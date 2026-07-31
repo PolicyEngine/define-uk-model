@@ -58,10 +58,18 @@ def run(workdir: Path | None = None) -> Path:
         )
     repo = fetch()
     cwd = workdir or repo
-    subprocess.run(
-        ["Rscript", "-e", f'rmarkdown::render("{MODEL_RMD}")'],
-        cwd=cwd, check=True,
+    # The upstream setup chunk locates itself with
+    # rstudioapi::getSourceEditorContext(), which only works inside RStudio.
+    # Shim that one call to return the notebook's real path — the upstream
+    # file itself is never modified.
+    shim = (
+        "loadNamespace('rstudioapi');"
+        "utils::assignInNamespace('getSourceEditorContext',"
+        f" function(...) list(path = file.path(getwd(), '{MODEL_RMD}')),"
+        " ns = 'rstudioapi');"
+        f"rmarkdown::render('{MODEL_RMD}')"
     )
+    subprocess.run(["Rscript", "-e", shim], cwd=cwd, check=True)
     out = cwd / "output"
     if not out.exists():
         raise RuntimeError(

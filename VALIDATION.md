@@ -24,6 +24,12 @@ Same bar as the suite's other replications (boe-var-model, us-hank-model):
 | 2 | — | power-sector regulation (S1–S4) | — | pending |
 | 3 | — | green public investment (S8–S9) | — | pending |
 
+## Run record
+
+| Date | Upstream commit | R | Result |
+|------|-----------------|---|--------|
+| 2026-08-01 | `846081a` | 4.3.0 (macOS) | Full notebook renders end to end via `define_uk.runner.run` (rstudioapi shim; upstream unmodified). 151 output files: figures and tables for all four scenario blocks plus `tables/Multiplier_Summary.csv`. **Execution ≠ validation**: no comparison against the published figures/tables has been made yet, so every target above remains pending. |
+
 ## Known blockers
 
 - Upstream carries no license; hosting results publicly should wait on the
