@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "define-uk-model"
+version = "0.0.1"
+description = "PolicyEngine adapter for the DEFINE-UK ecological stock-flow consistent model (pre-replication scaffold)"
+readme = "README.md"
+license = { text = "AGPL-3.0-only" }
+requires-python = ">=3.11"
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/PolicyEngine/define-uk-model"
+Upstream = "https://github.com/DEFINE-model/DEFINE_UK_1.1"
+
+[tool.setuptools.packages.find]
+where = ["src"]
