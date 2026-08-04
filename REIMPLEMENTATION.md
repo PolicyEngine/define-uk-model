@@ -38,7 +38,8 @@ src/define_uk/model/
   registry.py    # Equation(name, manual_ref, kind, func) + ordered registry
   solver.py      # per-period Gauss–Seidel iteration to SFC convergence
   sectors/       # one module per manual §3 section; equations register here
-  calibration.py # manual §5 parameters and initial values (to add)
+  calibration.py # manual §5 parameters and initial values (Tables 5–6)
+  accounting.py  # §2.2 transactions + balance-sheet matrices and residuals
 ```
 
 The solver is the standard SFC treatment: within each period, iterate all
@@ -48,13 +49,13 @@ sheets sum) are asserted each period, not assumed.
 
 ## Milestones
 
-| # | Slice (manual §) | Gate |
-|---|------------------|------|
-| 1 | Accounting core: transactions + balance-sheet matrices (§2.2), residual instruments | matrices identically satisfied on initial values (§5) |
-| 2 | High-level macro + production (§3.2–3.3) | baseline GDP path vs oracle |
-| 3 | Sectoral equations (§3.4.1–3.4.7) | full S1 baseline vs oracle within tolerance |
-| 4 | Ecosystem block (§3.1) | emissions/energy paths vs oracle |
-| 5 | Policy scenarios (regulation, green public investment, 1.1 extensions) | scenario deltas vs published figures per `VALIDATION.md` |
+| # | Slice (manual §) | Gate | Status |
+|---|------------------|------|--------|
+| 1 | Accounting core: transactions + balance-sheet matrices (§2.2), residual instruments | matrices identically satisfied on initial values (§5) | **PASS** (2026-08-04) — `model/accounting.py` + `model/calibration.py` (§5 Tables 5–6 fully transcribed); all Table 1/2 row and column identities hold on the §5 initial values within the manual's own 4-significant-figure printing precision (`tests/test_accounting.py`). One documented manual inconsistency (Table 6 LENDM_ROW omits the DIVN_ROW term of Eq. (383); overall LENDM tabulated as 5.44 where "should equal 0"): the MFI/RoW transaction columns miss LEND by ∓DIVN_ROW, pinned exactly in the tests. |
+| 2 | High-level macro + production (§3.2–3.3) | baseline GDP path vs oracle | pending |
+| 3 | Sectoral equations (§3.4.1–3.4.7) | full S1 baseline vs oracle within tolerance | pending |
+| 4 | Ecosystem block (§3.1) | emissions/energy paths vs oracle | pending |
+| 5 | Policy scenarios (regulation, green public investment, 1.1 extensions) | scenario deltas vs published figures per `VALIDATION.md` | pending |
 
 Tolerances are set per-milestone when the first comparison runs, and recorded
 in `VALIDATION.md` alongside the replication-gate entries — the oracle
