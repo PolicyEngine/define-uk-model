@@ -20,7 +20,8 @@ Same bar as the suite's other replications (boe-var-model, us-hank-model):
 
 | # | Published output | Scenario | Tolerance | Status |
 |---|------------------|----------|-----------|--------|
-| 1 | — | S1 baseline | — | pending |
+| 1a | Manual Table 4, macro block (real GDP growth, unemployment, population 16+, labour force at 2025/2030/2040) | S1 baseline | pop/LF ±0.01m; growth ±0.31pp; unemployment ±0.2pp | **PASS** (2026-08-04, `tests/test_replication_baseline.py`; calendar anchored on the population path: run = 1987Q1–2040Q4, 2025 = t153) |
+| 1b | Manual Table 4, total emissions | S1 baseline | — | **DIVERGENCE**: pinned code runs BELOW the published table, widening with horizon — 393 vs 407 (2025, −3.5%), 343 vs 382 (2030, −10%), 249 vs 324 (2040, −23%) MtCO2e/yr; components (EMIS_NELEC+EMIS_ELEC) sum exactly to EMIS and the baseline is identical across scenario folders, so this is a vintage/calibration gap between the published table and commit `846081a`, not an extraction error. Gated at the observed ratios so further drift fails loudly. |
 | 2 | — | power-sector regulation (S1–S4) | — | pending |
 | 3 | — | green public investment (S8–S9) | — | pending |
 
@@ -29,6 +30,7 @@ Same bar as the suite's other replications (boe-var-model, us-hank-model):
 | Date | Upstream commit | R | Result |
 |------|-----------------|---|--------|
 | 2026-08-01 | `846081a` | 4.3.0 (macOS) | Full notebook renders end to end via `define_uk.runner.run` (rstudioapi shim; upstream unmodified). 151 output files: figures and tables for all four scenario blocks plus `tables/Multiplier_Summary.csv`. **Execution ≠ validation**: no comparison against the published figures/tables has been made yet, so every target above remains pending. |
+| 2026-08-04 | `846081a` | cached run | Table 4 replication executed against the cached outputs: macro block passes (population and labour force exact to 0.01m; growth exact at 2030/2040, −0.30pp at 2025; unemployment within 0.2pp; 2025–40 mean/sd of growth and unemployment match the table). Emissions diverge as target 1b records. Suite: 14 passed. |
 
 ## External comparators (recorded 2026-08-04)
 
