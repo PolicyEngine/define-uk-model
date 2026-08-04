@@ -59,7 +59,8 @@ the demand-led caveat stated.
 
 ## Known blockers
 
-- Upstream carries no license; hosting results publicly should wait on the
-  DEFINE team's response (see README roadmap item 1).
+- Upstream carries no license, so its code is never vendored or hosted; the
+  hosting path is the clean-room reimplementation (REIMPLEMENTATION.md),
+  validated against this oracle.
 - Full-notebook runtime and R dependency set (26 packages incl. `seasonal`
   / X-13) are untested in CI.
