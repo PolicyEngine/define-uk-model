@@ -55,9 +55,13 @@ src/define_uk/
 
 ## Roadmap
 
-1. **License/permission request to the DEFINE team** (issue on the upstream
-   repo + email), so the model can be vendored and hosted like the suite's
-   other members.
+1. **Clean-room Python reimplementation** from the published Model Manual
+   v1.1, under the protocol in
+   [REIMPLEMENTATION.md](REIMPLEMENTATION.md) (`src/define_uk/model/`).
+   The unlicensed upstream code is used only as a numerical oracle; the
+   implementation is AGPL-3.0 and hostable like the suite's other adapted
+   models, credited to the DEFINE authors as an independent implementation
+   of their published design.
 2. **Replication gate:** reproduce the paper's headline scenario outputs
    (S1 baseline and at least two policy scenarios) and record them in
    `VALIDATION.md` with tolerances — the same validated-replication standard
