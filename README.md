@@ -57,7 +57,10 @@ src/define_uk/
 
 1. **License/permission request to the DEFINE team** (issue on the upstream
    repo + email), so the model can be vendored and hosted like the suite's
-   other members.
+   other members. In parallel, a **clean-room Python reimplementation** from
+   the published Model Manual v1.1 — hostable regardless of the upstream
+   licence — proceeds under the protocol in
+   [REIMPLEMENTATION.md](REIMPLEMENTATION.md) (`src/define_uk/model/`).
 2. **Replication gate:** reproduce the paper's headline scenario outputs
    (S1 baseline and at least two policy scenarios) and record them in
    `VALIDATION.md` with tolerances — the same validated-replication standard
