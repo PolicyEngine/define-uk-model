@@ -61,9 +61,14 @@ in `VALIDATION.md` alongside the replication-gate entries — the oracle
 comparison and the published-figure replication are the same standard applied
 to two references.
 
-## Relationship to the license request
+## Attribution
 
-The upstream license request (README roadmap #1) proceeds in parallel. If the
-DEFINE team licenses the upstream code, vendoring it may ship faster than this
-track finishes — the clean-room build still stands, as the hostable
-implementation PolicyEngine controls, and the two validate each other.
+This is the suite's standard adapted-model stance (as with the OBR
+macroeconometric emulator and the Bank of England SVAR replication): the
+**model design belongs to its authors**, the **implementation is ours**.
+Every surface that presents results names DEFINE-UK and its authors (George,
+Dafermos, Nikolaidi and co-authors), links the manual and papers, and states
+that this is an independent Python implementation of the published
+equations — not the authors' code, and not endorsed by them. The
+implementation itself is AGPL-3.0 like the rest of the repository, which is
+what makes hosting possible without any upstream licence.
