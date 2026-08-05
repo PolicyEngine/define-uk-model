@@ -1,0 +1,97 @@
+{
+  "notes": {
+    "manual": "DEFINE-UK Model Manual v1.1 (April 2026, George & Dafermos, SOAS). Contains NO policy-scenario results. Only published numeric targets are the baseline (Table 4, p.50) and scenario-design parameter values embedded in Table 5. Table 6 (pp.63-82) gives initial values for endogenous variables (2022-ish starting point) - a large replication surface for t=0 but not scenario results.",
+    "paper_ssrn_6541398": "Green Fiscal Policy in the UK: A Scenario Analysis (George & Dafermos, April 2026, DEFINE-UK 1.0). NOT OBTAINABLE: SSRN blocks direct fetch (403/HTML block page on abstract page and all Delivery.cfm/download.ssrn.com endpoints); no open mirror found on RePEc/SOAS/author pages. Per SSRN abstract (via search snippets) its scenarios are carbon pricing, green power sector subsidies, and green HOUSING subsidies - note: NOT 'fossil fuel ban' or 'housing regulation'. If our scenario mapping assumes a fossil-fuel ban or housing-regulation scenario, that does not match the published scenario set of this paper (regulatory/stranded-asset and public-ownership instruments were only ADDED in manual v1.1).",
+    "paper_fmm2023": "Earlier open version obtained: 'Green fiscal policy in an empirical UK E-SFC model' (George & Dafermos, Oct 2023, FMM conference, 'preliminary and incomplete'), https://www.imk-boeckler.de/data/downloads/IMK/FMM%20Konferenz%202023/v_2023_10_20_george.pdf (saved as fmm2023_george.pdf). Results are figure-based (Figure 3, pp.18-19); few precise numbers in text. Model version predates DEFINE-UK 1.0/1.1, so use only as qualitative/approximate sanity checks.",
+    "second_paper": "A second DEFINE-UK 1.1 paper exists: 'Evaluating climate policy mixes in the UK: an E-SFC approach' (2026), SSRN abstract_id=6588778 - also SSRN-gated, not obtained."
+  },
+  "scenario_definitions": [
+    {
+      "source": "manual v1.1 Table 5",
+      "scenario": "sce1 (baseline government renewable power investment)",
+      "shocks": "Quarterly government renewable power investment per activated unit GCF_PSGVTsce1 = 0.415 (GBP billion, 2022 prices), calibrated to generate the baseline. Government renewable investment is triggered when NFF capacity utilisation threshold sigma_NFFcap = 1.1 (ratio of NFF capacity to total electricity demand) is breached; inactive-trigger spending decays at delta_GCFPSGVT = 0.9 per quarter.",
+      "locator": "Table 5, pp.53, 58, 61"
+    },
+    {
+      "source": "manual v1.1 Table 5",
+      "scenario": "sce2 (Carbon Price Increase)",
+      "shocks": "Initial ETS price multiplier phi_PETSinitsce2 = 5.5 (scaling above baseline) applied at scenario start; thereafter quarterly ETS price growth g_PETSsce2 = 0.0306 beyond the initial jump; growth formula activates T_PETSdelay = 9 quarters after simulation start; ETS coverage for production and power sectors increased by delta_COVETS2 = 0.5. Baseline ETS carbon price growth g_ETSB = 0.0001283 quarterly; baseline emission price starts ~GBP 8.01/tCO2e (2025, Table 4).",
+      "locator": "Table 5, pp.53, 58, 61"
+    },
+    {
+      "source": "manual v1.1 Table 5",
+      "scenario": "sce3 (Green Power Subsidy / government renewable power investment scale-up)",
+      "shocks": "Quarterly government renewable power investment per activated unit GCF_PSGVTsce3 = 3.33 (GBP billion, 2022 prices), 'based on policy scenario design' (vs 0.415 in sce1).",
+      "locator": "Table 5, p.53"
+    },
+    {
+      "source": "manual v1.1 Section 1 (p.2)",
+      "scenario": "v1.1 new instruments (no numeric design values published)",
+      "shocks": "v1.1 adds: (i) limited forward-looking behaviour to policy announcements; (ii) regulatory policies that directly depreciate affected sectors' capital stock (stranded assets); (iii) direct government ownership of non-fossil power capital (strategic public ownership); (iv) green sovereign bond instrument financing green public investment in certain scenarios.",
+      "locator": "Section 1, p.2"
+    },
+    {
+      "source": "FMM 2023 paper, Section 5 (p.16)",
+      "scenario": "Carbon Tax Increase",
+      "shocks": "Implemented 2024Q1. Tax on emissions increased steadily from ~GBP 15/MtCO2e [sic, per tCO2e] to over GBP 150 by 2030. Baseline emission tax derived from OBR UK ETS revenue forecasts over all emissions.",
+      "locator": "fmm2023_george.pdf p.16"
+    },
+    {
+      "source": "FMM 2023 paper, Section 5 (p.16)",
+      "scenario": "Green Public Investment",
+      "shocks": "Implemented 2024Q1. Government invests an additional 1% of GDP in green projects by 2030.",
+      "locator": "fmm2023_george.pdf p.16"
+    },
+    {
+      "source": "FMM 2023 paper, Section 5 (p.16)",
+      "scenario": "Carbon Tax + Green Subsidy",
+      "shocks": "Implemented 2024Q1. Same carbon tax path as Carbon Tax Increase; all revenue recycled as green subsidies reducing the unit cost of renewable energy.",
+      "locator": "fmm2023_george.pdf p.16"
+    },
+    {
+      "source": "SSRN abstract 6541398 (paper not obtained)",
+      "scenario": "Paper scenario set (DEFINE-UK 1.0)",
+      "shocks": "Carbon pricing, green power sector subsidies, green housing subsidies (per abstract). Numeric shock sizes unavailable.",
+      "locator": "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6541398"
+    }
+  ],
+  "targets": [
+    {"source": "manual v1.1", "locator": "Table 4, p.50", "scenario": "baseline", "variable": "Real GDP growth", "year": 2025, "value": 4.96, "units": "%", "notes": "annualised quarterly"},
+    {"source": "manual v1.1", "locator": "Table 4, p.50", "scenario": "baseline", "variable": "Real GDP growth", "year": 2030, "value": 2.35, "units": "%", "notes": ""},
+    {"source": "manual v1.1", "locator": "Table 4, p.50", "scenario": "baseline", "variable": "Real GDP growth", "year": 2040, "value": 2.01, "units": "%", "notes": "mean 2025-2040 = 2.35, sd = 0.71"},
+    {"source": "manual v1.1", "locator": "Table 4, p.50", "scenario": "baseline", "variable": "Unemployment", "year": 2025, "value": 4.31, "units": "%", "notes": ""},
+    {"source": "manual v1.1", "locator": "Table 4, p.50", "scenario": "baseline", "variable": "Unemployment", "year": 2030, "value": 4.73, "units": "%", "notes": ""},
+    {"source": "manual v1.1", "locator": "Table 4, p.50", "scenario": "baseline", "variable": "Unemployment", "year": 2040, "value": 4.72, "units": "%", "notes": "mean 4.71, sd 0.14"},
+    {"source": "manual v1.1", "locator": "Table 4, p.50", "scenario": "baseline", "variable": "Population", "year": 2025, "value": 55.66, "units": "millions", "notes": ""},
+    {"source": "manual v1.1", "locator": "Table 4, p.50", "scenario": "baseline", "variable": "Population", "year": 2030, "value": 57.74, "units": "millions", "notes": ""},
+    {"source": "manual v1.1", "locator": "Table 4, p.50", "scenario": "baseline", "variable": "Population", "year": 2040, "value": 61.61, "units": "millions", "notes": "mean 58.68, sd 1.87"},
+    {"source": "manual v1.1", "locator": "Table 4, p.50", "scenario": "baseline", "variable": "Labour Force", "year": 2025, "value": 35.97, "units": "millions", "notes": ""},
+    {"source": "manual v1.1", "locator": "Table 4, p.50", "scenario": "baseline", "variable": "Labour Force", "year": 2030, "value": 37.12, "units": "millions", "notes": ""},
+    {"source": "manual v1.1", "locator": "Table 4, p.50", "scenario": "baseline", "variable": "Labour Force", "year": 2040, "value": 39.13, "units": "millions", "notes": "mean 37.62, sd 1.00"},
+    {"source": "manual v1.1", "locator": "Table 4, p.50", "scenario": "baseline", "variable": "Proportion of non-fossil electricity generation", "year": 2025, "value": 57.93, "units": "%", "notes": ""},
+    {"source": "manual v1.1", "locator": "Table 4, p.50", "scenario": "baseline", "variable": "Proportion of non-fossil electricity generation", "year": 2030, "value": 61.77, "units": "%", "notes": ""},
+    {"source": "manual v1.1", "locator": "Table 4, p.50", "scenario": "baseline", "variable": "Proportion of non-fossil electricity generation", "year": 2040, "value": 77.14, "units": "%", "notes": "mean 65.92, sd 6.35"},
+    {"source": "manual v1.1", "locator": "Table 4, p.50", "scenario": "baseline", "variable": "Total emissions", "year": 2025, "value": 407.32, "units": "MtCO2e/year", "notes": ""},
+    {"source": "manual v1.1", "locator": "Table 4, p.50", "scenario": "baseline", "variable": "Total emissions", "year": 2030, "value": 381.76, "units": "MtCO2e/year", "notes": ""},
+    {"source": "manual v1.1", "locator": "Table 4, p.50", "scenario": "baseline", "variable": "Total emissions", "year": 2040, "value": 324.37, "units": "MtCO2e/year", "notes": "mean 367.10, sd 25.46; baseline falls short of UK 2035 NDC (-81% vs 1990), p.49"},
+    {"source": "manual v1.1", "locator": "Table 4, p.50", "scenario": "baseline", "variable": "Emission price", "year": 2025, "value": 8.01, "units": "GBP/tCO2e", "notes": ""},
+    {"source": "manual v1.1", "locator": "Table 4, p.50", "scenario": "baseline", "variable": "Emission price", "year": 2030, "value": 10.58, "units": "GBP/tCO2e", "notes": ""},
+    {"source": "manual v1.1", "locator": "Table 4, p.50", "scenario": "baseline", "variable": "Emission price", "year": 2040, "value": 15.71, "units": "GBP/tCO2e", "notes": "mean 11.86, sd 2.44"},
+    {"source": "manual v1.1", "locator": "Table 4, p.50", "scenario": "baseline", "variable": "Green investment", "year": 2025, "value": 1.00, "units": "% of GDP", "notes": ""},
+    {"source": "manual v1.1", "locator": "Table 4, p.50", "scenario": "baseline", "variable": "Green investment", "year": 2030, "value": 1.07, "units": "% of GDP", "notes": ""},
+    {"source": "manual v1.1", "locator": "Table 4, p.50", "scenario": "baseline", "variable": "Green investment", "year": 2040, "value": 1.30, "units": "% of GDP", "notes": "mean 1.13, sd 0.10"},
+    {"source": "manual v1.1", "locator": "Table 4, p.50", "scenario": "baseline", "variable": "NFC default rate", "year": 2025, "value": 0.28, "units": "%", "notes": "2030: 0.33; 2040: 0.45; mean 0.36, sd 0.05"},
+    {"source": "manual v1.1", "locator": "Table 4, p.50", "scenario": "baseline", "variable": "NFC credit rationing", "year": 2025, "value": 3.81, "units": "%", "notes": "2030: 2.56; 2040: 4.79; mean 3.49, sd 0.74"},
+    {"source": "manual v1.1", "locator": "Table 4, p.50", "scenario": "baseline", "variable": "Power sector default rate", "year": 2025, "value": 0.16, "units": "%", "notes": "2030: 0.11; 2040: 0.13; mean 0.12, sd 0.01"},
+    {"source": "manual v1.1", "locator": "Table 4, p.50", "scenario": "baseline", "variable": "Power sector credit rationing", "year": 2025, "value": 47.22, "units": "%", "notes": "2030: 35.44; 2040: 21.09; mean 30.64, sd 9.04"},
+    {"source": "manual v1.1", "locator": "Table 4, p.50", "scenario": "baseline", "variable": "Imports", "year": 2025, "value": 39.99, "units": "% of GDP", "notes": "2030: 39.97; 2040: 41.18; mean 40.31, sd 0.51"},
+    {"source": "manual v1.1", "locator": "Table 4, p.50", "scenario": "baseline", "variable": "Exports", "year": 2025, "value": 38.58, "units": "% of GDP", "notes": "2030: 40.19; 2040: 44.15; mean 41.21, sd 1.80"},
+    {"source": "manual v1.1", "locator": "Table 4, p.50", "scenario": "baseline", "variable": "Real effective exchange rate", "year": 2025, "value": 1.00, "units": "index (2022=1)", "notes": "2030: 1.00; 2040: 0.98; mean 0.99, sd 0.01"},
+    {"source": "fmm2023 paper", "locator": "Section 5 text, p.16", "scenario": "baseline", "variable": "Total emissions", "year": 2030, "value": 350, "units": "MtCO2e", "notes": "'just under 350 MtCO2e' by 2030; NDC-consistent aim stated as 252 MtCO2e (-68% vs 1990). DEFINE-UK pre-1.0 vintage"},
+    {"source": "fmm2023 paper", "locator": "Section 5 text, p.16", "scenario": "baseline", "variable": "Real GDP growth", "year": 2030, "value": 1.0, "units": "% (approx)", "notes": "'close to zero from 2024, increasing to around 1% towards 2030'"},
+    {"source": "fmm2023 paper", "locator": "Section 5 text + Fig 3f, pp.16-18", "scenario": "Green Public Investment", "variable": "Total emissions", "year": 2030, "value": 252, "units": "MtCO2e (approx, reaches NDC level)", "notes": "text: 'both green public investment and carbon tax + green subsidy scenarios manage to reach the UK NDC emission level by 2030, with the latter having slightly lower emissions overall'"},
+    {"source": "fmm2023 paper", "locator": "Section 5 text + Fig 3f, pp.16-18", "scenario": "Carbon Tax + Green Subsidy", "variable": "Total emissions", "year": 2030, "value": 252, "units": "MtCO2e (approx, slightly below NDC level)", "notes": "slightly lower than Green Public Investment scenario"},
+    {"source": "fmm2023 paper", "locator": "Fig 3c, p.18 + scenario definition p.16", "scenario": "Carbon Tax Increase (and CT+GS)", "variable": "Emission price", "year": 2030, "value": 150, "units": "GBP/tCO2e (>150 by 2030)", "notes": "from ~GBP 15 at 2024Q1 start"},
+    {"source": "fmm2023 paper", "locator": "Section 5 text + Fig 3g/3h, pp.17-19", "scenario": "qualitative directions", "variable": "GDP / unemployment", "year": 2030, "value": null, "units": null, "notes": "Carbon tax alone: lower GDP growth, unemployment rises to ~4.7% by 2028-2030 (Fig 3h, approx) vs baseline ~2.7%; Green Public Investment: expansionary, unemployment falls toward ~1.5% by 2030 (Fig 3h, approx; labour supply constraint noted - larger GPI could hit 0%); CT+GS roughly neutral on GDP. Debt-to-GDP: lower than baseline under pure carbon tax, higher under GPI (Fig 3l). Figure readings are approximate."}
+  ]
+}

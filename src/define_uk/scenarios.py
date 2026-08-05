@@ -32,8 +32,10 @@ DEFAULT_VARIABLES = ("GDP_R", "EMIS", "UPLOT", "CONS_R")
 
 CAVEATS = [
     "Experimental: scenario outputs are gated against the pinned oracle "
-    "run only; no comparison against the published scenario figures has "
-    "been completed yet (VALIDATION.md targets 2/3).",
+    "run, the manual's published scenario definitions (exact policy-switch "
+    "sets), and two coarse anchors from the FMM 2023 paper vintage; no "
+    "numeric scenario results are published for v1.1, so a full published-"
+    "figure replication is not possible (VALIDATION.md targets 2/3).",
     "Deltas only: baseline LEVELS are not validated against outturns "
     "(e.g. baseline 2025 real GDP growth ~5% vs ~1% outturn) and must "
     "never be presented as forecasts.",
