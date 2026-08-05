@@ -5,11 +5,14 @@ of the UK economy by Dafermos, Nikolaidi and co-authors
 ([define-model.org/define-uk](https://define-model.org/define-uk/)), for the
 [PolicyEngine Macro](https://github.com/PolicyEngine/macro) suite.
 
-> **Status: scaffold — pre-replication.** This repository contains the
-> PolicyEngine adapter and validation harness only. It does not yet
-> reproduce any published DEFINE-UK result, and nothing here should be used
-> for analysis until `VALIDATION.md` records a passing replication of the
-> paper's scenarios.
+> **Status: baseline macro replication PASS; scenario surface gated
+> against the pinned oracle run only** (see `VALIDATION.md`). The scenario
+> surface is **local-only** — it reads a locally cached run of the
+> unlicensed upstream code; nothing is hosted or redistributed — and
+> **deltas-only**: baseline levels are not validated against outturns and
+> must never be presented as forecasts. The defensible outputs are
+> scenario-minus-baseline deltas under the model's demand-led closure,
+> with the caveats every result carries.
 
 ## What DEFINE-UK is
 
@@ -44,8 +47,23 @@ PolicyEngine convention.
 src/define_uk/
   upstream.py   # pinned-commit fetch + cache of DEFINE-model/DEFINE_UK_1.1
   runner.py     # runs the upstream Rmd scenarios via Rscript (subprocess)
-  scenarios.py  # curated scenario levers exposed to policyengine-macro
+  scenarios.py  # curated scenario surface over the CACHED upstream run
 ```
+
+### Scenario surface (`define_uk.scenarios`)
+
+`list_scenarios()` enumerates the 22 upstream scenarios (four blocks:
+`gvt_investment`, `housing_regulation`, `power_sector_regulation` under
+five expectation regimes, and `mixed`). `run_scenario(name)` returns
+annualised **scenario-minus-baseline delta paths** (level and %) for
+`GDP_R`, `EMIS`, `UPLOT`, `CONS_R` by default, with calendar years
+(run anchored 1987Q1–2040Q4), provenance (pinned commit, cache path, R
+run date), `result_type="scenario deltas"`, and mandatory caveats.
+It only ever reads the locally cached run produced by
+`define_uk.runner.run()` — it never runs R, and raises with instructions
+when no cache exists. Gated by `tests/test_scenarios.py` against the
+pinned oracle run; the published-figure comparison is still pending
+(VALIDATION.md targets 2/3).
 
 - **Pinned upstream revision:** `846081a580a6033159d5c421632ad8f0b30d0ded`
   (`DEFINE_UK_1.1@main`, fetched 2026-08-01).
