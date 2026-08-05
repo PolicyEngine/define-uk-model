@@ -1,0 +1,8 @@
+quantity,model,external,units,gap,verdict,source
+real_gdp_growth_2025,4.66,1.0,% y/y,3.66,far above outturn; never a forecast,ONS quarterly national accounts vintage 2026 (uk_gdp_cvm; 2026Q1 y/y 0.9%); OBR March 2026 EFO near-term 1-2%
+real_gdp_growth_mean_2025_2040,2.4,1.65,% y/y mean,0.75,high vs official long-run,OBR long-run growth assumption ~1.5-1.8% (March 2026 EFO)
+unemployment_2025,4.39,5.2,%,-0.81,below outturn,"ONS MGSX outturn, 2025Q4"
+population_16plus_2025,55.66,56.0,millions,-0.34,consistent,ONS 16+ population estimate ~56m
+labour_force_2025,35.97,34.5,millions,1.47,slightly high,ONS labour force ~34-35m
+emissions_2024,401.5,371.0,MtCO2e/yr,30.5,above the actuals it should start from,"DESNZ UK territorial greenhouse gas emissions, 2024 provisional (2023 final: 384)"
+emissions_2030_ndc,342.8,260.0,MtCO2e/yr,82.8,short of the NDC by design (current-policies baseline),UK NDC: 68% below 1990 by 2030 (~260 MtCO2e); the manual itself notes the current-policies baseline falls short by design
