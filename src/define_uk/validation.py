@@ -34,16 +34,20 @@ _BASE_FOLDER = "gvt_investment"  # baselines are identical across folders
 # Pinned external observations. (quantity, value, units, source)
 EXTERNAL = {
     "real_gdp_growth_2025": (
-        1.0, "% y/y",
-        "ONS quarterly national accounts vintage 2026 (uk_gdp_cvm; 2026Q1 "
-        "y/y 0.9%); OBR March 2026 EFO near-term 1-2%",
+        1.31, "% y/y",
+        "ONS quarterly national accounts, uk_gdp_cvm vintage 2026-07-26: "
+        "2025 calendar-year mean over 2024 = +1.31%; OBR March 2026 EFO "
+        "near-term 1-2%",
     ),
     "real_gdp_growth_mean_2025_2040": (
         1.65, "% y/y mean",
         "OBR long-run growth assumption ~1.5-1.8% (March 2026 EFO)",
     ),
     "unemployment_2025": (
-        5.2, "%", "ONS MGSX outturn, 2025Q4",
+        4.88, "%",
+        "ONS MGSX, uk_unemployment_rate vintage 2026-07-26: 2025 quarterly "
+        "path 4.6/4.7/5.0/5.2, annual mean 4.88 (annual-mean convention "
+        "matches the model column)",
     ),
     "population_16plus_2025": (
         56.0, "millions", "ONS 16+ population estimate ~56m",
