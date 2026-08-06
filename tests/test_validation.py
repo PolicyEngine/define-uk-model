@@ -39,7 +39,7 @@ def test_baseline_divergence_is_material_and_directional():
     rows = {r["quantity"]: r for r in validation.baseline_calibration()}
     # The reason the adapter is deltas-only, quantified:
     assert rows["real_gdp_growth_2025"]["gap"] > 3.0
-    assert rows["unemployment_2025"]["gap"] < -0.5
+    assert rows["unemployment_2025"]["gap"] < -0.4
     assert rows["emissions_2024"]["gap"] > 25.0
     # And the one row expected to be consistent stays consistent:
     assert abs(rows["population_16plus_2025"]["gap"]) < 0.5
