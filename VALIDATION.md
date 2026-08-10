@@ -16,6 +16,43 @@ Same bar as the suite's other replications (boe-var-model, us-hank-model):
 3. Record here: figure/table replicated, tolerance, result, upstream commit,
    R version, date.
 
+## Acceptance criteria (CI validation gate)
+
+Everything checked against the pinned upstream run
+(`846081a580a6033159d5c421632ad8f0b30d0ded`), with its numeric tolerance,
+lives in one committed reference artifact:
+**`validation/reference_outputs.json`**. The oracle tests read their pinned
+values from it, so a local cached run and CI gate the same numbers, and no
+tolerance or reference can drift silently in test code.
+
+| Output checked | Reference | Tolerance | Test |
+|---|---|---|---|
+| Baseline macro block: population 16+, labour force (2025/2030/2040, annual means) | Manual v1.1 Table 4 | abs ±0.01 m | `test_replication_baseline.py` |
+| Baseline real GDP growth (2025/2030/2040) | Manual v1.1 Table 4 | abs ±0.31 pp (annualisation convention; 2030/2040 match to 0.06pp) | `test_replication_baseline.py` |
+| Baseline unemployment (2025/2030/2040) | Manual v1.1 Table 4 | abs ±0.2 pp | `test_replication_baseline.py` |
+| Baseline emissions vs Table 4 | observed divergence ratios 0.965 / 0.898 / 0.767 (target 1b — a known vintage gap, gated so further drift fails) | abs ±0.02 on the ratio | `test_replication_baseline.py` |
+| 11 pinned scenario-minus-baseline delta points (GDP_R, EMIS, UPLOT across GPI, housing regulation, fossil-fuel ban, mixed) | cached pinned run | rel 1e-6 | `test_scenarios.py::test_pinned_delta_points` |
+| Scenario sign structure and cross-scenario ordering (deltas finite, baselines identical across blocks, EMIS falls everywhere by 2035, mixed dominates) | cached pinned run | exact sign / ordering | `test_scenarios.py` |
+| Scenario design: exact policy-switch set per scenario; FMM 2023 anchors (GPI GDP peak +0.92% vs "≈+1%"; 2030 baseline emissions 342.8 vs "just under 350") | manual Table 5 / FMM 2023 | exact flags; wide anchors | `test_scenario_design.py` |
+| GPI cumulative multiplier 1.78 (cum ΔGDP 209.9 / cum ΔSPEND_GVT 118.2; real cum 250.6) | own computation on cached run | abs ±0.01 (multiplier), ±0.5 (cumulants) | `test_validation.py` |
+| Calibration comparator table (baseline vs ONS/DESNZ/OBR) | committed `validation/baseline_vs_external.csv` | exact match vs recomputation | `test_validation.py` |
+
+**Hermetic half (runs on every PR, no cache, no R, no upstream fetch):**
+the upstream is unlicensed, so CI never fetches or runs it and the oracle
+tests above skip there. `tests/test_committed_artifacts.py` is the part of
+the gate CI can always enforce: the reference artifact is well-formed,
+internally consistent (e.g. the committed multiplier reproduces from its
+committed cumulants), pinned to the same commit as `define_uk.upstream`;
+the committed calibration CSV keeps its exact schema, pinned external
+observations, gap arithmetic, and headline divergences; the scenario
+registry matches; and README/VALIDATION.md/LICENSE-STATUS.md still name
+the pinned commit. The full oracle comparison runs wherever a cached
+pinned run exists (developer machines) and gates the identical numbers.
+
+**Changing any reference number** requires editing
+`validation/reference_outputs.json` deliberately, with a run-record entry
+below — never editing a test.
+
 ## Targets (to fill)
 
 | # | Published output | Scenario | Tolerance | Status |

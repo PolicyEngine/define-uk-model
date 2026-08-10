@@ -46,13 +46,25 @@ def test_baseline_divergence_is_material_and_directional():
 
 
 def test_gpi_multiplier_pinned():
+    import json
+
+    ref = json.loads(
+        (ARTIFACT.parent / "reference_outputs.json").read_text()
+    )["gpi_multiplier"]
     m = validation.gpi_multiplier()
-    assert m["multiplier"] == pytest.approx(1.78, abs=0.01)
-    assert m["cum_delta_gdp_real"] == pytest.approx(250.6, abs=0.5)
+    assert m["multiplier"] == pytest.approx(
+        ref["multiplier"], abs=ref["multiplier_tolerance_abs"]
+    )
+    tol = ref["cum_tolerance_abs"]
+    assert m["cum_delta_gdp_real"] == pytest.approx(
+        ref["cum_delta_gdp_real"], abs=tol
+    )
     # If either total drifts, the cached run changed — investigate, then
     # re-pin deliberately.
-    assert m["cum_delta_gdp"] == pytest.approx(209.9, abs=0.5)
-    assert m["cum_delta_spend"] == pytest.approx(118.2, abs=0.5)
+    assert m["cum_delta_gdp"] == pytest.approx(ref["cum_delta_gdp"], abs=tol)
+    assert m["cum_delta_spend"] == pytest.approx(
+        ref["cum_delta_spend"], abs=tol
+    )
 
 
 def test_upstream_multiplier_table_is_flagged_unusable():

@@ -1,0 +1,44 @@
+# Validation gate (hermetic): the committed reference artifacts must hold.
+#
+# The upstream DEFINE-UK code is UNLICENSED (see LICENSE-STATUS.md), so CI
+# never fetches or runs it — the oracle-comparison tests skip here and run
+# on developer machines against the local cached pinned run. What CI CAN
+# always enforce is that the committed reference artifacts
+# (validation/reference_outputs.json, validation/baseline_vs_external.csv)
+# stay internally consistent, pinned to the same upstream commit as the
+# code, and unedited-by-accident: tests/test_committed_artifacts.py.
+# Mirrors the invariants-gate pattern of obr-macroeconomic-model and
+# boe-var-model (committed references + tolerance-gated comparison + red
+# build on drift).
+name: Validation gate
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  committed-artifacts:
+    name: Committed reference artifacts (HARD GATE)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e . pytest
+      - name: Hermetic artifact gate
+        run: pytest tests/test_committed_artifacts.py -v
+      - name: Oracle tests must SKIP here, never silently pass
+        # The cache-gated oracle tests cannot run in CI (unlicensed
+        # upstream, no cache). If they ever report "passed" in CI,
+        # something is fetching or fabricating a cache — fail loudly.
+        run: |
+          set -euo pipefail
+          out=$(pytest -q tests/test_replication_baseline.py \
+                          tests/test_scenario_design.py \
+                          tests/test_validation.py \
+                          tests/test_scenarios.py 2>&1 | tail -5)
+          echo "$out"
+          echo "$out" | grep -q "skipped"

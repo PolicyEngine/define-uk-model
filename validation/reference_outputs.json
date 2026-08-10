@@ -1,0 +1,58 @@
+{
+  "description": "Pinned reference outputs for the DEFINE-UK validation gate. Single source of truth for every number the test suite compares the cached pinned upstream run against. All values were recorded from real repo artifacts (the cached run of the pinned commit, Manual v1.1 Table 4, and validation/baseline_vs_external.csv); none are invented. Update only deliberately, with a VALIDATION.md run-record entry.",
+  "upstream_commit": "846081a580a6033159d5c421632ad8f0b30d0ded",
+  "upstream_url": "https://github.com/DEFINE-model/DEFINE_UK_1.1",
+  "recorded": "2026-08-05",
+  "table4_baseline": {
+    "source": "DEFINE-UK Model Manual v1.1, Table 4 (p.50); replication recorded VALIDATION.md target 1a, 2026-08-04",
+    "columns": ["t0_index", "real_gdp_growth_pct", "unemployment_pct", "population_16plus_m", "labour_force_m", "emissions_mtco2e_yr"],
+    "tolerances": {
+      "population_16plus_m": {"abs": 0.01},
+      "labour_force_m": {"abs": 0.01},
+      "real_gdp_growth_pct": {"abs": 0.31, "note": "Table 4 annualisation convention not stated exactly; 2030/2040 match to 0.06pp, 2025 differs by 0.30pp"},
+      "unemployment_pct": {"abs": 0.2}
+    },
+    "years": {
+      "2025": [152, 4.96, 4.31, 55.66, 35.97, 407.32],
+      "2030": [172, 2.35, 4.73, 57.74, 37.12, 381.76],
+      "2040": [212, 2.01, 4.72, 61.61, 39.13, 324.37]
+    }
+  },
+  "emissions_divergence": {
+    "source": "VALIDATION.md target 1b: pinned commit's baseline EMIS runs below Table 4, widening with horizon (vintage/calibration gap, not extraction error); gated at the observed ratios so further drift fails loudly",
+    "ratio_run_over_table4": {"2025": 0.965, "2030": 0.898, "2040": 0.767},
+    "tolerance": {"abs": 0.02}
+  },
+  "pinned_scenario_deltas": {
+    "source": "Exact annual-mean scenario-minus-baseline deltas from the cached run at the pinned commit (CSV precision ~4 sig figs); recorded 2026-08-04 in tests/test_scenarios.py",
+    "convention": "scenario minus baseline, annual mean of quarterly levels, calendar anchored 1987Q1-2040Q4",
+    "tolerance": {"rel": 1e-06},
+    "points": [
+      {"scenario": "green_public_investment", "variable": "GDP_R", "year": 2026, "delta_level": -1.125},
+      {"scenario": "green_public_investment", "variable": "GDP_R", "year": 2030, "delta_level": 4.075},
+      {"scenario": "green_public_investment", "variable": "GDP_R", "year": 2035, "delta_level": 7.75},
+      {"scenario": "green_public_investment", "variable": "EMIS", "year": 2035, "delta_level": -13.5425},
+      {"scenario": "green_public_investment", "variable": "UPLOT", "year": 2035, "delta_level": -0.2195},
+      {"scenario": "housing_regulation", "variable": "GDP_R", "year": 2035, "delta_level": -2.3},
+      {"scenario": "housing_regulation", "variable": "EMIS", "year": 2035, "delta_level": -5.375},
+      {"scenario": "fossil_fuel_ban", "variable": "GDP_R", "year": 2030, "delta_level": -3.85},
+      {"scenario": "fossil_fuel_ban", "variable": "EMIS", "year": 2035, "delta_level": -10.6475},
+      {"scenario": "mixed_both_regulations_subsidies", "variable": "EMIS", "year": 2035, "delta_level": -23.0975},
+      {"scenario": "mixed_both_regulations_subsidies", "variable": "UPLOT", "year": 2030, "delta_level": 0.141}
+    ]
+  },
+  "gpi_multiplier": {
+    "source": "define_uk.validation.gpi_multiplier() on the cached pinned run; recorded 2026-08-05 (VALIDATION.md); replaces the unusable upstream Multiplier_Summary.csv",
+    "definition": "cum dGDP / cum dSPEND_GVT, nominal, full simulation, GPI + Green Bonds vs baseline",
+    "multiplier": 1.78,
+    "multiplier_tolerance_abs": 0.01,
+    "cum_delta_gdp": 209.9,
+    "cum_delta_spend": 118.2,
+    "cum_delta_gdp_real": 250.6,
+    "cum_tolerance_abs": 0.5
+  },
+  "scenario_registry": {
+    "count": 22,
+    "blocks": ["gvt_investment", "housing_regulation", "power_sector_regulation", "mixed"]
+  }
+}
