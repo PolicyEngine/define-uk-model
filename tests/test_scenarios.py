@@ -167,24 +167,25 @@ def test_mixed_policy_cuts_most_emissions():
 
 
 # Pinned oracle values: exact annual-mean deltas from the cached run at
-# commit 846081a (CSV precision ~4 sig figs). Any silent change to the
-# cache, the delta convention, or the calendar anchoring fails here.
+# commit 846081a (CSV precision ~4 sig figs), committed as the reference
+# artifact validation/reference_outputs.json (single source of truth,
+# hermetically gated by tests/test_committed_artifacts.py). Any silent
+# change to the cache, the delta convention, or the calendar anchoring
+# fails here.
+import json
+
+_REF = json.loads(
+    (Path(__file__).resolve().parents[1] / "validation"
+     / "reference_outputs.json").read_text()
+)
 PINNED = [
-    ("green_public_investment", "GDP_R", 2026, -1.125),
-    ("green_public_investment", "GDP_R", 2030, 4.075),
-    ("green_public_investment", "GDP_R", 2035, 7.75),
-    ("green_public_investment", "EMIS", 2035, -13.5425),
-    ("green_public_investment", "UPLOT", 2035, -0.2195),
-    ("housing_regulation", "GDP_R", 2035, -2.3),
-    ("housing_regulation", "EMIS", 2035, -5.375),
-    ("fossil_fuel_ban", "GDP_R", 2030, -3.85),
-    ("fossil_fuel_ban", "EMIS", 2035, -10.6475),
-    ("mixed_both_regulations_subsidies", "EMIS", 2035, -23.0975),
-    ("mixed_both_regulations_subsidies", "UPLOT", 2030, 0.141),
+    (p["scenario"], p["variable"], p["year"], p["delta_level"])
+    for p in _REF["pinned_scenario_deltas"]["points"]
 ]
+_PINNED_RTOL = _REF["pinned_scenario_deltas"]["tolerance"]["rel"]
 
 
 @needs_cache
 @pytest.mark.parametrize("name,var,year,value", PINNED)
 def test_pinned_delta_points(name, var, year, value):
-    assert _delta(name, var, year) == pytest.approx(value, rel=1e-6)
+    assert _delta(name, var, year) == pytest.approx(value, rel=_PINNED_RTOL)

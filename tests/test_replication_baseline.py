@@ -26,11 +26,24 @@ BASELINE = (
 
 # Manual v1.1 Table 4 (annualised): year -> (t0 index, real GDP growth %,
 # unemployment %, population 16+ m, labour force m, emissions MtCO2e/yr).
+# Loaded from the committed reference artifact (single source of truth,
+# hermetically gated by tests/test_committed_artifacts.py).
+import json
+
+_REF = json.loads(
+    (Path(__file__).resolve().parents[1] / "validation"
+     / "reference_outputs.json").read_text()
+)
 TABLE_4 = {
-    2025: (152, 4.96, 4.31, 55.66, 35.97, 407.32),
-    2030: (172, 2.35, 4.73, 57.74, 37.12, 381.76),
-    2040: (212, 2.01, 4.72, 61.61, 39.13, 324.37),
+    int(year): tuple(vals)
+    for year, vals in _REF["table4_baseline"]["years"].items()
 }
+_TOL = _REF["table4_baseline"]["tolerances"]
+_EMIS_RATIO = {
+    int(y): r
+    for y, r in _REF["emissions_divergence"]["ratio_run_over_table4"].items()
+}
+_EMIS_RATIO_TOL = _REF["emissions_divergence"]["tolerance"]["abs"]
 
 
 @pytest.fixture(scope="module")
@@ -57,18 +70,24 @@ def _year_mean(series, t0):
 @pytest.mark.parametrize("year", TABLE_4)
 def test_macro_block_replicates_table_4(baseline, year):
     t0, growth, unemp, pop, lf, _ = TABLE_4[year]
-    assert _year_mean(baseline["POP"], t0) == pytest.approx(pop, abs=0.01)
-    assert _year_mean(baseline["LF"], t0) == pytest.approx(lf, abs=0.01)
+    assert _year_mean(baseline["POP"], t0) == pytest.approx(
+        pop, abs=_TOL["population_16plus_m"]["abs"]
+    )
+    assert _year_mean(baseline["LF"], t0) == pytest.approx(
+        lf, abs=_TOL["labour_force_m"]["abs"]
+    )
     run_growth = 100 * (
         _year_mean(baseline["GDP_R"], t0) / _year_mean(baseline["GDP_R"], t0 - 4) - 1
     )
     # 0.3pp tolerance: Table 4's annualisation convention is not stated
     # exactly; 2030/2040 match to 0.06pp, 2025 differs by 0.30pp.
-    assert run_growth == pytest.approx(growth, abs=0.31)
+    assert run_growth == pytest.approx(
+        growth, abs=_TOL["real_gdp_growth_pct"]["abs"]
+    )
     run_unemp = _year_mean(baseline["UPLOT"], t0)
     if run_unemp < 1:
         run_unemp *= 100
-    assert run_unemp == pytest.approx(unemp, abs=0.2)
+    assert run_unemp == pytest.approx(unemp, abs=_TOL["unemployment_pct"]["abs"])
 
 
 @pytest.mark.parametrize("year", TABLE_4)
@@ -79,7 +98,8 @@ def test_emissions_divergence_from_table_4_does_not_widen(baseline, year):
     the pinned code is caught; a fix upstream that closes the gap will fail
     this test loudly, which is the correct prompt to retighten it.
     """
-    observed_ratio = {2025: 0.965, 2030: 0.898, 2040: 0.767}
     t0, *_, emis = TABLE_4[year]
     run_emis = 4 * _year_mean(baseline["EMIS"], t0)
-    assert run_emis / emis == pytest.approx(observed_ratio[year], abs=0.02)
+    assert run_emis / emis == pytest.approx(
+        _EMIS_RATIO[year], abs=_EMIS_RATIO_TOL
+    )
