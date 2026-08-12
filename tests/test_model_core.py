@@ -46,17 +46,17 @@ def test_registry_rejects_duplicate_endogenous_variable():
 def test_full_registry_builds_from_every_sector_module():
     """Every sector module registers cleanly; the count grows per milestone.
 
-    Milestone 2 has landed §3.2 (Eqs. 21-43, 23 equations) and §3.3.1
-    (Eqs. 44-70, 27 equations). §3.3.2, §3.3.3 and the remaining sector
-    modules are still stubs — update this as each slice lands, and keep it
-    exact rather than a lower bound: a silently-dropped `register()` call
-    should fail here, not pass.
+    Milestone 2 has landed §3.2 (Eqs. 21-43, 23 equations), §3.3.1
+    (Eqs. 44-70, 27 equations) and §3.3.2 (Eqs. 71-138, 68 equations).
+    §3.3.3 and the remaining sector modules are still stubs — update this as
+    each slice lands, and keep it exact rather than a lower bound: a
+    silently-dropped `register()` call should fail here, not pass.
     """
     registry = build_registry()
-    assert len(registry) == 23 + 27
+    assert len(registry) == 23 + 27 + 68
 
     sections = {eq.manual_ref.split(" eq.")[0] for eq in registry}
-    assert sections == {"§3.2", "§3.3.1"}
+    assert sections == {"§3.2", "§3.3.1", "§3.3.2"}
 
     # No sector module may register the same endogenous variable twice; the
     # Registry raises on collision, so reaching here already proves it.

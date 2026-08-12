@@ -52,7 +52,7 @@ sheets sum) are asserted each period, not assumed.
 | # | Slice (manual §) | Gate | Status |
 |---|------------------|------|--------|
 | 1 | Accounting core: transactions + balance-sheet matrices (§2.2), residual instruments | matrices identically satisfied on initial values (§5) | **PASS** (2026-08-04) — `model/accounting.py` + `model/calibration.py` (§5 Tables 5–6 fully transcribed); all Table 1/2 row and column identities hold on the §5 initial values within the manual's own 4-significant-figure printing precision (`tests/test_accounting.py`). One documented manual inconsistency (Table 6 LENDM_ROW omits the DIVN_ROW term of Eq. (383); overall LENDM tabulated as 5.44 where "should equal 0"): the MFI/RoW transaction columns miss LEND by ∓DIVN_ROW, pinned exactly in the tests. |
-| 2 | High-level macro + production (§3.2–3.3) | baseline GDP path vs oracle | **in progress** — §3.2 and §3.3.1 landed; §3.3.2, §3.3.3 and the oracle gate are still outstanding, so the milestone is **not** passed. See the notes below. |
+| 2 | High-level macro + production (§3.2–3.3) | baseline GDP path vs oracle | **in progress** — §3.2, §3.3.1 and §3.3.2 landed; §3.3.3 and the oracle gate are still outstanding, so the milestone is **not** passed. See the notes below. |
 | 3 | Sectoral equations (§3.4.1–3.4.7) | full S1 baseline vs oracle within tolerance | pending |
 | 4 | Ecosystem block (§3.1) | emissions/energy paths vs oracle | pending |
 | 5 | Policy scenarios (regulation, green public investment, 1.1 extensions) | scenario deltas vs published figures per `VALIDATION.md` | pending |
@@ -113,6 +113,83 @@ Findings, all implemented as printed and pinned rather than patched:
   consumption, government consumption and exports in Eq. (44), but the
   printed equation also carries GCF, and Table 6 confirms the equation (the
   four components sum to F_P = 805.0 exactly).
+
+**§3.3.2 Power generation sector** (2026-08-12) — `model/sectors/power.py`
+implements Eqs. (71)–(138), all 68 equations (electricity final demand and
+the Leontief block, the fossil/non-fossil cost split, marginal-cost
+electricity pricing, the utilisation and forward-looking-expectation block
+that drives investment, credit-rationed capital formation, and the sector's
+full financial account through to leverage, illiquidity and credit
+rationing), tested in `tests/test_power.py`. Thirty identities hold against
+Table 6 within its printing precision (worst 9.1e-4, Eq. (73), exactly what
+L_PSP's four printed digits predict).
+
+The section is, however, in materially worse shape than §3.2 or §3.3.1, and
+the two findings that matter most are about what §5 does *not* contain:
+
+- **§3.3.2 as published cannot be simulated forward.** Six parameters it
+  uses are absent from Table 5 — α₀GCFPS (Eq. (96)), α₀bNFF and α₁bNFF
+  (Eq. (99)), and α₁CRPS, α₂CRPS, α₃CRPS (Eq. (138)) — and two *variables*,
+  the capital profit rates r_KNFF and r_KFF of Eq. (99), are never defined
+  anywhere in the manual. All are defaulted to 0.0 in `power.MANUAL_GAPS`
+  and pinned. The consequences are not cosmetic: credit rationing degenerates
+  to a constant logistic(α₀CRPS) = 0.939, the green/fossil investment split
+  degenerates to 50:50 against the 69:31 Table 6 implies, and desired
+  power-sector investment turns negative. Held at its own initial values the
+  section returns GCF_PS = −0.021 against a tabulated +2.15.
+- **Ten identities disagree with Table 6 by one to three orders of magnitude
+  more than the printing noise**, all implemented as printed and pinned
+  individually. The largest is Eq. (84), P_ELEC = (1+MU_ELEC)·MC_ELEC, which
+  gives 0.9725 against a tabulated 0.3198 — a factor of 3.04, and an implied
+  mark-up of −0.267, i.e. electricity sold below marginal cost. Both sides
+  are corroborated independently (MC_ELEC by Eqs. (82)+(83) to 4.5e-5,
+  P_ELEC by Eq. (74) to 3.7e-4), so the manual's two chains meet at a
+  contradiction. Then Eq. (94) DIVP_PS 2.111 vs 1.251 (Table 6 corroborated:
+  Eq. (95) reproduces RP_PS exactly from it); Eq. (108) EQATR_PS 0.5025 vs
+  0.3836; Eq. (111) RESTR_PS −30.76 vs −8.569 (3.6×; η_PSB is within 1% of
+  η_NFCT, which Table 5 reuses for the power sector in nine other places);
+  Eq. (131) K_PS 136.6 vs 132.5, where Table 6's entry equals K_PSR to all
+  four digits — the real value copied into the nominal row, and propagated
+  consistently into its own Eqs. (134) and (135); Eq. (136) ILLIQ_PS 1.271
+  vs 1.046, which matters because Eq. (117) is exponential in it; and
+  Eqs. (104), (105), (132), (133), all ~3.9e-3 out because Table 6's capital
+  block is deflated at 1.031 throughout while the equations prescribe
+  P_P = 1.035.
+- **Four are sign contradictions no lag or vintage can rescue**: Eqs. (107),
+  (112), (113) and (116) each have a determinate-sign right-hand side and
+  Table 6 tabulates the opposite one. Table 6 is the corroborated side —
+  Eqs. (90)/(118) and (91)/(119) are two independent routes to each lagged
+  interest-bearing stock and agree to 1.4e-4 and 3.6e-5 — and Table 5 makes
+  it worse, since α_IBAPS and δ_IBAPS are both marked "model-constrained",
+  i.e. derived so these very equations reproduce the initial values.
+- **Nine equations a single-period snapshot cannot check**: Eqs. (78), (79),
+  (90), (91), (114), (115), (117), (127), (128). Eqs. (78)–(79)'s sum
+  matches Table 6's total power-sector cost to 8.6e-4, which localises their
+  disagreement to the split alone — β_NFF,t−1 = 0.5095 closes it, against a
+  current 0.5976, which the model's own dispatch structure (fossil is the
+  swing plant at u_FF = 0.31) makes plausible. Eqs. (127)–(128) imply fossil
+  generation capital fell 0.40% and non-fossil rose 1.42% over the initial
+  quarter — the decarbonisation mechanism, visible in the snapshot.
+- **Eq. (61) propagates but does not contaminate the checks.** §3.3.1's fuel
+  price gap (0.6788 against a normalised 1) reaches this section only through
+  IC_FUELPS, which §3.3.3 determines and Table 6 tabulates, so no identity
+  above is affected. In a *simulation* it cuts IC_FUELPS 32%, and since the
+  carbon bill is under 0.5% of Eq. (82)'s numerator at the baseline ETS price
+  it carries that −32% essentially undiluted into MC_FF, MC_ELEC and P_ELEC,
+  and −18% into COST_PSFF. It does not cancel Eq. (84): 3.04 × 0.68 still leaves the
+  electricity price 2.07× Table 6's. §3.3.2 also supplies a third,
+  independent witness that the normalisation is the right side of that
+  finding — Table 6 tabulates IC_FUELPS and IC_FUELPSR at the same 15.75,
+  which is only possible at P_FUEL = 1.
+- **Two structural notes.** Eq. (88)'s printed inequality points the opposite
+  way from the prose above it (as printed, fossil capacity is removed from
+  expected utilisation when the ban date is at or *beyond* the planning
+  horizon); the printed form is implemented and the baseline switch is −∞ so
+  that the no-ban case returns u_PS, which is what the manual's own
+  annotation asserts. And the price block is undefined at full
+  decarbonisation — Eqs. (81), (82) and (85) all divide by fossil quantities
+  that go to zero on exactly the path Eq. (88) exists to simulate — so those
+  guards raise rather than invent a limit.
 
 ## Attribution
 
