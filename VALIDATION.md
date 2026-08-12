@@ -4,6 +4,21 @@
 by this adapter yet. Nothing built on this repository may present model
 output as meaningful until this file records passing replications.
 
+## Upstream queries
+
+Findings raised with the DEFINE authors on their own tracker, so the record
+here and the record there stay in step:
+
+- [DEFINE_UK_1.1#1](https://github.com/DEFINE-model/DEFINE_UK_1.1/issues/1) —
+  which code vintage produced Model Manual v1.1 Table 4; the emissions path at
+  `846081a` runs below the published values.
+- [DEFINE_UK_1.1#2](https://github.com/DEFINE-model/DEFINE_UK_1.1/issues/2) —
+  §3.3.2 uses six parameters absent from Table 5 (α₀GCFPS, α₀bNFF, α₁bNFF,
+  α₁CRPS, α₂CRPS, α₃CRPS) and two variables defined nowhere in the manual
+  (r_KNFF, r_KFF), so the section cannot be simulated forward as published;
+  plus Eq. (84) disagreeing with Table 6 by 3.04x and Eq. (61) contradicting
+  the stated fuel-price normalisation.
+
 ## Standard
 
 Same bar as the suite's other replications (boe-var-model, us-hank-model):
