@@ -329,7 +329,15 @@ def test_eq_84_electricity_price_is_three_times_the_tabulated_value(
     average, while the initial period is a gas-price spike in which wholesale
     marginal cost ran above the retail electricity price — an explanation,
     but not a reconciliation, and the sign of GOS_PS (-4.48, a loss-making
-    power sector) says Table 6 means it.
+    power sector) says Table 6 means it. A mark-up that is a past-data mean
+    cannot be *negative* on average, which is why this is not filed as a
+    first-period jump the way Eqs. (94) and (111) are.
+
+    The likelier account is that Eq. (84) is not the whole rule: §5 calibrates
+    a long-run electricity price and a switch quarter for it (P_ELECLR,
+    t_ELECswitch) that no printed equation uses. See
+    test_the_electricity_price_long_run_rule_is_missing_from_the_body — the
+    two findings should always be quoted together.
     """
     computed = equations["P_ELEC"].func(initial, initial)
     assert computed == pytest.approx(0.972522, rel=1e-4)
@@ -408,15 +416,55 @@ def test_four_transfer_equations_contradict_table_6_in_sign(
     interest flows; it is the *rules that generate them* that are not.
 
     Table 5 makes this worse rather than better: α_IBAPS and δ_IBAPS are both
-    marked "model-constrained — calculated from Eq. (…)", meaning they were
-    supposed to be derived so that these very equations reproduce the initial
-    values. A model-constrained parameter that gets the sign wrong is a
-    defect, not a vintage difference.
+    marked "model-constrained", with the remark "calculated from Eq. (…)"
+    naming the very equations that fail here. (The manual never defines its
+    parameter categories, so "derived so the equation reproduces the initial
+    value" is our reading of that remark rather than a stated rule — but it is
+    the only reading under which the remark says anything, and Table 5's
+    cross-references land on the right equations at the +9 offset that block
+    of the table uses throughout.)
+
+    One of the four is NOT specific to the power sector, and saying so is
+    part of the finding: see the model-wide test below.
     """
     computed = equations[name].func(initial, initial)
     assert computed == pytest.approx(expected, rel=1e-4)
     assert initial[name] == tabulated
     assert computed * tabulated < 0.0, f"Eq. ({ref}) should disagree in sign"
+
+
+def test_the_iba_transfer_sign_contradiction_is_model_wide(initial):
+    """Eq. (107) is one instance of a manual-wide pattern, not a §3.3.2 bug.
+
+    The manual prints the same α·GO rule for four sectors — Eq. (107)
+    IBATR_PS, Eq. (177) IBATR_NFC, Eq. (231) IBATR_NMFI, Eq. (284) IBATR_GVT
+    — every α is positive in Table 5 and every gross output is positive, so
+    all four right-hand sides are strictly positive. Table 6 tabulates all
+    four transfers *negative*, and not merely with the sign flipped: the
+    magnitudes disagree by factors of 1.7 to 4.6 as well.
+
+    This is pinned here so the §3.3.2 finding is never quoted as a
+    power-sector defect. Whatever is wrong — the rule, or Table 6's sign
+    convention for interest-bearing asset transfers — is wrong everywhere,
+    and the sections that would confirm it (§3.4.1, §3.4.3, §3.4.4) are not
+    implemented yet. Until they are, this test asserts only what Table 5 and
+    Table 6 say on their own.
+    """
+    from define_uk.model.calibration import INITIAL_VALUES as V
+
+    cases = [
+        ("IBATR_PS", "alpha_IBAPS", "GO_PS", 107),
+        ("IBATR_NFC", "alpha_IBANFC", "GO_P", 177),
+        ("IBATR_NMFI", "alpha_IBANMFI", "GO", 231),
+        ("IBATR_GVT", "alpha_IBAGVT", "GO", 284),
+    ]
+    for transfer, alpha, output, eq in cases:
+        assert PARAMETERS[alpha] > 0.0, alpha
+        assert V[output] > 0.0, output
+        assert V[transfer] < 0.0, (
+            f"Eq. ({eq}): Table 6 no longer tabulates {transfer} negative; "
+            "the model-wide sign finding needs re-deriving"
+        )
 
 
 def test_the_lagged_interest_bearing_stocks_are_corroborated_two_ways(initial):
@@ -572,6 +620,15 @@ def test_capital_deflator_in_table_6_is_1_031_not_the_tabulated_P_P(
     # The same deflator, table-wide.
     assert initial["K_P"] / initial["K_PR"] == pytest.approx(1.031, rel=1e-3)
     assert initial["GCF"] / initial["GCF_R"] == pytest.approx(1.031, rel=1e-3)
+    for nom, rl in (("K_NFC", "K_NFCR"), ("GCF_NFC", "GCF_NFCR"),
+                    ("GCF_HH", "GCF_HHR"), ("GCF_GVT", "GCF_GVTR")):
+        assert initial[nom] / initial[rl] == pytest.approx(1.031, rel=1e-3), nom
+
+    # And therefore §3.2's Eq. (27) is the same finding, not a separate one:
+    # GCF/P_P misses the tabulated GCF_R by the same 0.4%, same direction.
+    assert initial["GCF"] / initial["P_P"] / initial["GCF_R"] == pytest.approx(
+        1.031 / 1.035, rel=1e-3
+    )
 
 
 def test_eq_136_illiquidity_ratio_is_twenty_percent_above_the_tabulated_value(
@@ -884,6 +941,47 @@ def test_eq_138_credit_rationing_slopes_are_missing(equations, initial):
         ("beta_EQLPS", "beta_EQLNFC"),
     ):
         assert PARAMETERS[ps_name] == PARAMETERS[nfc_name], ps_name
+
+
+def test_the_electricity_price_long_run_rule_is_missing_from_the_body(registry):
+    """MANUAL GAP — §5 calibrates an electricity price rule §3 never prints.
+
+    Table 5 tabulates t_ELECswitch = 153, "Time index (quarter) for the switch
+    in the electricity price long-run formation rule", and Table 6 tabulates
+    P_ELECLR, "Long run electricity price", "set equal to initial electricity
+    price". Neither symbol occurs anywhere in §§1-4. The only electricity
+    price equation printed is Eq. (84), a fixed mark-up over marginal cost
+    with no long-run term and no switch — so §3 does not contain the rule §5
+    calibrates, and no equation in this registry consumes either symbol.
+
+    This is the mirror image of the missing-parameter gaps: a *tabulated*
+    symbol with no equation, as with Table 5's α_0GCFFF and α_0GCFNFF (which
+    §3.3.2 replaced with Eq. (96) but §5 still carries). It is also the most
+    economical explanation of Eq. (84)'s factor of 3.04 — a missing equation
+    rather than a wrong number — and it is recorded so that finding is quoted
+    with that alternative attached.
+    """
+    assert "electricity_price_long_run_rule" in power.MANUAL_GAPS
+
+    # Both are transcribed in §5 ...
+    assert PARAMETERS["t_ELECswitch"] == 153
+    assert INITIAL_VALUES["P_ELECLR"] == INITIAL_VALUES["P_ELEC"] == 0.3198
+
+    # ... and neither is read by any §3.3.2 equation. P_ELEC is determined by
+    # Eq. (84) alone: perturbing the long-run price changes nothing.
+    values = dict(INITIAL_VALUES)
+    values.update(power.POLICY_DEFAULTS)
+    values["delta_KPS"] = INITIAL_VALUES["delta_KPSFF"]
+    equations = {eq.name: eq for eq in registry}
+    base = equations["P_ELEC"].func(values, values)
+    shocked = equations["P_ELEC"].func(
+        dict(values, P_ELECLR=10.0, t_ELECswitch=0), values
+    )
+    assert shocked == base
+
+    # The orphan investment intercepts, the same class of gap, already
+    # recorded under alpha0_GCFPS.
+    assert {"alpha0_GCFFF", "alpha0_GCFNFF"} <= set(PARAMETERS)
 
 
 def test_delta_KPS_is_seeded_from_the_two_equal_tabulated_rates(

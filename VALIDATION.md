@@ -17,7 +17,12 @@ here and the record there stay in step:
   α₁CRPS, α₂CRPS, α₃CRPS) and two variables defined nowhere in the manual
   (r_KNFF, r_KFF), so the section cannot be simulated forward as published;
   plus Eq. (84) disagreeing with Table 6 by 3.04x and Eq. (61) contradicting
-  the stated fuel-price normalisation.
+  the stated fuel-price normalisation. Both re-verified 2026-08-12. One
+  addition to make on that thread when convenient: §5 calibrates
+  `t_ELECswitch` ("switch in the electricity price long-run formation rule")
+  and `P_ELECLR` ("long run electricity price"), neither of which appears in
+  any printed equation — most likely the reason Eq. (84) alone does not
+  reproduce Table 6's P_ELEC.
 
 ## Standard
 
@@ -89,6 +94,8 @@ below — never editing a test.
 
 | 2026-08-05 | `846081a` | cached run | **Targets 2/3 closed at the achievable ceiling; calibration computed.** Scenario-design gate added (`tests/test_scenario_design.py`, 10 tests: exact policy-switch sets per scenario + FMM 2023 anchors, GPI GDP peak +0.92% vs "≈+1%", baseline 2030 emissions 342.8 vs "just under 350"). External-comparator table now computed from the cached run and committed (`validation/baseline_vs_external.csv`, `define_uk.validation`, `tests/test_validation.py`). Own GPI multiplier **1.78** (cum ΔGDP/ΔSPEND_GVT, nominal) replaces the unusable upstream `Multiplier_Summary.csv`. Published sources catalogued in `validation/published_targets.json`. Suite: 130 passed, 1 skipped. |
 
+| 2026-08-12 | n/a (audit; manual + committed artifacts only) | n/a | **Audit of the pinned manual findings.** Every transcribed §5 value re-checked against the PDF (661 entries; each value found on the manual page its source comment names, the two documented SUBS placeholders excepted), and every pinned discrepancy recomputed independently of the sector modules. All arithmetic reproduced. Three findings re-characterised rather than withdrawn: Eqs. (51)/(59)/(94)/(111) are **first-period jumps**, not manual contradictions, because Table 5 describes each parameter as a historical mean; the Eq. (51) "the equation is the corroborated one" claim is **withdrawn** (it evaluated the lagged Eq. (49) at contemporaneous unit costs — honouring the lag, the tabulated µ is the value consistent with the manual's own g = 1.019 quarterly); and Eq. (107)'s sign contradiction is **model-wide**, shared with Eqs. (177), (231) and (284). Eqs. (27), (104), (105), (132), (133) unified as one finding (Table 6's capital block is deflated at 1.031). One new gap found: §5 calibrates an electricity price long-run formation rule (`t_ELECswitch`, `P_ELECLR`) that §3 never prints, which is the likeliest account of Eq. (84). Publicly filed claims (issues #1, #2) all verified. Suite: 236 passed, 59 skipped. |
+
 ## External comparators (recorded 2026-08-04)
 
 Beyond the oracle (pinned upstream run) and the published figures, the
@@ -106,7 +113,7 @@ publishes baseline values, which already diverge from officials in places:
 | Labour force, 2025 | 35.97m | ONS ≈ 34–35m | Slightly high. |
 | Total emissions, 2025 | 407 MtCO2e/yr | UK territorial GHG: 384 (2023), ≈ 371 provisional (2024), DESNZ | Above the actuals it should start from. |
 | Emissions, 2030 | 382 MtCO2e/yr | NDC path (68% below 1990 ≈ 260); NESO current-policy | Manual itself notes it "falls significantly short" of the NDC — by design (current-policies baseline). |
-| Green public investment cumulative multiplier | **1.78** by our own computation (cum ΔGDP 209.9 / cum ΔSPEND_GVT 118.2, nominal, full simulation; `define_uk.validation.gpi_multiplier`, pinned in `tests/test_validation.py`) | IMF green-spending multipliers ≈ 1.1–1.5 (Batini et al. 2021); OBR capital-spending impact multiplier ≈ 1.0 | Above but near the IMF range under the demand-led closure; label accordingly. The previously quoted ≈2.4 came from the upstream table's ΔG=104.22, which matches the cumulative delta of **no variable** in the scenario file — do not quote it. |
+| Green public investment cumulative multiplier | **1.78** by our own computation (cum ΔGDP 209.9 / cum ΔSPEND_GVT 118.2, nominal, full simulation; `define_uk.validation.gpi_multiplier`, pinned in `tests/test_validation.py`) | IMF green-spending multipliers ≈ 1.1–1.5 (Batini et al. 2021); OBR capital-spending impact multiplier ≈ 1.0 | Above the comparators, but **not like-for-like** — see the three caveats below, which all point the same way. Defensible as what this closure implies; not defensible as a direct comparison. The previously quoted ≈2.4 came from the upstream table's ΔG=104.22, which matches the cumulative delta of **no variable** in the scenario file — do not quote it. |
 | `Multiplier_Summary.csv` M_Impact / M_4Q / M_8Q | −32.22 / −0.88 / 2.6 **identical across all 8 scenarios** | — | **Upstream artifact confirmed unusable** (2026-08-05): scenario-invariant multiplier columns, and TotalDeltaG unreproducible from the scenario files (TotalDeltaGDP=250.76 does reconcile: it is the cumulative quarterly real-GDP delta of `Variables_GPI + Green Bonds.csv`, 250.6 by our sum). Superseded by `define_uk.validation.gpi_multiplier`. |
 
 Since 2026-08-05 this table is COMPUTED, not prose: `define_uk.validation.
@@ -117,6 +124,36 @@ on any drift between the committed artifact and a recomputation. (Values
 there use the annual-mean convention, e.g. 2025 growth 4.66% vs Table 4's
 4.96% — the same −0.30pp anchoring gap recorded under target 1a; emissions
 are annualised from the quarterly EMIS flow, 401.5 in 2024.)
+
+### The 1.78 multiplier, qualified (2026-08-12)
+
+The number is reproducible and the arithmetic checks (209.9 / 118.2 =
+1.7758). What does *not* hold is reading it straight against the IMF and OBR
+figures. Three properties, all pushing the same direction, are now carried as
+`define_uk.validation.GPI_MULTIPLIER_CAVEATS` and gated hermetically by
+`tests/test_committed_artifacts.py::test_the_multiplier_caveats_travel_with_the_number`:
+
+1. **Horizon.** Ours is cumulative over the whole simulation to 2040. The
+   IMF's 1.1–1.5 and the OBR's ≈1.0 are short-horizon (impact / few-year)
+   multipliers. A long-horizon cumulative ratio is *expected* to exceed them,
+   so "1.78 vs 1.1–1.5" overstates the disagreement.
+2. **Denominator.** `SPEND_GVT` is total government spending excluding wages;
+   Table 6's components imply `OCONS_GVT + SOCB_GVT + GCF_GVT` (58.03 + 82.8
+   + 20.76 = 161.59 vs a tabulated 161.6), of which government investment —
+   the actual lever — is only 12.8%. So the denominator is an endogenous
+   aggregate: social benefits fall as the scenario cuts unemployment, which
+   shrinks it and **biases the multiplier up**. The impulse-based ratio
+   (cum ΔGDP over cum ΔGCF_GVTG) is the cleaner number and has not been
+   computed; until it is, treat 1.78 as upper-leaning.
+3. **Closure.** Demand-led, with a Kaldor–Verdoorn productivity equation
+   (Eq. (31)) that makes a demand impulse raise productivity growth
+   permanently, and real GDP not held to the supply ceiling (Eq. (38)). A
+   multiplier above 1 over fifteen years is what this closure *implies*.
+
+Verdict: not a red flag about the implementation, and not a reason to
+discount the deltas — but a reason to label the number precisely wherever it
+is served, and a reason to compute the impulse-based multiplier before it is
+compared to anyone else's.
 
 Implication for the site: even after replication passes, near-term baseline
 levels are not competitive with `obr-macro`/`boe-svar` and must never be

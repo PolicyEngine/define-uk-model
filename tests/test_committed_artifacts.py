@@ -37,6 +37,7 @@ from pathlib import Path
 import pytest
 
 from define_uk import validation
+from define_uk.model.calibration import INITIAL_VALUES
 from define_uk.scenarios import list_scenarios
 from define_uk.upstream import UPSTREAM_COMMIT
 
@@ -107,6 +108,33 @@ def test_reference_gpi_multiplier_is_consistent(ref):
     )
     assert 0 < g["multiplier_tolerance_abs"] <= 0.05
     assert 0 < g["cum_tolerance_abs"] <= 1.0
+
+
+def test_the_multiplier_caveats_travel_with_the_number():
+    """1.78 must never be served as like-for-like against IMF/OBR figures.
+
+    Two properties of our definition push it up relative to the published
+    comparators — a full-simulation cumulative horizon against their
+    short-horizon multipliers, and an endogenous denominator (SPEND_GVT
+    includes social benefits, which fall as the scenario cuts unemployment)
+    rather than the policy impulse. Hermetic, because the caveats are
+    prose and would otherwise be the easiest thing in the gate to lose.
+    """
+    caveats = " ".join(validation.GPI_MULTIPLIER_CAVEATS).lower()
+    for needle in ("cumulative", "endogenous", "impulse", "demand-led",
+                   "not like-for-", "spend_gvt"):
+        assert needle in caveats, needle
+
+    # The decomposition the denominator caveat rests on, checked rather than
+    # asserted: Table 6's own components sum to the tabulated SPEND_GVT.
+    v = INITIAL_VALUES
+    assert v["OCONS_GVT"] + v["SOCB_GVT"] + v["GCF_GVT"] == pytest.approx(
+        v["SPEND_GVT"], rel=1e-3
+    )
+    # Government investment — the actual green-investment lever — is an
+    # eighth of it, so the rest of the denominator is free to move
+    # endogenously.
+    assert v["GCF_GVT"] / v["SPEND_GVT"] == pytest.approx(0.128, rel=1e-2)
 
 
 # --- 2. baseline_vs_external.csv --------------------------------------------

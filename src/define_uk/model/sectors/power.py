@@ -105,6 +105,26 @@ exactly as printed and pinned in tests/test_power.py with the measured gap:
   Eq. (136)  ILLIQ_PS    1.271  vs 1.046                  2.2e-1
   Eqs. (104), (105), (132), (133)  real/nominal capital   ~3.9e-3
 
+Three qualifications, so the list is not read as stronger than it is:
+
+- **Two are first-period jumps rather than contradictions**, on Table 5's own
+  account of the parameter. Eq. (94)'s α_DIVPPS is "set as the mean of past
+  implied values" and Eq. (111)'s η_PSB is "taken as the mean of past data";
+  neither was ever meant to reproduce t=L. (Compare §3.3.1's Eqs. (51) and
+  (59).) They still matter — the model jumps 69% and 3.6x on its first
+  sweep — but they are not evidence the manual disagrees with itself.
+- **Eq. (107)'s sign contradiction is model-wide, not a power-sector one.**
+  The identical α·GO rule is printed for three other sectors — Eq. (177)
+  IBATR_NFC, Eq. (231) IBATR_NMFI, Eq. (284) IBATR_GVT — each with a
+  positive Table 5 α, and Table 6 tabulates all four transfers negative
+  (-37.73, -141.5, -9.236, -1.065). Whatever is wrong is wrong in the IBA
+  transfer rule or in Table 6's sign convention for it, everywhere; §3.3.2
+  is where we happen to meet it first.
+- **The four ~3.9e-3 capital rows are one finding, and it reaches §3.2 too.**
+  Table 6 deflates its entire capital block at 1.031, every sector, while the
+  equations prescribe P_P = 1.035 — which is also exactly why §3.2's Eq. (27)
+  (GCF_R = GCF/P_P) misses by 0.37%.
+
 The remaining twenty-four either read a lagged variable, so a single-period
 snapshot cannot check them at all — Eqs. (78), (79), (90), (91), (96),
 (114)-(121), (125), (127), (128), (130), (138) — or determine a variable
@@ -275,6 +295,23 @@ MANUAL_GAPS = {
         "printed inequality (transcription beats interpretation) and set the "
         "baseline switch to -inf so that the no-ban case returns u_PS, which "
         "is what the manual's own annotation on the first branch asserts."
+    ),
+    "electricity_price_long_run_rule": (
+        "§5 carries an electricity price rule the §3 body never prints. "
+        "Table 5 tabulates t_ELECswitch = 153, 'Time index (quarter) for the "
+        "switch in the electricity price long-run formation rule' ('set as "
+        "the first period beyond the initial OBR projection horizon'), and "
+        "Table 6 tabulates P_ELECLR, 'Long run electricity price', 'set "
+        "equal to initial electricity price' (0.3198). Neither symbol occurs "
+        "anywhere in §§1-4: Eq. (84) is the only electricity price equation "
+        "printed, and it has no long-run term and no switch. So the printed "
+        "price block is incomplete, and the model that produced Table 6 "
+        "formed P_ELEC by some rule the manual does not state. This is the "
+        "mirror image of the missing-parameter gaps above — a symbol "
+        "tabulated but never used, like Table 5's α_0GCFFF and α_0GCFNFF — "
+        "and it is the most likely explanation of Eq. (84)'s factor of 3.04: "
+        "not a wrong number but a missing equation. Nothing is implemented "
+        "for it, because there is nothing printed to implement."
     ),
     "untabulated_endogenous": (
         "Table 6 omits five variables §3.3.2 determines: GCF_PSD (Eq. 96), "
