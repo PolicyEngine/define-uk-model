@@ -1,10 +1,10 @@
 """Sector modules, one per Model Manual v1.1 section (§3.1–§3.4.7)."""
 
 from ..registry import Registry
-from . import (ecosystem, macro, production, nfc, mfi, nmfi,
+from . import (ecosystem, macro, production, power, nfc, mfi, nmfi,
                government, households, row, returns)
 
-ALL = (ecosystem, macro, production, nfc, mfi, nmfi,
+ALL = (ecosystem, macro, production, power, nfc, mfi, nmfi,
        government, households, row, returns)
 
 
