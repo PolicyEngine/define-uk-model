@@ -52,7 +52,7 @@ sheets sum) are asserted each period, not assumed.
 | # | Slice (manual §) | Gate | Status |
 |---|------------------|------|--------|
 | 1 | Accounting core: transactions + balance-sheet matrices (§2.2), residual instruments | matrices identically satisfied on initial values (§5) | **PASS** (2026-08-04) — `model/accounting.py` + `model/calibration.py` (§5 Tables 5–6 fully transcribed); all Table 1/2 row and column identities hold on the §5 initial values within the manual's own 4-significant-figure printing precision (`tests/test_accounting.py`). One documented manual inconsistency (Table 6 LENDM_ROW omits the DIVN_ROW term of Eq. (383); overall LENDM tabulated as 5.44 where "should equal 0"): the MFI/RoW transaction columns miss LEND by ∓DIVN_ROW, pinned exactly in the tests. |
-| 2 | High-level macro + production (§3.2–3.3) | baseline GDP path vs oracle | **in progress** — §3.2 landed (2026-08-11): `model/sectors/macro.py` implements Eqs. (21)–(43), all 23 equations, and the section solves as a system (`tests/test_macro.py`). Every identity holds against the §5 Table 6 initial values at the manual's 4-significant-figure printing precision except **Eq. (27)**, `GCF_R = GCF/P_P`, which gives 111.88 against a tabulated 112.30 (0.37%, ~10× the rounding noise) — and the manual disagrees with itself here, since Eq. (25) only reproduces the tabulated `GDP_R` using 112.30. Pinned in the tests, not absorbed into a tolerance. Also **Eq. (31) uses an intercept α₀λ that Table 5 never tabulates** (the α₀ block ends at α₀WS); defaulted to 0.0, recorded in `macro.MANUAL_GAPS`, pinned by a test that fails if a value is later published. §3.3 and the oracle gate are still outstanding, so the milestone is **not** passed. |
+| 2 | High-level macro + production (§3.2–3.3) | baseline GDP path vs oracle | **in progress** — §3.2 and §3.3.1 landed; §3.3.2, §3.3.3 and the oracle gate are still outstanding, so the milestone is **not** passed. See the notes below. |
 | 3 | Sectoral equations (§3.4.1–3.4.7) | full S1 baseline vs oracle within tolerance | pending |
 | 4 | Ecosystem block (§3.1) | emissions/energy paths vs oracle | pending |
 | 5 | Policy scenarios (regulation, green public investment, 1.1 extensions) | scenario deltas vs published figures per `VALIDATION.md` | pending |
@@ -61,6 +61,58 @@ Tolerances are set per-milestone when the first comparison runs, and recorded
 in `VALIDATION.md` alongside the replication-gate entries — the oracle
 comparison and the published-figure replication are the same standard applied
 to two references.
+
+### Milestone 2 progress
+
+**§3.2 High-level macroeconomic variables** (2026-08-11) — `model/sectors/macro.py`
+implements Eqs. (21)–(43), all 23 equations, and the section solves as a
+system (`tests/test_macro.py`). Every identity holds against the §5 Table 6
+initial values at the manual's 4-significant-figure printing precision except
+**Eq. (27)**, `GCF_R = GCF/P_P`, which gives 111.88 against a tabulated 112.30
+(0.37%, ~10× the rounding noise) — and the manual disagrees with itself here,
+since Eq. (25) only reproduces the tabulated `GDP_R` using 112.30. Pinned in
+the tests, not absorbed into a tolerance. Also **Eq. (31) uses an intercept
+α₀λ that Table 5 never tabulates** (the α₀ block ends at α₀WS); defaulted to
+0.0, recorded in `macro.MANUAL_GAPS`, pinned by a test that fails if a value
+is later published.
+
+**§3.3.1 Domestic production module** (2026-08-12) — `model/sectors/production.py`
+implements Eqs. (44)–(70), all 27 equations (final demand and the Leontief
+gross-output block, mark-up pricing over lagged unit costs, the
+wage-share/wage-rate distribution block, direct-energy prices and costs, and
+the productive capital aggregates), tested in `tests/test_production.py`.
+Nineteen identities hold against Table 6 within its printing precision (worst
+8.1e-4, Eq. (46), which is exactly what L_PP's four printed digits predict).
+Findings, all implemented as printed and pinned rather than patched:
+
+- **Five inconsistencies at the manual's own initial values**, one to three
+  orders of magnitude beyond the rounding noise. Eq. (51) `MU = α_MU·u` gives
+  0.1584 vs a tabulated µ of 0.1704 (7.1%) — though the equation is the
+  corroborated one, since Eqs. (49)+(50) imply 0.1598. Eq. (52)'s wage-share
+  logistic gives 0.5997 vs a tabulated 0.6233 (3.8%), which is a
+  self-contradiction: Table 5 says α₀WS was "calibrated so [the wage-share]
+  equation equals observed at t=L", and the tabulated share is exactly
+  W/GDP on two data figures. Eq. (59) gives a direct-energy price of 0.1491
+  vs a tabulated 0.09337 (60%; implied α_NELEC 1.601, not 2.557). Eq. (61)
+  gives P_FUEL = 0.6788 where Table 5 and Table 6 both state the initial fuel
+  price is normalised to 1 (32%; implied α_PFUEL 16.18). Eq. (70) equates
+  δ_KP to δ_kpc, but Table 5 prints 0.02375 and Table 6 0.02149 (10.5%), both
+  marked "Free" — two data estimates of one constant.
+- **Two equations a single-period snapshot cannot check at all**: Eqs. (49)
+  and (55) read lagged variables. Eq. (55)'s implied wage-rate growth is
+  1.0189 against the tabulated g = 1.019, three-significant-figure agreement
+  on a quantity never fitted to it — evidence that Table 6 is the snapshot of
+  a growing economy, so neither is treated as a defect.
+- **Two symbol gaps**, in `production.MANUAL_GAPS`: the body's "direct
+  energy" D-subscript family (P_D, P_DT, ITAX_D, E_D, COST_D) appears nowhere
+  in Tables 5–6, and the tables' NELEC family appears nowhere in the body —
+  they are the same variables, which Eqs. (60) and (62) confirm to ~1e-5, and
+  we use the tabulated names; and Table 6 omits both components of Eq. (68)
+  (K_NFCGR, K_GVTGR), tabulating only their sum K_PGR.
+- A **prose/equation mismatch**: §3.3.1's text lists only household
+  consumption, government consumption and exports in Eq. (44), but the
+  printed equation also carries GCF, and Table 6 confirms the equation (the
+  four components sum to F_P = 805.0 exactly).
 
 ## Attribution
 

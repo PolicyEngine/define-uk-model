@@ -32,8 +32,8 @@ These are read from ``state`` but determined elsewhere in the manual; a
   EXP, IMP            nominal exports and imports         (§3.4.6)
   EXP_R, IMP_R        real exports and imports            (§3.4.6)
   GO_P, GO_PS         gross output, production and power  (§3.3.1, §3.3.2)
-  P_P                 production price deflator           (§3.3.1)
-  K_PR                real productive capital stock       (§3.4.1)
+  P_P                 production price deflator           (§3.3.1 eq. (49))
+  K_PR                real productive capital stock       (§3.3.1 eq. (67))
   g_LFOBR, POP_OBR    OBR labour-force growth and population projections
 
 Known manual gap
