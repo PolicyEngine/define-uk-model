@@ -1,8 +1,26 @@
 # Validation — DEFINE-UK replication gate
 
-**Status: NOT VALIDATED.** No published DEFINE-UK result has been reproduced
-by this adapter yet. Nothing built on this repository may present model
-output as meaningful until this file records passing replications.
+**Status: PARTIALLY VALIDATED — read the target table before quoting
+anything.** This header said "NOT VALIDATED. No published DEFINE-UK result
+has been reproduced" long after target 1a passed, which made every
+downstream page that cited this file as its record contradict it. What
+holds today:
+
+- **Target 1a PASS.** The manual's Table 4 macro block reproduces within
+  tolerance (population and labour force exact to 0.01m; growth exact at
+  2030/2040 and -0.30pp at 2025 against a +/-0.31pp gate; unemployment
+  within 0.2pp).
+- **Target 1b DIVERGENCE, pinned.** The emissions path runs below the
+  published table and widens with horizon (-3.5% in 2025 to -23% in 2040).
+  It is gated at the observed ratios, not tolerated.
+- **Targets 2 and 3 CLOSED AT THE ACHIEVABLE CEILING**, not passed: no
+  machine-readable v1.1 scenario results exist to compare against, so what
+  is gated is scenario *design* plus two coarse anchors from a pre-1.0
+  conference version.
+- **Reimplementation milestone 1 PASS; milestone 2 outstanding.**
+
+Nothing here licenses presenting scenario output as a validated result. A
+claim about this model must name the target it rests on.
 
 ## Upstream queries
 
