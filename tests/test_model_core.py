@@ -43,6 +43,45 @@ def test_registry_rejects_duplicate_endogenous_variable():
         r.add(eq)
 
 
+def test_manual_ref_must_be_a_parseable_citation():
+    """The ref format is load-bearing, not cosmetic.
+
+    Every section test asserts its equation numbers are contiguous by parsing
+    them out of ``manual_ref``. A ref that does not parse would silently drop
+    that equation from the contiguity check instead of failing it, so the
+    format is enforced where the object is built.
+    """
+    for bad in ("§3.3.2 eq (84)", "eq. (84)", "§3.3.2 equation 84", "§3.3.2"):
+        with pytest.raises(ValueError, match="manual_ref"):
+            Equation("X", bad, "identity", lambda s, l: 0.0)
+
+    ok = Equation("X", "§3.3.2 eq. (84)", "identity", lambda s, l: 0.0)
+    assert ok.section == "§3.3.2" and ok.number == 84
+
+
+def test_registry_rejects_two_equations_citing_the_same_manual_equation():
+    """One manual equation determines one variable.
+
+    A copy-pasted ``manual_ref`` makes an equation look transcribed while
+    implementing something else, and the per-section contiguity tests cannot
+    catch it on their own — a duplicated ref surfaces there only as a hole
+    somewhere else in the range.
+    """
+    r = Registry()
+    r.add(Equation("P_ELEC", "§3.3.2 eq. (84)", "calibrated", lambda s, l: 0.0))
+    with pytest.raises(ValueError, match="already cited by P_ELEC"):
+        r.add(Equation("MC_ELEC", "§3.3.2 eq. (84)", "behavioural", lambda s, l: 0.0))
+
+
+def test_every_registered_equation_has_a_parseable_unique_citation():
+    """The guarantee, asserted on the real registry rather than a fixture."""
+    registry = build_registry()
+    refs = [eq.manual_ref for eq in registry]
+    assert len(set(refs)) == len(refs)
+    for eq in registry:
+        assert eq.section is not None and eq.number is not None, eq.manual_ref
+
+
 def test_full_registry_builds_from_every_sector_module():
     """Every sector module registers cleanly; the count grows per milestone.
 

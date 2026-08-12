@@ -59,8 +59,8 @@ Known manual gaps (see ``MANUAL_GAPS``)
   name appears in the other place. We use the tabulated names.
 - Table 6 omits K_NFCGR and K_GVTGR, the two components Eq. (68) sums.
 
-Manual inconsistencies measured at the §5 Table 6 initial values
------------------------------------------------------------------
+Gaps between the equations and the §5 Table 6 initial values
+------------------------------------------------------------
 Nineteen of the section's identities reproduce Table 6 within its
 four-significant-figure printing noise (worst 8.1e-4, Eq. (46)). Five do not,
 and the gaps are one to three orders of magnitude larger than that noise.
@@ -73,10 +73,44 @@ rather than patched or absorbed into a tolerance:
   Eq. (61)  P_FUEL    0.6788 vs 1.0 tabulated         3.2e-1
   Eq. (70)  delta_KP  0.02375 (Table 5) vs 0.02149 (Table 6)  1.1e-1
 
+They are **not all the same kind of finding**, and the distinction is what
+makes the credible ones credible. Table 5 states the provenance of each
+parameter, and it splits them in two:
+
+*Contradictions* — the manual states a property that its own numbers do not
+have. Eq. (52): Table 5 says α_0WS was "calibrated so [the wage-share]
+equation equals observed [wage share] at t=L", and it does not (and the
+tabulated share is exactly W/GDP on two independently tabulated data
+figures). Eq. (61): Table 5 says α_PFUEL is "based on initial data" and that
+"at the initial condition fuel price is normalised to equal 1", and the
+equation gives 0.6788. Eq. (70): two "Free" data estimates of one constant.
+
+*First-period jumps* — Table 5 describes the parameter as a historical mean,
+so it was never meant to reproduce t=L, and the model simply steps away from
+the initial value on its first sweep. Eq. (51): α_1MU is "calibrated so LR
+markup at initial utilisation equals mean of 45:88 and 109:132 (excl. COVID
+and GFC)". Eq. (59): α_NELEC is "calculated using the mean over past data",
+while P_GAS and P_OIL are tabulated at the 2022Q4 spike (Table 6 dates the
+initial period: P is the "GDP price deflator indexed at Q4 2022" and INF_A =
+0.107 is that quarter's CPI). A mean pass-through applied to a spiked gas
+price over-predicts, which is exactly the direction and roughly the size of
+the gap. These are a real hazard for a simulation started from Table 6 — the
+model takes the jump in step one — but they are not evidence that the manual
+disagrees with itself, and they are not reported as such.
+
 Eqs. (49) and (55) depend on a lagged variable and so cannot be checked
 against a single-period snapshot at all; both are consistent with Table 6
 being the snapshot of a *growing* economy, and the tests say exactly that
-much and no more.
+much and no more. Eq. (49) is also why Eq. (51)'s gap cannot be attributed to
+either side: see test_eq_51_markup_leaves_the_tabulated_value_in_one_step.
+
+Eq. (27) of §3.2 (GCF_R = GCF/P_P, 111.88 against a tabulated 112.30) is not
+a §3.2 finding on its own — it is one row of a systematic Table 6 property.
+Table 6 deflates its whole capital block at 1.031 (GCF/GCF_R, GCF_NFC/…R,
+GCF_HH/…R, GCF_GVT/…R, K_P/K_PR, K_NFC/K_NFCR all give 1.0309-1.0312) while
+Eqs. (27), (104), (105), (132), (133) and the §3.4 capital equations all
+prescribe P_P = 1.035. See tests/test_power.py::
+test_capital_deflator_in_table_6_is_1_031_not_the_tabulated_P_P.
 """
 
 from __future__ import annotations

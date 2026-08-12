@@ -68,6 +68,32 @@ EXTERNAL = {
 }
 
 
+# What the multiplier is and is not. Kept as a module constant so the
+# hermetic gate can assert it still travels with the number, and so nothing
+# quotes 1.78 against the IMF/OBR figures without them.
+GPI_MULTIPLIER_CAVEATS = (
+    "Horizon: this is a CUMULATIVE ratio over the whole simulation to 2040, "
+    "not an impact or 1-year multiplier. The IMF green-spending range "
+    "(1.1-1.5, Batini et al. 2021) and the OBR capital multiplier (~1.0) are "
+    "short-horizon figures, so the comparison is indicative, not like-for-"
+    "like; a long-horizon cumulative ratio is expected to sit above them.",
+    "Denominator: SPEND_GVT is total government spending excluding wages, "
+    "and Table 6's components imply it is OCONS_GVT + SOCB_GVT + GCF_GVT "
+    "(58.03 + 82.8 + 20.76 = 161.59 against a tabulated 161.6). It is "
+    "therefore an ENDOGENOUS aggregate, not the policy impulse: social "
+    "benefits fall as the scenario cuts unemployment, which shrinks the "
+    "denominator and biases the ratio UP. The impulse-based multiplier "
+    "(cumulative dGDP over cumulative dGCF_GVTG) is the cleaner number and "
+    "has not been computed; until it is, 1.78 is an upper-leaning estimate.",
+    "Closure: the model is demand-led with a Kaldor-Verdoorn productivity "
+    "equation (Eq. (31)), so a demand impulse raises productivity growth "
+    "permanently and real GDP is not held to the supply ceiling (Eq. (38)). "
+    "A multiplier above 1 over 15 years is what this closure implies rather "
+    "than a symptom of an error, which is why the number is labelled and not "
+    "corrected.",
+)
+
+
 def _baseline_path() -> Path:
     return _run_root() / _TABLES / _BASE_FOLDER / "Variables_Baseline.csv"
 
@@ -132,6 +158,11 @@ def gpi_multiplier() -> dict:
     vs baseline, summed over the full simulation. Reported alongside the
     real-GDP cumulative delta so the number is reproducible from the
     scenario file alone.
+
+    Read ``GPI_MULTIPLIER_CAVEATS`` before quoting the number against the
+    IMF or OBR figures: this is a full-horizon cumulative ratio with an
+    endogenous denominator, and both of those push it above a comparable
+    short-horizon, impulse-based multiplier.
     """
     root = _run_root() / _TABLES / _BASE_FOLDER
     scen = root / "Variables_GPI + Green Bonds.csv"
@@ -155,6 +186,7 @@ def gpi_multiplier() -> dict:
             "imf_green_spending_multiplier": "1.1-1.5 (Batini et al. 2021)",
             "obr_capital_spending_impact_multiplier": "~1.0",
         },
+        "caveats": GPI_MULTIPLIER_CAVEATS,
         "upstream_table_unusable": (
             "Multiplier_Summary.csv M_Impact/M_4Q/M_8Q identical across all "
             "8 scenarios (M_Impact=-32.22); TotalDeltaG=104.22 matches no "

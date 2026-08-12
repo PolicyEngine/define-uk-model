@@ -179,19 +179,36 @@ def test_green_and_conventional_capital_partition_the_total(initial):
 # 3. Documented manual inconsistencies — implemented as printed, pinned here
 # --------------------------------------------------------------------------
 
-def test_eq_51_markup_is_inconsistent_with_the_tabulated_value(equations, initial):
-    """DOCUMENTED MANUAL INCONSISTENCY — Eq. (51) MU = α_MU·u.
+def test_eq_51_markup_leaves_the_tabulated_value_in_one_step(equations, initial):
+    """FIRST-PERIOD JUMP, not a manual contradiction — Eq. (51) MU = α_MU·u.
 
-    Table 5 gives α_1MU = 0.1943 ("Calibrated so LR markup at initial
-    utilisation equals mean of 45:88 and 109:132") and Table 6 gives
-    u = 0.815, so Eq. (51) yields 0.1584. Table 6 tabulates µ = 0.1704 —
-    a 7.1% gap, ~70x the section's rounding noise. The implied α_MU would be
-    0.2091.
+    Table 5 gives α_1MU = 0.1943 and Table 6 gives u = 0.815, so Eq. (51)
+    yields 0.1584 against a tabulated µ = 0.1704 — a 7.1% gap, ~70x the
+    section's rounding noise. The implied α_MU would be 0.2091. A model
+    started from Table 6 therefore moves its mark-up 7% on the first sweep.
 
-    The equation, not the tabulated µ, is the one corroborated: Eqs. (49) and
-    (50) together imply a mark-up of P_P/UC - 1 = 0.1598 at the tabulated
-    P_P and UC, which is 0.9% from Eq. (51)'s answer and 6.7% from Table 6's.
-    So we implement Eq. (51) as printed and treat Table 6's µ as the outlier.
+    That much is measurement. What it is *not* is evidence that the manual
+    contradicts itself, and this test exists to stop that stronger claim
+    being read into the number:
+
+    1. Table 5 describes α_1MU as "Calibrated so LR markup at initial
+       utilisation equals mean of 45:88 and 109:132 (excl. COVID and GFC)" —
+       a historical mean over two windows, not a fit to t=L. Nothing in the
+       manual asserts Eq. (51) reproduces the initial period. (Contrast
+       Eq. (52), where Table 5 does assert exactly that, and it fails.)
+
+    2. Eqs. (49)+(50) cannot arbitrate, because Eq. (49) reads UC_{t-1}.
+       Evaluating it at the *current* UC gives P_P/UC - 1 = 0.1598 and so
+       appears to favour Eq. (51) — but that reading assumes unit costs were
+       flat into the initial period. Honouring the lag, Table 6's µ needs
+       lagged unit costs of 0.8843 (+0.91% per quarter, +3.7% annualised) and
+       Eq. (51)'s µ needs 0.8935 (-0.12% per quarter, i.e. deflation). The
+       manual's own initial period is a growing, inflating one — Eq. (29)'s
+       quarterly nominal GDP growth is tabulated at g = 1.019 and INF_A at
+       0.107 — so the growth reading favours the *tabulated* µ if anything.
+
+    So the gap is pinned, the equation is implemented as printed, and neither
+    side is called the outlier.
     """
     computed = equations["mu"].func(initial, initial)
     assert computed == pytest.approx(0.158355, rel=1e-4)
@@ -200,11 +217,22 @@ def test_eq_51_markup_is_inconsistent_with_the_tabulated_value(equations, initia
     relative_gap = abs(computed - initial["mu"]) / initial["mu"]
     assert relative_gap == pytest.approx(7.1e-2, rel=0.05)
     assert relative_gap > 10 * SIG_FIG_TOL
+    assert initial["mu"] / initial["u"] == pytest.approx(0.2091, rel=1e-3)
 
-    # The corroboration: Eqs. (49)+(50) imply 0.1598, near Eq. (51), far from µ.
-    implied_by_prices = initial["P_P"] / initial["UC"] - 1.0
-    assert implied_by_prices == pytest.approx(0.15979, rel=1e-4)
-    assert abs(implied_by_prices - computed) < abs(implied_by_prices - initial["mu"])
+    # Eq. (49) read at the current UC — the reading that appears to favour
+    # Eq. (51), recorded together with the lag that makes it inconclusive.
+    assert initial["P_P"] / initial["UC"] - 1.0 == pytest.approx(0.15979, rel=1e-4)
+
+    # Lagged unit costs each candidate mark-up implies, and the quarterly
+    # unit-cost growth needed to get from there to the tabulated UC.
+    for markup, expected_growth in ((computed, -0.001241), (initial["mu"], 0.009145)):
+        lagged_uc = initial["P_P"] / (1.0 + markup)
+        assert initial["UC"] / lagged_uc - 1.0 == pytest.approx(
+            expected_growth, rel=1e-3
+        )
+    # The tabulated mark-up is the one that needs a *growing* economy, which
+    # is what Table 6 says it is (Eq. (29)'s g is quarterly — manual p. 14).
+    assert initial["g"] > 1.0
 
 
 def test_eq_52_wage_share_is_inconsistent_with_the_tabulated_value(equations, initial):
@@ -245,7 +273,7 @@ def test_eq_52_wage_share_is_inconsistent_with_the_tabulated_value(equations, in
 def test_eq_59_direct_energy_price_is_inconsistent_with_the_tabulated_value(
     equations, initial
 ):
-    """DOCUMENTED MANUAL INCONSISTENCY — Eq. (59), the largest in the section.
+    """FIRST-PERIOD JUMP — Eq. (59), the largest gap in the section.
 
     α_NELEC = 2.557 ("Pass through from gas and oil prices to overall
     non-electric energy costs") applied to the tabulated wholesale gas and
@@ -254,10 +282,17 @@ def test_eq_59_direct_energy_price_is_inconsistent_with_the_tabulated_value(
 
     Table 6 marks P_NELEC as data ("Free": DUKES table 1.1.6 costs divided by
     non-electric energy use) and it is corroborated downstream — Eqs. (60),
-    (62) and (63) all reproduce their tabulated values from it to ~1e-4. So
-    the initial period and the equation disagree by 60%, and a model started
-    from Table 6 takes that jump in its first step. That is a question for
-    the DEFINE authors, not something to paper over here.
+    (62) and (63) all reproduce their tabulated values from it to ~1e-4.
+
+    Both sides are therefore sound, and Table 5 says why they differ without
+    contradicting each other: α_NELEC is "calculated using the mean over past
+    data", while the initial period is the 2022Q4 gas spike (Table 6 dates it:
+    P is the "GDP price deflator indexed at Q4 2022", INF_A = 0.107). A
+    historical-mean pass-through applied to a spiked gas price over-predicts,
+    which is the direction of the gap. So this is not filed as a manual
+    contradiction — but it is a live hazard, because a run started from
+    Table 6 raises the non-electric energy price 60% in one quarter, and that
+    price drives the green-investment share.
     """
     computed = equations["P_NELEC"].func(initial, initial)
     assert computed == pytest.approx(0.149122, rel=1e-4)
@@ -271,6 +306,9 @@ def test_eq_59_direct_energy_price_is_inconsistent_with_the_tabulated_value(
     assert initial["P_NELEC"] / mix == pytest.approx(1.601, rel=1e-3)
     # The fuel mix shares are a partition, which is not itself in doubt.
     assert PARAMETERS["beta_NELECGAS"] + PARAMETERS["beta_NELECOIL"] == 1.0
+    # The initial period is the 2022Q4 spike, which is what makes a
+    # historical-mean pass-through over-predict rather than disagree.
+    assert initial["INF_A"] == 0.107
 
 
 def test_eq_61_fuel_price_contradicts_the_manuals_own_normalisation(
