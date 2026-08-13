@@ -73,10 +73,15 @@ EXTERNAL = {
 # quotes 1.78 against the IMF/OBR figures without them.
 GPI_MULTIPLIER_CAVEATS = (
     "Horizon: this is a CUMULATIVE ratio over the whole simulation to 2040, "
-    "not an impact or 1-year multiplier. The IMF green-spending range "
-    "(1.1-1.5, Batini et al. 2021) and the OBR capital multiplier (~1.0) are "
-    "short-horizon figures, so the comparison is indicative, not like-for-"
-    "like; a long-horizon cumulative ratio is expected to sit above them.",
+    "not an impact or 1-year multiplier. Published green-spending multipliers "
+    "and the OBR capital multiplier (~1.0) are short-horizon figures, so the "
+    "comparison is indicative, not like-for-like; a long-horizon cumulative "
+    "ratio is expected to sit above them. An IMF range of 1.1-1.5 was "
+    "attributed here to 'Batini et al. 2021'; no such publication could be "
+    "located, and the only IMF reference this project holds is Batini et al. "
+    "(2014), a different paper reporting a different quantity (0-1, first "
+    "year, advanced economies). The attribution is withdrawn rather than "
+    "repaired, because an unidentifiable citation is worse than none.",
     "Denominator: SPEND_GVT is total government spending excluding wages, "
     "and Table 6's components imply it is OCONS_GVT + SOCB_GVT + GCF_GVT "
     "(58.03 + 82.8 + 20.76 = 161.59 against a tabulated 161.6). It is "
