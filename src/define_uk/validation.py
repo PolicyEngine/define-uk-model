@@ -70,7 +70,7 @@ EXTERNAL = {
 
 # What the multiplier is and is not. Kept as a module constant so the
 # hermetic gate can assert it still travels with the number, and so nothing
-# quotes 1.78 against the IMF/OBR figures without them.
+# quotes 1.78 against published multipliers without them.
 GPI_MULTIPLIER_CAVEATS = (
     "Horizon: this is a CUMULATIVE ratio over the whole simulation to 2040, "
     "not an impact or 1-year multiplier. Published green-spending multipliers "
@@ -83,13 +83,21 @@ GPI_MULTIPLIER_CAVEATS = (
     "year, advanced economies). The attribution is withdrawn rather than "
     "repaired, because an unidentifiable citation is worse than none.",
     "Denominator: SPEND_GVT is total government spending excluding wages, "
-    "and Table 6's components imply it is OCONS_GVT + SOCB_GVT + GCF_GVT "
-    "(58.03 + 82.8 + 20.76 = 161.59 against a tabulated 161.6). It is "
-    "therefore an ENDOGENOUS aggregate, not the policy impulse: social "
-    "benefits fall as the scenario cuts unemployment, which shrinks the "
-    "denominator and biases the ratio UP. The impulse-based multiplier "
-    "(cumulative dGDP over cumulative dGCF_GVTG) is the cleaner number and "
-    "has not been computed; until it is, 1.78 is an upper-leaning estimate.",
+    "OCONS_GVT + SOCB_GVT + GCF_GVT + SPEND_GVTPS (Table 6's components "
+    "omit SPEND_GVTPS, which is zero at the start: 58.03 + 82.8 + 20.76 = "
+    "161.59 against a tabulated 161.6). In the cached GPI + Green Bonds run "
+    "its cumulative delta of 118.2 is SPEND_GVTPS +91.2 (government "
+    "power-sector spending, most of the policy impulse), OCONS_GVT +21.1, "
+    "SOCB_GVT +8.0 and GCF_GVT -2.3 (green GCF_GVTG +17.0 offset by "
+    "conventional GCF_GVTC -19.3: the scenario substitutes green for "
+    "conventional public investment). The denominator therefore mixes the "
+    "impulse with ENDOGENOUS items that RISE in this scenario, so the "
+    "direction of its bias against an impulse-based multiplier is not "
+    "established. An earlier version of this caveat said social benefits "
+    "fall and that 1.78 is upper-leaning; the cached run contradicts both, "
+    "and both are withdrawn. cum dGDP / cum dGCF_GVTG is not a usable "
+    "impulse ratio either: green GCF is a small, offset share of the "
+    "impulse. Which impulse definition to use has not been decided.",
     "Closure: the model is demand-led with a Kaldor-Verdoorn productivity "
     "equation (Eq. (31)), so a demand impulse raises productivity growth "
     "permanently and real GDP is not held to the supply ceiling (Eq. (38)). "
@@ -164,10 +172,11 @@ def gpi_multiplier() -> dict:
     real-GDP cumulative delta so the number is reproducible from the
     scenario file alone.
 
-    Read ``GPI_MULTIPLIER_CAVEATS`` before quoting the number against the
-    IMF or OBR figures: this is a full-horizon cumulative ratio with an
-    endogenous denominator, and both of those push it above a comparable
-    short-horizon, impulse-based multiplier.
+    Read ``GPI_MULTIPLIER_CAVEATS`` before quoting the number against any
+    published figure: this is a full-horizon cumulative ratio (which pushes
+    it above a short-horizon multiplier) with a denominator that mixes the
+    policy impulse with endogenous spending (direction of that bias not
+    established).
     """
     root = _run_root() / _TABLES / _BASE_FOLDER
     scen = root / "Variables_GPI + Green Bonds.csv"
@@ -188,7 +197,8 @@ def gpi_multiplier() -> dict:
         "multiplier": round(d_gdp / d_spend, 2),
         "cum_delta_gdp_real": round(cum_delta("GDP_R"), 1),
         "comparators": {
-            "imf_green_spending_multiplier": "1.1-1.5 (Batini et al. 2021)",
+            # The IMF "1.1-1.5 (Batini et al. 2021)" entry was withdrawn with
+            # the caveat text (no such publication could be located).
             "obr_capital_spending_impact_multiplier": "~1.0",
         },
         "caveats": GPI_MULTIPLIER_CAVEATS,
