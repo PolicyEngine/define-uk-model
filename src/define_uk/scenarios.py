@@ -50,6 +50,20 @@ CAVEATS = [
 
 _TABLES = "output/tables"
 
+# Units of ``delta_level``. Every series is the annual MEAN of the quarterly
+# values, so flows are per-QUARTER rates: an EMIS delta of -10 is -40
+# MtCO2e/yr (define_uk.validation multiplies EMIS by 4 for the same reason).
+VARIABLE_UNITS = {
+    "GDP_R": "real GDP, model currency units per quarter (annual mean of the "
+             "quarterly flow); delta_pct is % of baseline",
+    "CONS_R": "real household consumption, model currency units per quarter "
+              "(annual mean of the quarterly flow); delta_pct is % of baseline",
+    "EMIS": "MtCO2e per QUARTER (annual mean of the quarterly flow); multiply "
+            "delta_level by 4 for MtCO2e per year",
+    "UPLOT": "unemployment rate in %, so delta_level is in percentage points; "
+             "delta_pct is % of the baseline RATE, not pp",
+}
+
 # (public name, block, csv folder relative to output/tables, csv scenario
 #  label, description). Folder Baseline is the delta reference.
 _REGISTRY: list[tuple[str, str, str, str, str]] = [
@@ -243,7 +257,12 @@ def run_scenario(
             else None
             for y in years
         ]
-        per_variable[var] = {"delta_level": levels, "delta_pct": pct}
+        per_variable[var] = {
+            "delta_level": levels,
+            "delta_pct": pct,
+            "units": VARIABLE_UNITS.get(
+                var, "model units, annual mean of quarterly values"),
+        }
 
     return {
         "result_type": "scenario deltas",
