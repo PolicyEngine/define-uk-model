@@ -6,10 +6,12 @@ presents as meaningful (VALIDATION.md).
 
 Sign-sanity notes (grounded in the cached numbers, not priors): every
 policy scenario REDUCES emissions relative to baseline by 2030 and beyond.
-Green public investment DEPRESSES real GDP slightly in the first years
-(delta -1.125 in 2026) before turning strongly positive (+4.08 in 2030,
-+7.75 in 2035) — the naive "raises GDP immediately" prior is false in the
-cached run and is gated as observed. Housing regulation is contractionary
+Green public investment shows real GDP slightly BELOW baseline in the first
+years (delta -1.125 in 2026) before turning strongly positive (+4.08 in 2030,
++7.75 in 2035). The 2023-26 part is not the policy: no switch acts before
+2027Q1 and every scenario carries the same -1.125, the effect of the
+Baseline's lower alpha_PP (test_alpha_pp_confound.py). It is gated as
+observed. Housing regulation is contractionary
 for GDP throughout (-1.6 in 2030, -2.3 in 2035) while cutting emissions.
 """
 
