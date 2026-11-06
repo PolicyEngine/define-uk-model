@@ -57,6 +57,19 @@ _TABLES = "output/tables"
 # it: the fossil-fuel ban under no forward guidance (2035Q3 and 2036Q1, |LEND|
 # up to 74.56) and under unexpected enforcement (2033Q1, 14.63). Deltas from
 # such a solve are not results, so run_scenario refuses them by default.
+#
+# Cause (diagnosed 2026-11-06 from the cached outputs alone): in exactly those
+# three quarters, and in no other quarter of any of the 30 files, the power
+# sector's gross output is not GO_PSR * P_ELEC (manual Eq. (74)). GO_PS is
+# valued at the long-run price P_ELECLR while every buyer of electricity
+# (households, Eq. (CONS_HHPS); production's intermediate consumption) pays
+# P_ELEC. The gap GO_PSR*P_ELEC - GO_PS is 122.54, 81.79 and 24.03, and LEND
+# is -0.61 times it in all three. The quarters are the ones where the
+# fossil-fuel ban pushes generation against capacity (E_ELEC at or near
+# E_ELECMAX), i.e. the electricity price changes regime (manual §3.3.2
+# footnote 22), and the upstream solve leaves the seller and the buyers on
+# different sides of the switch. The break is in the upstream output, not in
+# this check, so the refusal stands; ``sfc_check`` reports the gap.
 SFC_TOLERANCE = 0.01  # GBP bn per quarter, far above CSV rounding of a zero
 
 
@@ -68,20 +81,32 @@ class StockFlowInconsistent(ValueError):
 def sfc_check(path: Path, tolerance: float = SFC_TOLERANCE) -> dict:
     """Redundant-equation check on one cached Variables CSV.
 
-    Returns {variable, tolerance, max_abs, failing_quarters, passed}, where
-    failing_quarters are 'YYYYQn' labels with |LEND| above the tolerance.
+    Returns {variable, tolerance, max_abs, failing_quarters,
+    electricity_valuation_gap, passed}, where failing_quarters are 'YYYYQn'
+    labels with |LEND| above the tolerance and electricity_valuation_gap maps
+    each of them to GO_PSR*P_ELEC - GO_PS (see the note on SFC_TOLERANCE).
     """
     lend = _read_column(path, "LEND")
-    failing = [
-        f"{START_YEAR + i // 4}Q{i % 4 + 1}"
-        for i, v in enumerate(lend)
-        if v is not None and abs(v) > tolerance
+    failing_idx = [
+        i for i, v in enumerate(lend) if v is not None and abs(v) > tolerance
     ]
+    failing = [f"{START_YEAR + i // 4}Q{i % 4 + 1}" for i in failing_idx]
+    gap: dict[str, float] = {}
+    if failing_idx:
+        go, go_r, p = (_read_column(path, v) for v in ("GO_PS", "GO_PSR", "P_ELEC"))
+        gap = {
+            q: round(go_r[i] * p[i] - go[i], 4)
+            for q, i in zip(failing, failing_idx)
+            if None not in (go[i], go_r[i], p[i])
+        }
     return {
         "variable": "LEND (sum of sectoral net lending)",
         "tolerance": tolerance,
         "max_abs": max(abs(v) for v in lend if v is not None),
         "failing_quarters": failing,
+        # GO_PSR*P_ELEC - GO_PS (manual Eq. (74)) in each failing quarter:
+        # the diagnosed source of every break in the pinned run.
+        "electricity_valuation_gap": gap,
         "passed": not failing,
     }
 
