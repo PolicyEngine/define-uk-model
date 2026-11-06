@@ -52,7 +52,7 @@ sheets sum) are asserted each period, not assumed.
 | # | Slice (manual §) | Gate | Status |
 |---|------------------|------|--------|
 | 1 | Accounting core: transactions + balance-sheet matrices (§2.2), residual instruments | matrices identically satisfied on initial values (§5) | **PASS** (2026-08-04) — `model/accounting.py` + `model/calibration.py` (§5 Tables 5–6 fully transcribed); all Table 1/2 row and column identities hold on the §5 initial values within the manual's own 4-significant-figure printing precision (`tests/test_accounting.py`). One documented manual inconsistency (Table 6 LENDM_ROW omits the DIVN_ROW term of Eq. (383); overall LENDM tabulated as 5.44 where "should equal 0"): the MFI/RoW transaction columns miss LEND by ∓DIVN_ROW, pinned exactly in the tests. |
-| 2 | High-level macro + production (§3.2–3.3) | baseline GDP path vs oracle | **in progress** — §3.2, §3.3.1 and §3.3.2 landed; §3.3.3 and the oracle gate are still outstanding, so the milestone is **not** passed. See the notes below. |
+| 2 | High-level macro + production (§3.2–3.3) | baseline GDP path vs oracle | **in progress** — §3.2, §3.3.1, §3.3.2 and §3.3.3 landed and the gate is now a real solve (`tests/test_oracle.py::test_baseline_gdp_path_matches_oracle`, strict xfail): with §3.1/§3.4 held at the oracle, solved GDP is within 0.41% (empirical forms) / 0.43% (manual) every quarter, not within the 2e-3 printing tolerance. See "Scenario solver" below. |
 | 3 | Sectoral equations (§3.4.1–3.4.7) | full S1 baseline vs oracle within tolerance | pending |
 | 4 | Ecosystem block (§3.1) | emissions/energy paths vs oracle | pending |
 | 5 | Policy scenarios (regulation, green public investment, 1.1 extensions) | scenario deltas vs published figures per `VALIDATION.md` | pending |
@@ -61,6 +61,36 @@ Tolerances are set per-milestone when the first comparison runs, and recorded
 in `VALIDATION.md` alongside the replication-gate entries — the oracle
 comparison and the published-figure replication are the same standard applied
 to two references.
+
+### Scenario solver (2026-11-06, round 3)
+
+`model/scenario.py::solve_path` solves the registry quarter by quarter
+(Gauss–Seidel per quarter via `solver.solve_period`, relative tolerance
+1e-10, 2,000-sweep cap; `ConvergenceError` names the quarter; a non-finite
+value raises — before this round a NaN compared false and "converged").
+Closure is **block-exogenous**: everything the registry does not determine
+(§3.1, §3.4.1–§3.4.7) is read from a reference path (a cached oracle CSV),
+so a shock moves only §3.2–§3.3.3. `build_registry(forms="empirical")`
+swaps in the 12 oracle-derived forms of `model/empirical.py`; the default
+is the manual as printed. Inputs the CSVs do not print are recovered as
+documented in `scenario.scenario_inputs` (g_LFOBR from LF by inverting Eq.
+(39); policy switches at `power.POLICY_DEFAULTS`).
+
+Why the baseline solve does not reproduce, equation by equation:
+- Eq. (96) intercept α_0GCFPS not in Table 5 (defaulted 0): solved GCF_PSD
+  misses by >100% from 2023Q3 and the power-sector finance block (YD_PS,
+  RP_PS, DSR_PS, LEND_PS, FNW_PS) follows. Exogenising prop_NFF, CR_PS and
+  DEF_PS at the oracle does not fix it.
+- Price level 1.2% low from 2023Q1 (P, GO_P): Eq. (49) marks up last
+  quarter's UC, which the CSVs do not print, so it is seeded from Table 6.
+- Manual Eq. (84): the solved P_ELEC ends 110% above the oracle (the
+  empirical form keeps it within 0.4%).
+- Eq. (139): every Baseline file uses α_PP = 0.2748, every policy file
+  Table 5's 0.2762; baseline solves override it.
+- Σ sectoral LEND in the solve is up to 8.5 (empirical) / 48 (manual)
+  against 0.05 in the oracle: it is exactly the LEND_PS divergence, since
+  every other sector is held at the oracle. Stock-flow consistency of a
+  solve waits on §3.4.
 
 ### Milestone 2 progress
 

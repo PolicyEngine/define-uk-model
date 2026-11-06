@@ -84,6 +84,23 @@ class Registry:
                 )
         self._equations[equation.name] = equation
 
+    def replace(self, equation: Equation) -> None:
+        """Swap the equation for an already-registered variable in place.
+
+        Keeps solve order and the variable's manual_ref; used only by the
+        opt-in empirical forms (``define_uk.model.empirical``), never by the
+        manual registry.
+        """
+        old = self._equations.get(equation.name)
+        if old is None:
+            raise KeyError(f"{equation.name}: no equation to replace")
+        if equation.manual_ref != old.manual_ref:
+            raise ValueError(
+                f"{equation.name}: a replacement must keep manual_ref "
+                f"{old.manual_ref!r}"
+            )
+        self._equations[equation.name] = equation
+
     def __iter__(self) -> Iterator[Equation]:
         return iter(self._equations.values())
 
