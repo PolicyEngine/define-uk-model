@@ -62,13 +62,36 @@ in `VALIDATION.md` alongside the replication-gate entries — the oracle
 comparison and the published-figure replication are the same standard applied
 to two references.
 
+### Whole model (2026-11-06, round 4)
+
+§3.1 (Eqs. (1)-(20)) and §3.4.1-§3.4.7 (Eqs. (159)-(401)) are implemented from
+the manual (pp. 9-13, 28-48), so every printed equation is in the registry
+(420 registrations; §3.4.7's sector-indexed Eqs. (398)-(401) carry a tag,
+`§3.4.7 eq. (398)[NFC]`). The reference path supplies only start-quarter lags
+and exogenous inputs. Each module's `MANUAL_GAPS` lists what the manual does
+not define (GOS_P, r_BOEQ, beta_dnfc, spr_psa/minr_ps, delta_rlhh, delta_jt,
+epsilon_CHHP, GCF_HHHIS, TREND_betaHH_t, GCF_GVTNFFR).
+
+Stock-flow closure is the redundant equation Σ_s LEND_s = 0, with MFIs as the
+residual sector (Eqs. (211), (213), (214), (216)). As printed it fails in the
+dividend row: Eqs. (93), (163), (313) give each holder β_j × its equity share
+of DIVP_NMFI with β's that do not sum to one, and Eq. (221) omits the RoW.
+The oracle's forms (DIVR_NFC residual, DIVR_HH over EQL_NMFI − EQN_RoW,
+DIVR_NMFI net of DIVN_RoW), with Eq. (281) SUBS_GVT = SPEND_GVTPS, close it
+to machine precision in every solved quarter (`forms="empirical"`). See
+VALIDATION.md for the baseline and shock results.
+
+The CSV alias map (`scenario.CSV_ALIASES`) was incomplete before this round:
+inputs spelt differently in the CSVs (r_IBA_PS, r_IBL_PS, r_IBL_GVT,
+OTEQL_NMFI, WS, ...) sat at Table 6 in every round-3 solved quarter.
+
 ### Scenario solver (2026-11-06, round 3)
 
 `model/scenario.py::solve_path` solves the registry quarter by quarter
 (Gauss–Seidel per quarter via `solver.solve_period`, relative tolerance
 1e-10, 2,000-sweep cap; `ConvergenceError` names the quarter; a non-finite
 value raises — before this round a NaN compared false and "converged").
-Closure is **block-exogenous**: everything the registry does not determine
+(Superseded 2026-11-06 round 4, see *Whole model* below; the round-3 tests keep this closure by holding §3.1/§3.4 explicitly.) Closure is **block-exogenous**: everything the registry does not determine
 (§3.1, §3.4.1–§3.4.7) is read from a reference path (a cached oracle CSV),
 so a shock moves only §3.2–§3.3.3. `build_registry(forms="empirical")`
 swaps in the 12 oracle-derived forms of `model/empirical.py`; the default
@@ -247,7 +270,11 @@ the two findings that matter most are about what §5 does *not* contain:
   1.7× to 4.6× as well. Whatever is wrong is wrong in the interest-bearing
   asset transfer rule, or in Table 6's sign convention for it, model-wide;
   §3.3.2 is only where we meet it first. Confirming that needs §3.4.1, §3.4.3
-  and §3.4.4, which are not implemented yet.
+  and §3.4.4, which are not implemented yet. **Resolved 2026-11-06 (round 4):**
+  with §3.4 implemented, IBATR_NFC = α_IBANFC·GO_P, IBATR_NMFI = α_IBANMFI·GO
+  and IBATR_GVT = α_IBAGVT·GO reproduce the oracle from 2023Q1 (12.58, 30.85,
+  5.371); Table 6's negatives are the 2022Q4 data row, which the rule is never
+  asked to reproduce.
 - **§5 calibrates an electricity price rule §3 never prints.** Table 5 gives
   t_ELECswitch = 153, "Time index (quarter) for the switch in the electricity
   price long-run formation rule", and Table 6 gives P_ELECLR, "Long run

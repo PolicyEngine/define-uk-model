@@ -96,12 +96,14 @@ EMPIRICAL_FORMS: dict[str, tuple[str, Callable[[State, State], float]]] = {
             1.0 + _P["pi3"] * math.exp(_P["kappa3"] * l["K_PG"] / l["K_PC"])),
     ),
     "K_GVTNFFR": (
-        "Eq. (276) with GCF_GVTNFFR = SPEND_GVTPS / P_P and depreciation "
-        "delta_KPSNFF: the green public power investment of the scenarios "
-        "accumulates here (exact in all GPI files, "
-        "tests/test_scenario_sweep.py).",
+        "Eq. (276) with GCF_GVTNFFR = (SPEND_GVTPS - SUBS_PS) / P_P (the "
+        "on-balance-sheet part, as in the GCF form) and depreciation "
+        "delta_KPSNFF: green public power investment accumulates here "
+        "(exact in the GPI file, where SUBS_PS = 0: "
+        "tests/test_scenario_sweep.py; in the baseline SPEND_GVTPS = SUBS_PS "
+        "and K_GVTNFFR stays at its initial path).",
         lambda s, l: (1.0 - s["delta_KPSNFF"]) * l["K_GVTNFFR"]
-        + s["SPEND_GVTPS"] / s["P_P"],
+        + (s["SPEND_GVTPS"] - s["SUBS_PS"]) / s["P_P"],
     ),
     # Dividend closure (round 4). As printed, Eqs. (93), (163), (313) give
     # each sector beta_j x its equity share of DIVP_NMFI with betas that do

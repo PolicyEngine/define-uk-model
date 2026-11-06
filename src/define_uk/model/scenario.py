@@ -7,23 +7,20 @@ solved quarter becomes the next quarter's lag. A quarter that does not
 converge raises ``ConvergenceError`` naming the quarter; nothing is ever
 returned from a non-converged sweep.
 
-Closure: block-exogenous, not a full-model solve
-------------------------------------------------
-The registry implements manual §3.2, §3.3.1, §3.3.2 and §3.3.3. §3.1
-(ecosystem) and §3.4.1-§3.4.7 (the sectors: NFC, MFI, NMFI, government,
-households, rest of the world, rates of return) are not implemented yet.
-Every variable the registry does not determine is therefore read from a
-*reference path* (a cached oracle ``Variables_*.csv``) and held there. So:
+Closure: the whole model (since 2026-11-06, round 4)
+----------------------------------------------------
+The registry implements every printed equation of the manual, §3.1 to
+§3.4.7 (Eqs. (1)-(401)). The reference path supplies only (a) the lags at
+the start quarter and (b) exogenous inputs no equation determines: policy
+paths (GCF_GVTBASE = the reference GCF_GVT, P_ETSRB, SPEND_GVTPS,
+SUBS_PS), demography and OBR inputs, and parameters the manual leaves
+undefined. Before round 4 §3.1 and §3.4 were read from the reference and a
+shock moved only §3.2-§3.3.3.
 
-- a solve on the baseline reference tests the implemented blocks *given*
-  the oracle's paths for everything else (a conditional, block-level
-  reproduction, not the full milestone-3 baseline);
-- a shock to an exogenous variable moves only what the implemented blocks
-  determine. Households, firms' investment, government financing and the
-  rest of the world do not respond, so there is no consumption multiplier,
-  and the economy-wide stock-flow closure (Σ sectoral net lending = 0)
-  holds only on the reference path itself. Results from shocked solves are
-  diagnostics of the implemented blocks, not model scenarios.
+Stock-flow closure is not imposed: MFIs are the residual sector (Eqs.
+(211), (213), (214), (216)) and Σ_s LEND_s = 0 is the model's redundant
+equation, checked on solved paths. As printed it fails in the dividend
+row (empirical.py, "Dividend closure"); forms="empirical" closes it.
 
 ``overrides`` exogenises variables: a name given there is taken off the
 registry for the solve and set to the given value (scalar, or one value per
