@@ -43,9 +43,61 @@ from .registry import Registry
 from .sectors import power
 from .solver import solve_period
 
-# Cached-CSV column -> registry name, where the two spell a variable
-# differently. Used to seed lags and to compare solved paths.
-CSV_ALIASES = {"lambda": "lam", "MU": "mu"}
+# Cached-CSV column -> registry name (the manual §5 Table 6 spelling), where
+# the two spell a variable differently. Used to seed lags and exogenous
+# inputs and to compare solved paths. Covers every Table 6 key the CSVs print
+# under another name (tests/test_scenario_solver.py checks completeness);
+# Table 6's SUBS_GVT is the one key the CSVs do not print at all.
+#
+# Before 2026-11-06 this map held only lambda and MU, so every other
+# differently-spelled input (e.g. r_IBA_PS, r_IBL_PS, r_IBL_GVT, OTEQL_NMFI,
+# WS) was never read from the reference: the solver's guess started from
+# Table 6 and carried the 2022Q4 value forward unchanged every quarter.
+CSV_ALIASES = {
+    "C_HIEER": "CHI_EER", "C_HIENR": "CHI_ENR", "DISC_RoW": "DISC_ROW",
+    "DIVN_RoW": "DIVN_ROW", "EQNTR_RoW": "EQNTR_ROW", "EQN_RoW": "EQN_ROW",
+    "FNW_GVTM": "FNWM_GVT", "FNW_HHM": "FNWM_HH", "FNW_M": "FNWM",
+    "FNW_MFIM": "FNWM_MFI", "FNW_NFCM": "FNWM_NFC", "FNW_NMFIM": "FNWM_NMFI",
+    "FNW_PSM": "FNWM_PS", "FNW_RoW": "FNW_ROW", "FNW_RoWM": "FNWM_ROW",
+    "IBLTR_GVTMFI": "IBLTR_GVT_MFI", "IBLTR_GVTNMFI": "IBLTR_GVT_NMFI",
+    "IBLTR_GVTRoW": "IBLTR_GVT_ROW", "IBL_GVTMFI": "IBL_GVT_MFI",
+    "IBL_GVTNMFI": "IBL_GVT_NMFI", "IBL_GVTRoW": "IBL_GVT_ROW",
+    "IBNTR_RoW": "IBNTR_ROW", "IBN_RoW": "IBN_ROW", "INSTR": "INSTR_",
+    "INTN_RoW": "INTN_ROW", "I_ADJ": "IADJ", "LEND_GVTM": "LENDM_GVT",
+    "LEND_HHM": "LENDM_HH", "LEND_M": "LENDM", "LEND_MFIM": "LENDM_MFI",
+    "LEND_NFCM": "LENDM_NFC", "LEND_NMFIM": "LENDM_NMFI",
+    "LEND_RoW": "LEND_ROW", "LEND_RoWM": "LENDM_ROW", "MU": "mu",
+    "OT_EQAHH": "OTEQA_HH", "OT_EQANFC": "OTEQA_NFC",
+    "OT_EQANMFI": "OTEQA_NMFI", "OT_EQAPS": "OTEQA_PS",
+    "OT_EQLNFC": "OTEQL_NFC", "OT_EQLNMFI": "OTEQL_NMFI",
+    "OT_EQLPS": "OTEQL_PS", "OT_EQNRoW": "OTEQN_ROW",
+    "OT_IBAGVT": "OTIBA_GVT", "OT_IBAHH": "OTIBA_HH",
+    "OT_IBANFC": "OTIBA_NFC", "OT_IBANMFI": "OTIBA_NMFI",
+    "OT_IBAPS": "OTIBA_PS", "OT_IBARoW": "OTIBA_ROW",
+    "OT_IBLGVT": "OTIBL_GVT", "OT_IBLHH": "OTIBL_HH",
+    "OT_IBLNFC": "OTIBL_NFC", "OT_IBLNMFI": "OTIBL_NMFI",
+    "OT_IBLPS": "OTIBL_PS", "OT_INS": "OTINS", "OT_PENS": "OTPENS",
+    "OT_RESGVT": "OTRES_GVT", "OT_RESHH": "OTRES_HH",
+    "OT_RESNFC": "OTRES_NFC", "OT_RESNMFI": "OTRES_NMFI",
+    "OT_RESPS": "OTRES_PS", "OT_RESRoW": "OTRES_ROW", "P_E": "PE",
+    "P_F": "PF", "P_H": "PH", "P_I": "PI", "RESTR_RoW": "RESTR_ROW",
+    "RES_RoW": "RES_ROW", "RoW_DR": "ROW_DR", "W_S": "WS", "YP_RoW": "YP_ROW",
+    "lambda": "lam", "r_IBAGVT": "r_IBA_GVT", "r_IBAGVTLR": "r_IBA_GVTLR",
+    "r_IBAHH": "r_IBA_HH", "r_IBAHHLR": "r_IBA_HHLR", "r_IBANFC": "r_IBA_NFC",
+    "r_IBANFCLR": "r_IBA_NFCLR", "r_IBANMFI": "r_IBA_NMFI",
+    "r_IBANMFILR": "r_IBA_NMFILR", "r_IBAPS": "r_IBA_PS",
+    "r_IBAPSLR": "r_IBA_PSLR", "r_IBLGVT": "r_IBL_GVT", "r_IBLHH": "r_IBL_HH",
+    "r_IBLNFC": "r_IBL_NFC", "r_IBLNMFI": "r_IBL_NMFI", "r_IBLPS": "r_IBL_PS",
+    "r_IBNRoW": "r_IBN_ROW", "r_IBNRoWLR": "r_IBN_ROWLR",
+    # Not Table 6 keys, but printed by the CSVs under another spelling: the
+    # long-run liability rates of Eq. (401) and world price growth (376).
+    "r_IBLNFCLR": "r_IBL_NFCLR", "r_IBLPSLR": "r_IBL_PSLR",
+    "r_IBLNMFILR": "r_IBL_NMFILR", "r_IBLGVTLR": "r_IBL_GVTLR",
+    "r_IBLHHLR": "r_IBL_HHLR", "RoW_Pg": "ROW_Pg",
+}
+
+# Variables some equation reads two quarters back: name -> carried key.
+SECOND_LAGS = {"K_PS": "K_PS_LAG", "K_NFC": "K_NFC_LAG", "GCF_HHNB": "GCF_HHNB_LAG"}
 
 START_YEAR = 1987  # cached runs are anchored 1987Q1-2040Q4
 SIM_START = 144  # 2023Q1, the first simulated quarter
@@ -106,8 +158,16 @@ def scenario_inputs(
         if "u_PS" in r:
             r.setdefault("Eu_PS", r["u_PS"])
             r.setdefault("Fu_PS", r["u_PS"])
-        if t > 1 and "K_PS" in reference[t - 2]:
-            r["K_PS_LAG"] = reference[t - 2]["K_PS"]
+        for name, key in SECOND_LAGS.items():
+            if t > 1 and name in reference[t - 2]:
+                r[key] = reference[t - 2][name]
+        # §3.4 exogenous inputs the CSVs do not print under the manual name.
+        if "GCF_GVT" in r:  # Eq. (272): the OBR baseline path
+            r.setdefault("GCF_GVTBASE", r["GCF_GVT"])
+        r.setdefault("GCF_GVTNFFR", 0.0)  # Eq. (276), government.MANUAL_GAPS
+        r.setdefault("SUBS_GVT", 0.0)  # Eq. (281), Table 6 value
+        if "ROW_DR" in r and "PF" in r:  # Eq. (369), not printed
+            r.setdefault("ROW_D", r["ROW_DR"] * r["PF"])
         out.append(r)
     return out
 
@@ -165,8 +225,9 @@ def solve_path(
                                  max_iter=max_iter, guess=guess)
         except (RuntimeError, ZeroDivisionError, ValueError, OverflowError) as e:
             raise ConvergenceError(t, e) from e
-        # Eq. (96) reads K_PS two quarters back (power.SECOND_LAG_KEYS).
-        state["K_PS_LAG"] = lag["K_PS"]
+        # Eqs. (96), (166), (324) read two quarters back (SECOND_LAGS).
+        for name, key in SECOND_LAGS.items():
+            state[key] = lag[name]
         path.append(state)
         lag = state
     path.extend(dict(r) for r in reference[end + 1:])

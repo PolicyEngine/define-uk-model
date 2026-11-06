@@ -107,7 +107,7 @@ def test_default_registry_is_the_manual_as_printed():
 def test_empirical_flag_replaces_exactly_the_twelve_forms_in_place():
     manual = list(build_registry())
     emp = list(build_registry("empirical"))
-    assert len(EMPIRICAL_FORMS) == 12
+    assert len(EMPIRICAL_FORMS) == 18
     assert [e.name for e in manual] == [e.name for e in emp]  # solve order kept
     assert [e.manual_ref for e in manual] == [e.manual_ref for e in emp]
     changed = {m.name for m, e in zip(manual, emp)
@@ -117,7 +117,11 @@ def test_empirical_flag_replaces_exactly_the_twelve_forms_in_place():
 
 def test_empirical_forms_match_the_pinned_oracle_forms():
     from test_oracle import ORACLE_FORMS
-    assert set(ORACLE_FORMS) - {"alpha_PP"} == set(EMPIRICAL_FORMS)
+    # K_GVTNFFR and LENDM_GVT read inputs the CSVs do not print (GCF_GVTNFFR,
+    # SUBS_GVT; test_oracle.NOT_EVALUABLE); K_GVTNFFR's form is pinned against
+    # every GPI file in test_scenario_sweep.py, LENDM_GVT's in
+    # test_full_model.py.
+    assert set(ORACLE_FORMS) - {"alpha_PP"} == set(EMPIRICAL_FORMS) - {"K_GVTNFFR", "LENDM_GVT"}
 
 
 def test_unknown_forms_value_is_refused():
