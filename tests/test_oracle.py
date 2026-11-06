@@ -88,6 +88,12 @@ REPRODUCED = {
     "LEND_PS", "IBLTR_PS", "MC_ELEC", "DIVP_PS", "IBATR_PS", "EQATR_PS",
     "FA_PS", "FL_PS", "K_PSR", "K_PS", "K_PSFF", "K_PSNFF", "LEV_PS",
     "GOS_PS", "RP_PS", "NW_PS",
+    # §3.3.3 input-output block (2026-11-06, round 3). alpha_PP, Eq. (139),
+    # only in the policy files: see ORACLE_FORMS.
+    "alpha_PSP", "alpha_PSPS", "alpha_OPPS", "alpha_FUELPS", "alpha_PPS",
+    "IC_PSPR", "IC_FUELPSR", "IC_OPPSR", "IC_PP", "IC_PSP", "IC_PSPS",
+    "IC_PPS", "IC_FUELPS", "IC_OPPS", "det_IA", "L_PP", "L_PPS", "L_PSP",
+    "L_PSPS",
 }
 
 ALL_FILES = frozenset(ORACLE_FILES)
@@ -95,6 +101,10 @@ _EQ23 = next(e for e in build_registry() if e.name == "GCF")
 _SUBSIDY_FILES = ALL_FILES - {"gvt_investment/Variables_GPI + Green Bonds.csv"}
 _BAN_FILE = "mixed/mutual_trust/Variables_Both Regulations + Subsidies.csv"
 _BAN_FROM = 180  # 2032Q1: first quarter with zero desired fossil investment
+_BASELINE_FILE = "gvt_investment/Variables_Baseline.csv"
+# Eq. (139)'s alpha_PP in the run's Baseline files (all 7 print 0.2748 in
+# every simulated quarter); every policy file prints Table 5's 0.2762.
+ALPHA_PP_BASELINE_RUN = 0.2748
 
 # Equations where the oracle departs from the manual as printed, with the
 # form the oracle's numbers do follow. Our registry keeps the manual form
@@ -199,6 +209,17 @@ ORACLE_FORMS = {
         / (s["EQL_NMFI"] - s["EQN_RoW"]) * s["DIVP_NMFI"],
     ),
 }
+
+# Not a form but a coefficient: Eq. (139) sets alpha_PP to Table 5's
+# alpha_PPLR = 0.2762, which every policy file prints, while all seven
+# Baseline files print 0.2748 from 2023Q1. Policy-minus-baseline deltas
+# therefore also carry a 0.5% change in production's own-input coefficient.
+ORACLE_FORMS["alpha_PP"] = (
+    {_BASELINE_FILE},
+    "Eq. (139): the run's Baseline files use alpha_PP = 0.2748, not Table "
+    "5's alpha_PPLR = 0.2762 (which every policy file uses).",
+    lambda s, l, t, f: ALPHA_PP_BASELINE_RUN if f == _BASELINE_FILE else 0.2762,
+)
 
 # Still diverge in at least one file, and the oracle form is not known.
 # value = why
@@ -392,29 +413,19 @@ def test_divergent_equations_still_diverge():
 
 @requires_cached_run
 @pytest.mark.xfail(
-    strict=True, raises=NotImplementedError,
-    reason="milestone 2: the solved GDP-path comparison is not written",
+    strict=True, raises=AssertionError,
+    reason="milestone 2: with §3.1/§3.4 held at the oracle, solved GDP is "
+    "within 0.6% but not within printing precision (price level 1.2% off "
+    "from 2023Q1; power-sector investment misses without alpha_0GCFPS)",
 )
 def test_baseline_gdp_path_matches_oracle():
-    raise NotImplementedError(
-        "solve our registry over the oracle horizon for the S1 baseline and "
-        "compare GDP paths within a tolerance recorded in VALIDATION.md"
-    )
-
-
-def test_the_oracle_gate_cannot_pass_by_accident():
-    """Runs everywhere, including CI: the gate above is still outstanding.
-
-    Milestone 2 is not passed until ``test_baseline_gdp_path_matches_oracle``
-    is a real comparison. This test is what makes the *absence* of that
-    comparison visible in a green suite — it fails the moment the registry is
-    complete enough that a reader might assume the oracle gate has run.
-    """
-    registry = build_registry()
-    assert len(registry) > 0, "sector modules register nothing"
-
-    sections = {eq.section for eq in registry}
-    assert "§3.3.3" not in sections, (
-        "§3.3.3 has landed — the oracle comparison is now the only thing "
-        "between here and milestone 2, so write it and delete this guard"
-    )
+    """The milestone-2 gate, now a real solve (2026-11-06, round 3):
+    ``define_uk.model.scenario.solve_path`` over 2023Q1-2040Q4 on the S1
+    baseline, empirical forms, Baseline-run alpha_PP, compared within TOL."""
+    from define_uk.model.scenario import load_reference, scenario_inputs, solve_path
+    ref = scenario_inputs(load_reference(_run_root() / _TABLES / _BASELINE_FILE))
+    path = solve_path(build_registry("empirical"), ref,
+                      overrides={"alpha_PP": ALPHA_PP_BASELINE_RUN})
+    worst = max(abs(path[t]["GDP"] / ref[t]["GDP"] - 1)
+                for t in range(SIM_START, len(ref)))
+    assert worst < TOL
