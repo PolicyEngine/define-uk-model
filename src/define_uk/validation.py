@@ -14,9 +14,11 @@ Two kinds of quantity live here:
 * ``gpi_multiplier()`` — our own cumulative green-public-investment
   multiplier.  The upstream ``Multiplier_Summary.csv`` is not usable: its
   M_Impact/M_4Q/M_8Q columns are identical across all eight scenarios
-  (M_Impact = −32.22 everywhere) and its TotalDeltaG (104.22) matches the
-  cumulative delta of no variable in the scenario file, so we recompute
-  from the delta paths with an explicit, reproducible definition.
+  (M_Impact = −32.22 everywhere, the common GVT_ENERGY switch) and its
+  row labels are shifted by one scenario: TotalDeltaG (104.22) is upstream's
+  real G for GPI + Green Bonds, a different impulse from ours (issue #16).
+  So we recompute from the delta paths with an explicit, reproducible
+  definition.
 
 External values are pinned with source and date; update them only with a
 newer official release, never to make a comparison look better.
