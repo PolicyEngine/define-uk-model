@@ -7,7 +7,8 @@ baseline repeated in each block folder), not on one example.
 - Stock-flow consistency: the redundant equation (LEND, the sum of sectoral
   net lending) is zero in every quarter, and the seven sectoral balances add
   up to it. Two solves break it; they are pinned and ``run_scenario``
-  refuses them.
+  refuses them. Every break is one missing flow: GO_PS valued at P_ELECLR
+  while buyers pay P_ELEC (manual Eq. (74)), in the price-regime quarters.
 - Stocks equal cumulated flows: public green power capital accumulates the
   public green power spending, with depreciation, quarter by quarter.
 - Zero shock = baseline: every scenario equals its baseline exactly before
@@ -119,6 +120,43 @@ def test_sectoral_balances_sum_to_the_redundant_equation(rel):
         gap = abs(sum(terms) - d["LEND"][t])
         bound = sum(half_ulp(x) for x in terms + [d["LEND"][t]])
         assert gap <= bound + floor, (rel, t, gap, bound)
+
+
+@needs_cache
+def test_every_break_is_the_power_sector_valuation_gap():
+    """The cause of the two refused solves, pinned (2026-11-06).
+
+    In each failing quarter, and in no other simulation quarter of any of
+    the 30 files, GO_PS != GO_PSR * P_ELEC (manual Eq. (74)): the seller's
+    revenue is valued at P_ELECLR while buyers pay P_ELEC. LEND is the same
+    fraction (-0.61) of that gap in all three quarters, so the gap accounts
+    for the whole break.
+    """
+    breaks = {}
+    for rel in FILES:
+        d = _load(rel)
+        for t in range(SIM_START, len(d["LEND"])):
+            gap = d["GO_PSR"][t] * d["P_ELEC"][t] - d["GO_PS"][t]
+            if abs(gap) > 0.01 * max(1.0, abs(d["GO_PS"][t])):
+                breaks[(_key(rel), f"{1987 + t // 4}Q{t % 4 + 1}")] = (
+                    gap, d["LEND"][t], d["GO_PS"][t] / d["GO_PSR"][t],
+                    d["P_ELECLR"][t],
+                )
+    assert {(k, q) for k, qs in REFERENCE["known_failures"].items()
+            for q in qs} == set(breaks)
+    for gap, lend, price, p_lr in breaks.values():
+        assert lend / gap == pytest.approx(-0.608, abs=0.005)
+        assert price == pytest.approx(p_lr, rel=2e-3)
+
+
+@needs_cache
+def test_sfc_check_reports_the_valuation_gap():
+    rel = "power_sector_regulation/no_forward_guidance/Variables_Fossil Fuel Ban.csv"
+    gap = sfc_check(ROOT / rel)["electricity_valuation_gap"]
+    assert gap == {"2035Q3": pytest.approx(122.54, abs=0.05),
+                   "2036Q1": pytest.approx(81.79, abs=0.05)}
+    ok = "gvt_investment/Variables_Baseline.csv"
+    assert sfc_check(ROOT / ok)["electricity_valuation_gap"] == {}
 
 
 @needs_cache
