@@ -107,7 +107,7 @@ def test_default_registry_is_the_manual_as_printed():
 def test_empirical_flag_replaces_exactly_the_twelve_forms_in_place():
     manual = list(build_registry())
     emp = list(build_registry("empirical"))
-    assert len(EMPIRICAL_FORMS) == 12
+    assert len(EMPIRICAL_FORMS) == 18
     assert [e.name for e in manual] == [e.name for e in emp]  # solve order kept
     assert [e.manual_ref for e in manual] == [e.manual_ref for e in emp]
     changed = {m.name for m, e in zip(manual, emp)
@@ -117,7 +117,11 @@ def test_empirical_flag_replaces_exactly_the_twelve_forms_in_place():
 
 def test_empirical_forms_match_the_pinned_oracle_forms():
     from test_oracle import ORACLE_FORMS
-    assert set(ORACLE_FORMS) - {"alpha_PP"} == set(EMPIRICAL_FORMS)
+    # K_GVTNFFR and LENDM_GVT read inputs the CSVs do not print (GCF_GVTNFFR,
+    # SUBS_GVT; test_oracle.NOT_EVALUABLE); K_GVTNFFR's form is pinned against
+    # every GPI file in test_scenario_sweep.py, LENDM_GVT's in
+    # test_full_model.py.
+    assert set(ORACLE_FORMS) - {"alpha_PP"} == set(EMPIRICAL_FORMS) - {"K_GVTNFFR", "LENDM_GVT"}
 
 
 def test_unknown_forms_value_is_refused():
@@ -202,7 +206,7 @@ from test_oracle import (  # noqa: E402
 )
 
 _SECTOR_LEND = ("LEND_NFC", "LEND_PS", "LEND_MFI", "LEND_NMFI", "LEND_GVT",
-                "LEND_HH", "LEND_RoW")
+                "LEND_HH", "LEND_ROW")
 _SIM = range(144, 216)
 
 
@@ -222,7 +226,20 @@ def gpi_ref():
     return _ref("gvt_investment/Variables_GPI + Green Bonds.csv")
 
 
+# §3.1 and §3.4 landed on 2026-11-06 (round 4). The tests in this file pin
+# the round-3 *conditional* closure: those sections held at the reference
+# path, so only §3.2-§3.3.3 are solved. Whole-model solves are in
+# test_full_model.py.
+_HELD_SECTIONS = ("§3.1", "§3.4")
+
+
+def _held(ref, forms):
+    return {e.name: [r[e.name] for r in ref] for e in build_registry(forms)
+            if e.section and e.section.startswith(_HELD_SECTIONS)}
+
+
 def _solve(ref, forms="empirical", **over):
+    over = {**_held(ref, forms), **over}
     over.setdefault("alpha_PP", ALPHA_PP_BASELINE_RUN)
     return solve_path(build_registry(forms), ref, overrides=over)
 
@@ -327,8 +344,9 @@ def test_solved_stock_flow_gap_is_exactly_the_power_sector_divergence(baseline_r
 
 
 @requires_cached_run
-@pytest.mark.xfail(strict=True, reason="milestone 3: §3.4 counterpart sectors "
-                   "not implemented, so the solve is not stock-flow consistent")
+@pytest.mark.xfail(strict=True, reason="conditional closure: §3.1/§3.4 held "
+                   "at the oracle, so the solved LEND_PS gap is not absorbed "
+                   "(the whole-model solve closes: test_full_model.py)")
 def test_solved_baseline_is_stock_flow_consistent_every_quarter(emp_base):
     worst = max(abs(sum(emp_base[t][k] for k in _SECTOR_LEND)) for t in _SIM)
     assert worst < 0.05
