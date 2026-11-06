@@ -50,6 +50,55 @@ CAVEATS = [
 
 _TABLES = "output/tables"
 
+# Stock-flow consistency gate. LEND is the sum of the sectors' net lending
+# (households, NFC, MFI, NMFI, government, RoW, power sector), the model's
+# redundant equation: in a consistent solve it is zero to rounding (|LEND| <
+# 1e-5 in every quarter of 28 of the 30 cached files). Two cached solves break
+# it: the fossil-fuel ban under no forward guidance (2035Q3 and 2036Q1, |LEND|
+# up to 74.56) and under unexpected enforcement (2033Q1, 14.63). Deltas from
+# such a solve are not results, so run_scenario refuses them by default.
+SFC_TOLERANCE = 0.01  # GBP bn per quarter, far above CSV rounding of a zero
+
+
+class StockFlowInconsistent(ValueError):
+    """A cached solve violates the redundant equation (sectoral net lending
+    does not sum to zero), so its deltas cannot be served as results."""
+
+
+def sfc_check(path: Path, tolerance: float = SFC_TOLERANCE) -> dict:
+    """Redundant-equation check on one cached Variables CSV.
+
+    Returns {variable, tolerance, max_abs, failing_quarters, passed}, where
+    failing_quarters are 'YYYYQn' labels with |LEND| above the tolerance.
+    """
+    lend = _read_column(path, "LEND")
+    failing = [
+        f"{START_YEAR + i // 4}Q{i % 4 + 1}"
+        for i, v in enumerate(lend)
+        if v is not None and abs(v) > tolerance
+    ]
+    return {
+        "variable": "LEND (sum of sectoral net lending)",
+        "tolerance": tolerance,
+        "max_abs": max(abs(v) for v in lend if v is not None),
+        "failing_quarters": failing,
+        "passed": not failing,
+    }
+
+# Units of ``delta_level``. Every series is the annual MEAN of the quarterly
+# values, so flows are per-QUARTER rates: an EMIS delta of -10 is -40
+# MtCO2e/yr (define_uk.validation multiplies EMIS by 4 for the same reason).
+VARIABLE_UNITS = {
+    "GDP_R": "real GDP, model currency units per quarter (annual mean of the "
+             "quarterly flow); delta_pct is % of baseline",
+    "CONS_R": "real household consumption, model currency units per quarter "
+              "(annual mean of the quarterly flow); delta_pct is % of baseline",
+    "EMIS": "MtCO2e per QUARTER (annual mean of the quarterly flow); multiply "
+            "delta_level by 4 for MtCO2e per year",
+    "UPLOT": "unemployment rate in %, so delta_level is in percentage points; "
+             "delta_pct is % of the baseline RATE, not pp",
+}
+
 # (public name, block, csv folder relative to output/tables, csv scenario
 #  label, description). Folder Baseline is the delta reference.
 _REGISTRY: list[tuple[str, str, str, str, str]] = [
@@ -183,6 +232,7 @@ def run_scenario(
     name: str,
     variables: tuple[str, ...] = DEFAULT_VARIABLES,
     horizon_years: int = 15,
+    allow_inconsistent: bool = False,
 ) -> dict:
     """Annualised scenario-minus-baseline delta paths from the cached run.
 
@@ -190,6 +240,11 @@ def run_scenario(
     folder's baseline annual mean; for rates such as UPLOT the level delta
     is already in the rate's own units). The horizon starts at the first
     calendar year in which any requested variable departs from baseline.
+
+    Raises ``StockFlowInconsistent`` if the scenario or its baseline breaks
+    the redundant equation (see ``sfc_check``). ``allow_inconsistent=True``
+    returns the deltas anyway, for diagnosis only, with the failed check in
+    ``sfc_check`` and a leading caveat.
     """
     if name not in _BY_NAME:
         known = ", ".join(sorted(_BY_NAME))
@@ -203,6 +258,17 @@ def run_scenario(
             raise FileNotFoundError(
                 f"cached run is missing {p}; re-run define_uk.runner.run()"
             )
+    checks = {"scenario": sfc_check(scen_path), "baseline": sfc_check(base_path)}
+    failed = {k: c for k, c in checks.items() if not c["passed"]}
+    if failed and not allow_inconsistent:
+        detail = "; ".join(
+            f"{k}: |LEND| up to {c['max_abs']:.2f} in {', '.join(c['failing_quarters'])}"
+            for k, c in failed.items()
+        )
+        raise StockFlowInconsistent(
+            f"scenario {name!r}: the cached solve is not stock-flow "
+            f"consistent ({detail}); its deltas are not served"
+        )
 
     annual: dict[str, dict] = {}
     start_year: int | None = None
@@ -243,8 +309,21 @@ def run_scenario(
             else None
             for y in years
         ]
-        per_variable[var] = {"delta_level": levels, "delta_pct": pct}
+        per_variable[var] = {
+            "delta_level": levels,
+            "delta_pct": pct,
+            "units": VARIABLE_UNITS.get(
+                var, "model units, annual mean of quarterly values"),
+        }
 
+    caveats = list(CAVEATS)
+    if failed:
+        caveats.insert(0, (
+            "NOT STOCK-FLOW CONSISTENT: sectoral net lending does not sum to "
+            "zero in " + ", ".join(
+                q for c in failed.values() for q in c["failing_quarters"])
+            + "; diagnostic output only, not a result."
+        ))
     return {
         "result_type": "scenario deltas",
         "scenario": name,
@@ -253,7 +332,8 @@ def run_scenario(
         "delta_convention": "scenario minus baseline (same block folder)",
         "years": years,
         "variables": per_variable,
-        "caveats": list(CAVEATS),
+        "caveats": caveats,
+        "sfc_check": checks,
         "provenance": {
             "upstream_commit": UPSTREAM_COMMIT,
             "cache_path": str(scen_path),

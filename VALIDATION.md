@@ -114,6 +114,10 @@ below — never editing a test.
 
 | 2026-08-12 | n/a (audit; manual + committed artifacts only) | n/a | **Audit of the pinned manual findings.** Every transcribed §5 value re-checked against the PDF (661 entries; each value found on the manual page its source comment names, the two documented SUBS placeholders excepted), and every pinned discrepancy recomputed independently of the sector modules. All arithmetic reproduced. Three findings re-characterised rather than withdrawn: Eqs. (51)/(59)/(94)/(111) are **first-period jumps**, not manual contradictions, because Table 5 describes each parameter as a historical mean; the Eq. (51) "the equation is the corroborated one" claim is **withdrawn** (it evaluated the lagged Eq. (49) at contemporaneous unit costs — honouring the lag, the tabulated µ is the value consistent with the manual's own g = 1.019 quarterly); and Eq. (107)'s sign contradiction is **model-wide**, shared with Eqs. (177), (231) and (284). Eqs. (27), (104), (105), (132), (133) unified as one finding (Table 6's capital block is deflated at 1.031). One new gap found: §5 calibrates an electricity price long-run formation rule (`t_ELECswitch`, `P_ELECLR`) that §3 never prints, which is the likeliest account of Eq. (84). Publicly filed claims (issues #1, #2) all verified. Suite: 236 passed, 59 skipped. |
 
+| 2026-11-05 | `846081a` | cached run (CSV reads only) | **Multiplier denominator caveat corrected.** ΔSPEND_GVT decomposed from the cached GPI + Green Bonds run: SPEND_GVTPS +91.2, OCONS_GVT +21.1, SOCB_GVT +8.0, GCF_GVT −2.3 (sum 118.0 vs 118.2). The "social benefits fall → upper-leaning" claim and the ΔGCF_GVTG impulse ratio are withdrawn; the leftover Batini 2021 comparator in `gpi_multiplier()` is removed. No reference number changed (1.78, 209.9, 118.2, 250.6 unchanged). |
+
+| 2026-11-06 | `846081a` | cached run (CSV reads only) | **Scenario sweep and per-equation oracle comparison.** (1) Stock-flow consistency: the redundant equation LEND (sum of sectoral net lending) is zero to rounding in 28 of the 30 cached files; it fails in the fossil-fuel ban under no forward guidance (2035Q3, 2036Q1; \|LEND\| up to 74.56) and under unexpected enforcement (2033Q1; 14.63). `run_scenario` now refuses those two scenarios (`StockFlowInconsistent`); every served result carries `sfc_check`. (2) Every registered equation is evaluated on the oracle's own inputs over 2023Q1–2040Q4 in five files (118 equations): 68 reproduce within 2e-3 (4-significant-figure printing) in all five, GCF in four, 17 diverge (pinned, not yet diagnosed), 32 cannot be compared one at a time. Eq. (23) GCF diverges only in GPI + Green Bonds, by exactly SPEND_GVTPS (the oracle counts on-balance-sheet green power investment in GCF; the printed equation does not). (3) Zero shock = baseline holds in every column before 2023Q1 except MU in 2022Q4 (pinned). (4) Public green power capital equals cumulated public green power spending net of depreciation. `test_baseline_gdp_path_matches_oracle` is now a strict xfail instead of an error whenever a cache exists. No reference number changed. Tolerances in `reference_outputs.json` (`stock_flow_consistency`, `oracle_identity_residuals`). |
+
 ## External comparators (recorded 2026-08-04)
 
 Beyond the oracle (pinned upstream run) and the published figures, the
@@ -124,15 +128,15 @@ publishes baseline values, which already diverge from officials in places:
 
 | Quantity | DEFINE-UK baseline (manual Table 4 / upstream run) | External | Verdict |
 |---|---|---|---|
-| Real GDP growth, 2025 | 4.96% | ONS outturn ≈ 1% y/y (macro repo vintage `uk_gdp_cvm`, 2026Q1 y/y 0.9%); OBR March 2026 EFO ≈ 1–2% | **Baseline far above outturn.** Manual says the baseline "should not be seen as a prediction"; treat levels/near-term growth as non-informative. |
+| Real GDP growth, 2025 | 4.96% (Table 4); 4.66% annual-mean, committed CSV | ONS 2025 calendar-year mean over 2024 = 1.31% (`uk_gdp_cvm` vintage 2026-07-26, the CSV's pinned value); OBR March 2026 EFO ≈ 1–2% | **Baseline far above outturn.** Manual says the baseline "should not be seen as a prediction"; treat levels/near-term growth as non-informative. |
 | Real GDP growth, mean 2025–40 | 2.35% | OBR long-run ≈ 1.5–1.8% | High vs official. |
-| Unemployment, 2025 | 4.31% | ONS MGSX outturn 5.2% (2025Q4), 5.0% (2026Q1) | Below outturn by ~0.8pp. |
+| Unemployment, 2025 | 4.31% (Table 4); 4.39% annual-mean, committed CSV | ONS MGSX 2025 annual mean 4.88% (quarters 4.6/4.7/5.0/5.2; the CSV's pinned value) | Below outturn by ~0.5pp on the CSV's like-for-like annual means. |
 | Population 16+, 2025 | 55.66m | ONS 16+ population ≈ 56m | Consistent (Table 4 "population" is 16+, not total ~69m). |
 | Labour force, 2025 | 35.97m | ONS ≈ 34–35m | Slightly high. |
 | Total emissions, 2025 | 407 MtCO2e/yr | UK territorial GHG: 384 (2023), ≈ 371 provisional (2024), DESNZ | Above the actuals it should start from. |
 | Emissions, 2030 | 382 MtCO2e/yr | NDC path (68% below 1990 ≈ 260); NESO current-policy | Manual itself notes it "falls significantly short" of the NDC — by design (current-policies baseline). |
-| Green public investment cumulative multiplier | **1.78** by our own computation (cum ΔGDP 209.9 / cum ΔSPEND_GVT 118.2, nominal, full simulation; `define_uk.validation.gpi_multiplier`, pinned in `tests/test_validation.py`) | IMF green-spending multipliers ≈ 1.1–1.5 (Batini et al. 2021); OBR capital-spending impact multiplier ≈ 1.0 | Above the comparators, but **not like-for-like** — see the three caveats below, which all point the same way. Defensible as what this closure implies; not defensible as a direct comparison. The previously quoted ≈2.4 came from the upstream table's ΔG=104.22, which matches the cumulative delta of **no variable** in the scenario file — do not quote it. |
-| `Multiplier_Summary.csv` M_Impact / M_4Q / M_8Q | −32.22 / −0.88 / 2.6 **identical across all 8 scenarios** | — | **Upstream artifact confirmed unusable** (2026-08-05): scenario-invariant multiplier columns, and TotalDeltaG unreproducible from the scenario files (TotalDeltaGDP=250.76 does reconcile: it is the cumulative quarterly real-GDP delta of `Variables_GPI + Green Bonds.csv`, 250.6 by our sum). Superseded by `define_uk.validation.gpi_multiplier`. |
+| Green public investment cumulative multiplier | **1.78** by our own computation (cum ΔGDP 209.9 / cum ΔSPEND_GVT 118.2, nominal, full simulation; `define_uk.validation.gpi_multiplier`, pinned in `tests/test_validation.py`) | OBR capital-spending impact multiplier ≈ 1.0 (an IMF "1.1–1.5, Batini et al. 2021" comparator was withdrawn on 2026-08-13: no such publication could be located) | Above the comparator, but **not like-for-like** — see the three caveats below. Defensible as what this closure implies; not defensible as a direct comparison. The previously quoted ≈2.4 is the upstream table's real/real ratio (TotalDeltaGDP 250.76 / TotalDeltaG 104.22). It is not quoted here: its row label is shifted by one, and it uses a different impulse and real rather than nominal values (issue #16, where the impulse definition is decided). |
+| `Multiplier_Summary.csv` M_Impact / M_4Q / M_8Q | −32.22 / −0.88 / 2.6 **identical across all 8 scenarios** | — | **Upstream artifact confirmed unusable** (2026-08-05): scenario-invariant multiplier columns (every policy scenario sets the common `GVT_ENERGY = 1` switch, so M_Impact measures that switch, not the policy). **Corrected 2026-11-06 (issue #16):** the totals do reconcile, once the labels are read correctly. The upstream multiplier chunk labels its rows one scenario off, so the row "Green Public Investment" is `Variables_GPI + Green Bonds.csv`: TotalDeltaG 104.22 is the cumulative delta of upstream's real G, (CONS_GVT + GCF_GVT + SPEND_GVTPS) at baseline prices (104.1 by our sum), and TotalDeltaGDP 250.76 its real-GDP delta (250.6). The earlier "unreproducible" reading was wrong. Superseded by `define_uk.validation.gpi_multiplier`. |
 
 Since 2026-08-05 this table is COMPUTED, not prose: `define_uk.validation.
 baseline_calibration()` recomputes every row from the cached pinned run
@@ -146,23 +150,32 @@ are annualised from the quarterly EMIS flow, 401.5 in 2024.)
 ### The 1.78 multiplier, qualified (2026-08-12)
 
 The number is reproducible and the arithmetic checks (209.9 / 118.2 =
-1.7758). What does *not* hold is reading it straight against the IMF and OBR
-figures. Three properties, all pushing the same direction, are now carried as
+1.7758). What does *not* hold is reading it straight against published
+short-horizon figures. Three properties are carried as
 `define_uk.validation.GPI_MULTIPLIER_CAVEATS` and gated hermetically by
 `tests/test_committed_artifacts.py::test_the_multiplier_caveats_travel_with_the_number`:
 
 1. **Horizon.** Ours is cumulative over the whole simulation to 2040. The
-   IMF's 1.1–1.5 and the OBR's ≈1.0 are short-horizon (impact / few-year)
-   multipliers. A long-horizon cumulative ratio is *expected* to exceed them,
-   so "1.78 vs 1.1–1.5" overstates the disagreement.
-2. **Denominator.** `SPEND_GVT` is total government spending excluding wages;
-   Table 6's components imply `OCONS_GVT + SOCB_GVT + GCF_GVT` (58.03 + 82.8
-   + 20.76 = 161.59 vs a tabulated 161.6), of which government investment —
-   the actual lever — is only 12.8%. So the denominator is an endogenous
-   aggregate: social benefits fall as the scenario cuts unemployment, which
-   shrinks it and **biases the multiplier up**. The impulse-based ratio
-   (cum ΔGDP over cum ΔGCF_GVTG) is the cleaner number and has not been
-   computed; until it is, treat 1.78 as upper-leaning.
+   OBR's ≈1.0 is a short-horizon (impact / few-year) multiplier. A
+   long-horizon cumulative ratio is *expected* to exceed it, so a direct
+   comparison overstates the disagreement.
+2. **Denominator** (corrected 2026-11-05). `SPEND_GVT` is total government
+   spending excluding wages, `OCONS_GVT + SOCB_GVT + GCF_GVT + SPEND_GVTPS`
+   (the identity holds in the cached run to CSV rounding, ≤0.13, over
+   2027–2040). Table 6's components (58.03 + 82.8 + 20.76 = 161.59 vs a
+   tabulated 161.6) omit `SPEND_GVTPS` only because it is zero at the start.
+   In the GPI + Green Bonds run the cumulative ΔSPEND_GVT of 118.2 is
+   **ΔSPEND_GVTPS +91.2** (government power-sector spending, most of the
+   impulse), ΔOCONS_GVT +21.1, ΔSOCB_GVT **+8.0** and ΔGCF_GVT −2.3 (green
+   ΔGCF_GVTG +17.0 offset by conventional ΔGCF_GVTC −19.3: the scenario
+   substitutes green for conventional public investment). The earlier text
+   said social benefits *fall*, biasing 1.78 *up*; the cached run shows
+   they rise, so that claim and "upper-leaning" are withdrawn. The direction
+   of the denominator bias against an impulse-based multiplier is not
+   established. The earlier proposed impulse ratio (cum ΔGDP / cum
+   ΔGCF_GVTG) is also withdrawn: green GCF is a small, offset share of the
+   impulse. The impulse definition (e.g. ΔSPEND_GVTPS alone, or ΔSPEND_GVTPS +
+   ΔGCF_GVTG) is an open decision; no alternative number is published here.
 3. **Closure.** Demand-led, with a Kaldor–Verdoorn productivity equation
    (Eq. (31)) that makes a demand impulse raise productivity growth
    permanently, and real GDP not held to the supply ceiling (Eq. (38)). A
@@ -170,7 +183,7 @@ figures. Three properties, all pushing the same direction, are now carried as
 
 Verdict: not a red flag about the implementation, and not a reason to
 discount the deltas — but a reason to label the number precisely wherever it
-is served, and a reason to compute the impulse-based multiplier before it is
+is served, and a reason to settle the impulse definition before it is
 compared to anyone else's.
 
 Implication for the site: even after replication passes, near-term baseline

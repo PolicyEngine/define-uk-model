@@ -5,8 +5,11 @@ of the UK economy by Dafermos, Nikolaidi and co-authors
 ([define-model.org/define-uk](https://define-model.org/define-uk/)), for the
 [PolicyEngine Macro](https://github.com/PolicyEngine/macro) suite.
 
-> **Status: baseline macro replication PASS; scenario surface gated
-> against the pinned oracle run only** (see `VALIDATION.md`). The scenario
+> **Status: partially validated** (see `VALIDATION.md`). The baseline
+> macro block reproduces the manual's Table 4 within tolerance (2025 growth
+> −0.30pp against a ±0.31pp tolerance); baseline emissions run below the
+> table, by 23% in 2040. The scenario surface is gated against the pinned
+> oracle run only: no machine-readable published scenario results exist. The scenario
 > surface is **local-only** — it reads a locally cached run of the
 > unlicensed upstream code; nothing is hosted or redistributed — and
 > **deltas-only**: baseline levels are not validated against outturns and
@@ -61,9 +64,14 @@ annualised **scenario-minus-baseline delta paths** (level and %) for
 run date), `result_type="scenario deltas"`, and mandatory caveats.
 It only ever reads the locally cached run produced by
 `define_uk.runner.run()` — it never runs R, and raises with instructions
-when no cache exists. Gated by `tests/test_scenarios.py` against the
-pinned oracle run; the published-figure comparison is still pending
-(VALIDATION.md targets 2/3).
+when no cache exists. Every result carries `sfc_check`, and two scenarios
+are refused (`StockFlowInconsistent`): the fossil-fuel ban under no forward
+guidance and under unexpected enforcement, where the cached upstream output
+breaks stock-flow consistency (net lending summed across sectors is not
+zero; the break is the power-sector valuation gap in Eq. 74, issue #17). Gated by
+`tests/test_scenarios.py` against the pinned oracle run. VALIDATION.md
+targets 2/3 are closed at the achievable ceiling, not passed: scenario
+design plus two coarse anchors from a conference version of the paper.
 
 - **Pinned upstream revision:** `846081a580a6033159d5c421632ad8f0b30d0ded`
   (`DEFINE_UK_1.1@main`, fetched 2026-08-01).
@@ -79,12 +87,17 @@ pinned oracle run; the published-figure comparison is still pending
    The unlicensed upstream code is used only as a numerical oracle; the
    implementation is AGPL-3.0 and hostable like the suite's other adapted
    models, credited to the DEFINE authors as an independent implementation
-   of their published design.
+   of their published design. **It cannot solve a scenario yet.**
+   Milestone 1 (accounting matrices) passes; milestone 2 is not passed
+   (§3.3.3 is outstanding), and eight of the eleven sector modules (§3.4)
+   are stubs. Every number this repo serves comes from the cached upstream
+   R run.
 2. **Replication gate:** reproduce the paper's headline scenario outputs
    (S1 baseline and at least two policy scenarios) and record them in
-   `VALIDATION.md` with tolerances — the same validated-replication standard
-   as [boe-var-model](https://github.com/PolicyEngine/boe-var-model) and
-   [us-hank-model](https://github.com/PolicyEngine/us-hank-model).
+   `VALIDATION.md` with tolerances, as
+   [boe-var-model](https://github.com/PolicyEngine/boe-var-model) and
+   [us-hank-model](https://github.com/PolicyEngine/us-hank-model) do for
+   their own targets (neither has validated response magnitudes).
 3. **Adapter surface:** a `define_scenario` entry point in
    `policyengine-macro` (curated levers, model-unit validation, ScoreResult
    provenance), refusing anything unreplicated.
