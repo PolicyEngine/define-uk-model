@@ -51,6 +51,22 @@
     "cum_delta_gdp_real": 250.6,
     "cum_tolerance_abs": 0.5
   },
+  "stock_flow_consistency": {
+    "source": "define_uk.scenarios.sfc_check on every Variables_*.csv of the cached pinned run; recorded 2026-11-06",
+    "redundant_equation": "LEND = sum of sectoral net lending; zero in a consistent solve",
+    "tolerance_abs": 0.01,
+    "sectoral_sum_tolerance_abs": 0.1,
+    "sectoral_sum_note": "sum of the seven LEND_* columns vs LEND over the simulation quarters; each column is printed to 4 significant figures; observed max 0.059 in consistent files",
+    "known_failures": {
+      "power_sector_regulation/no_forward_guidance/Fossil Fuel Ban": ["2035Q3", "2036Q1"],
+      "power_sector_regulation/unexpected_enforcement/Fossil Fuel Ban": ["2033Q1"]
+    }
+  },
+  "oracle_identity_residuals": {
+    "source": "tests/test_oracle.py: each registered equation evaluated on the oracle's own values for its inputs (state = quarter t, lag = t-1), simulation quarters 2023Q1-2040Q4; recorded 2026-11-06",
+    "tolerance_rel": 0.002,
+    "tolerance_note": "every input is printed to 4 significant figures (relative error up to 5e-4 each); observed max 1.4e-3 (Eq. (134) NW_PS)"
+  },
   "scenario_registry": {
     "count": 22,
     "blocks": ["gvt_investment", "housing_regulation", "power_sector_regulation", "mixed"]
