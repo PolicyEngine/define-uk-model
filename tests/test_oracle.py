@@ -159,7 +159,9 @@ ORACLE_FORMS = {
     "MC_FF": (
         ALL_FILES,
         "Timing. Eq. (82) divides by E_ELECFF at t; the oracle divides by "
-        "E_ELECFF at t-1 (reproduces to 5e-4 in every file).",
+        "E_ELECFF at t-1 (reproduces to 5e-4 in the five comparison "
+        "files; not checked in the ban solves, where the price regime "
+        "changes).",
         lambda s, l, t, f: (s["IC_FUELPS"] + s["COV_ETSPS"] * s["P_ETS"]
                          * s["EMIS_ELEC"]) / l["E_ELECFF"],
     ),
@@ -169,7 +171,10 @@ ORACLE_FORMS = {
         "MU_ELEC MC_ELEC with the same Table 5 MU_ELEC = 1.228, i.e. MU_ELEC "
         "is used as a gross mark-up factor. As printed, the price is 81% "
         "higher. The oracle's P_ELEC equals its P_ELECLR (the long-run rule "
-        "§5 calibrates and §3 never prints) in every quarter here.",
+        "§5 calibrates and §3 never prints) in every quarter of the five "
+        "comparison files, none of which reaches E_ELECMAX. In the ban "
+        "solves generation hits capacity and the price leaves this rule "
+        "(footnote 22's average-cost regime; see scenarios.SFC_TOLERANCE).",
         lambda s, l, t, f: power._MU_ELEC * s["MC_ELEC"],
     ),
     "RESTR_PS": (
