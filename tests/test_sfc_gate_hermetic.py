@@ -32,7 +32,9 @@ REFERENCE = json.loads(
 )["stock_flow_consistency"]
 NAME = "green_public_investment"
 _, _, FOLDER, LABEL, _ = scenarios._BY_NAME[NAME]
-COLUMNS = ("LEND",) + scenarios.DEFAULT_VARIABLES
+# GO_PS, GO_PSR, P_ELEC: sfc_check reads them to report the electricity
+# valuation gap (manual Eq. (74)) in failing quarters; zero gap here.
+COLUMNS = ("LEND",) + scenarios.DEFAULT_VARIABLES + ("GO_PS", "GO_PSR", "P_ELEC")
 SIM_START = 144  # 2023Q1
 
 
@@ -45,6 +47,7 @@ def _write(path: Path, *, shocked: bool, lend: dict[int, float] | None = None):
             bump = 1.0 if shocked and t >= SIM_START else 0.0
             row = [(lend or {}).get(t, 0.0)]
             row += [100.0 + bump, 50.0 - bump, 5.0, 60.0 + bump]
+            row += [10.0, 10.0, 1.0]
             w.writerow([t + 1] + row)
 
 
