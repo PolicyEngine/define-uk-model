@@ -15,7 +15,12 @@ KINDS = ("identity", "behavioural", "calibrated")
 # equation number out of every ref and assert the section is *contiguous* — a
 # ref that silently failed to parse would drop an equation out of that check
 # without failing anything. Test fixtures opt out with the TEST_REF sentinel.
-MANUAL_REF = re.compile(r"^§(\d+(?:\.\d+)*) eq\. \((\d+)\)$")
+#
+# Eqs. (397)-(401) of §3.4.7 are printed once with a sector index j; each
+# sector's instance carries an index tag, "§3.4.7 eq. (398)[NFC]", so one
+# printed equation can determine one variable per sector without a
+# duplicated ref.
+MANUAL_REF = re.compile(r"^§(\d+(?:\.\d+)*) eq\. \((\d+)\)(?:\[(\w+)\])?$")
 TEST_REF = "test fixture"
 
 
