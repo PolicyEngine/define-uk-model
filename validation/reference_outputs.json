@@ -65,7 +65,8 @@
   "oracle_identity_residuals": {
     "source": "tests/test_oracle.py: each registered equation evaluated on the oracle's own values for its inputs (state = quarter t, lag = t-1), simulation quarters 2023Q1-2040Q4; recorded 2026-11-06",
     "tolerance_rel": 0.002,
-    "tolerance_note": "every input is printed to 4 significant figures (relative error up to 5e-4 each); observed max 1.4e-3 (Eq. (134) NW_PS)"
+    "tolerance_note": "every input is printed to 4 significant figures (relative error up to 5e-4 each); observed max 1.4e-3 (Eq. (134) NW_PS)",
+    "printing_bound_note": "since 2026-11-06 an equation reproduces if |model - oracle| <= max(tolerance_rel * |oracle|, first-order propagation of 5e-4 relative rounding of every input read plus the output); this moved GOS_PS, RP_PS and NW_PS to reproduced. 12 equations carry a pinned oracle form (tests/test_oracle.py ORACLE_FORMS); prop_NFF, CR_PS, DEF_PS remain divergent"
   },
   "scenario_registry": {
     "count": 22,
