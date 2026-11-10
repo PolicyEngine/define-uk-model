@@ -52,7 +52,7 @@ sheets sum) are asserted each period, not assumed.
 | # | Slice (manual §) | Gate | Status |
 |---|------------------|------|--------|
 | 1 | Accounting core: transactions + balance-sheet matrices (§2.2), residual instruments | matrices identically satisfied on initial values (§5) | **PASS** (2026-08-04) — `model/accounting.py` + `model/calibration.py` (§5 Tables 5–6 fully transcribed); all Table 1/2 row and column identities hold on the §5 initial values within the manual's own 4-significant-figure printing precision (`tests/test_accounting.py`). One documented manual inconsistency (Table 6 LENDM_ROW omits the DIVN_ROW term of Eq. (383); overall LENDM tabulated as 5.44 where "should equal 0"): the MFI/RoW transaction columns miss LEND by ∓DIVN_ROW, pinned exactly in the tests. |
-| 2 | High-level macro + production (§3.2–3.3) | baseline GDP path vs oracle | **in progress** — §3.2, §3.3.1 and §3.3.2 landed; §3.3.3 and the oracle gate are still outstanding, so the milestone is **not** passed. See the notes below. |
+| 2 | High-level macro + production (§3.2–3.3) | baseline GDP path vs oracle | **in progress** — §3.2, §3.3.1, §3.3.2 and §3.3.3 landed and the gate is now a real solve (`tests/test_oracle.py::test_baseline_gdp_path_matches_oracle`, strict xfail): with §3.1/§3.4 held at the oracle, solved GDP is within 0.41% (empirical forms) / 0.43% (manual) every quarter, not within the 2e-3 printing tolerance. See "Scenario solver" below. |
 | 3 | Sectoral equations (§3.4.1–3.4.7) | full S1 baseline vs oracle within tolerance | pending |
 | 4 | Ecosystem block (§3.1) | emissions/energy paths vs oracle | pending |
 | 5 | Policy scenarios (regulation, green public investment, 1.1 extensions) | scenario deltas vs published figures per `VALIDATION.md` | pending |
@@ -61,6 +61,59 @@ Tolerances are set per-milestone when the first comparison runs, and recorded
 in `VALIDATION.md` alongside the replication-gate entries — the oracle
 comparison and the published-figure replication are the same standard applied
 to two references.
+
+### Whole model (2026-11-06, round 4)
+
+§3.1 (Eqs. (1)-(20)) and §3.4.1-§3.4.7 (Eqs. (159)-(401)) are implemented from
+the manual (pp. 9-13, 28-48), so every printed equation is in the registry
+(420 registrations; §3.4.7's sector-indexed Eqs. (398)-(401) carry a tag,
+`§3.4.7 eq. (398)[NFC]`). The reference path supplies only start-quarter lags
+and exogenous inputs. Each module's `MANUAL_GAPS` lists what the manual does
+not define (GOS_P, r_BOEQ, beta_dnfc, spr_psa/minr_ps, delta_rlhh, delta_jt,
+epsilon_CHHP, GCF_HHHIS, TREND_betaHH_t, GCF_GVTNFFR).
+
+Stock-flow closure is the redundant equation Σ_s LEND_s = 0, with MFIs as the
+residual sector (Eqs. (211), (213), (214), (216)). As printed it fails in the
+dividend row: Eqs. (93), (163), (313) give each holder β_j × its equity share
+of DIVP_NMFI with β's that do not sum to one, and Eq. (221) omits the RoW.
+The oracle's forms (DIVR_NFC residual, DIVR_HH over EQL_NMFI − EQN_RoW,
+DIVR_NMFI net of DIVN_RoW), with Eq. (281) SUBS_GVT = SPEND_GVTPS, close it
+to machine precision in every solved quarter (`forms="empirical"`). See
+VALIDATION.md for the baseline and shock results.
+
+The CSV alias map (`scenario.CSV_ALIASES`) was incomplete before this round:
+inputs spelt differently in the CSVs (r_IBA_PS, r_IBL_PS, r_IBL_GVT,
+OTEQL_NMFI, WS, ...) sat at Table 6 in every round-3 solved quarter.
+
+### Scenario solver (2026-11-06, round 3)
+
+`model/scenario.py::solve_path` solves the registry quarter by quarter
+(Gauss–Seidel per quarter via `solver.solve_period`, relative tolerance
+1e-10, 2,000-sweep cap; `ConvergenceError` names the quarter; a non-finite
+value raises — before this round a NaN compared false and "converged").
+(Superseded 2026-11-06 round 4, see *Whole model* below; the round-3 tests keep this closure by holding §3.1/§3.4 explicitly.) Closure is **block-exogenous**: everything the registry does not determine
+(§3.1, §3.4.1–§3.4.7) is read from a reference path (a cached oracle CSV),
+so a shock moves only §3.2–§3.3.3. `build_registry(forms="empirical")`
+swaps in the 12 oracle-derived forms of `model/empirical.py`; the default
+is the manual as printed. Inputs the CSVs do not print are recovered as
+documented in `scenario.scenario_inputs` (g_LFOBR from LF by inverting Eq.
+(39); policy switches at `power.POLICY_DEFAULTS`).
+
+Why the baseline solve does not reproduce, equation by equation:
+- Eq. (96) intercept α_0GCFPS not in Table 5 (defaulted 0): solved GCF_PSD
+  misses by >100% from 2023Q3 and the power-sector finance block (YD_PS,
+  RP_PS, DSR_PS, LEND_PS, FNW_PS) follows. Exogenising prop_NFF, CR_PS and
+  DEF_PS at the oracle does not fix it.
+- Price level 1.2% low from 2023Q1 (P, GO_P): Eq. (49) marks up last
+  quarter's UC, which the CSVs do not print, so it is seeded from Table 6.
+- Manual Eq. (84): the solved P_ELEC ends 110% above the oracle (the
+  empirical form keeps it within 0.4%).
+- Eq. (139): every Baseline file uses α_PP = 0.2748, every policy file
+  Table 5's 0.2762; baseline solves override it.
+- Σ sectoral LEND in the solve is up to 8.5 (empirical) / 48 (manual)
+  against 0.05 in the oracle: it is exactly the LEND_PS divergence, since
+  every other sector is held at the oracle. Stock-flow consistency of a
+  solve waits on §3.4.
 
 ### Milestone 2 progress
 
@@ -217,7 +270,11 @@ the two findings that matter most are about what §5 does *not* contain:
   1.7× to 4.6× as well. Whatever is wrong is wrong in the interest-bearing
   asset transfer rule, or in Table 6's sign convention for it, model-wide;
   §3.3.2 is only where we meet it first. Confirming that needs §3.4.1, §3.4.3
-  and §3.4.4, which are not implemented yet.
+  and §3.4.4, which are not implemented yet. **Resolved 2026-11-06 (round 4):**
+  with §3.4 implemented, IBATR_NFC = α_IBANFC·GO_P, IBATR_NMFI = α_IBANMFI·GO
+  and IBATR_GVT = α_IBAGVT·GO reproduce the oracle from 2023Q1 (12.58, 30.85,
+  5.371); Table 6's negatives are the 2022Q4 data row, which the rule is never
+  asked to reproduce.
 - **§5 calibrates an electricity price rule §3 never prints.** Table 5 gives
   t_ELECswitch = 153, "Time index (quarter) for the switch in the electricity
   price long-run formation rule", and Table 6 gives P_ELECLR, "Long run

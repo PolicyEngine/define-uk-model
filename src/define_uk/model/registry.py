@@ -15,7 +15,12 @@ KINDS = ("identity", "behavioural", "calibrated")
 # equation number out of every ref and assert the section is *contiguous* — a
 # ref that silently failed to parse would drop an equation out of that check
 # without failing anything. Test fixtures opt out with the TEST_REF sentinel.
-MANUAL_REF = re.compile(r"^§(\d+(?:\.\d+)*) eq\. \((\d+)\)$")
+#
+# Eqs. (397)-(401) of §3.4.7 are printed once with a sector index j; each
+# sector's instance carries an index tag, "§3.4.7 eq. (398)[NFC]", so one
+# printed equation can determine one variable per sector without a
+# duplicated ref.
+MANUAL_REF = re.compile(r"^§(\d+(?:\.\d+)*) eq\. \((\d+)\)(?:\[(\w+)\])?$")
 TEST_REF = "test fixture"
 
 
@@ -82,6 +87,23 @@ class Registry:
                     f"{equation.name}: manual_ref {equation.manual_ref!r} is "
                     f"already cited by {clash.name}"
                 )
+        self._equations[equation.name] = equation
+
+    def replace(self, equation: Equation) -> None:
+        """Swap the equation for an already-registered variable in place.
+
+        Keeps solve order and the variable's manual_ref; used only by the
+        opt-in empirical forms (``define_uk.model.empirical``), never by the
+        manual registry.
+        """
+        old = self._equations.get(equation.name)
+        if old is None:
+            raise KeyError(f"{equation.name}: no equation to replace")
+        if equation.manual_ref != old.manual_ref:
+            raise ValueError(
+                f"{equation.name}: a replacement must keep manual_ref "
+                f"{old.manual_ref!r}"
+            )
         self._equations[equation.name] = equation
 
     def __iter__(self) -> Iterator[Equation]:

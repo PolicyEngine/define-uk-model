@@ -6,10 +6,12 @@ presents as meaningful (VALIDATION.md).
 
 Sign-sanity notes (grounded in the cached numbers, not priors): every
 policy scenario REDUCES emissions relative to baseline by 2030 and beyond.
-Green public investment DEPRESSES real GDP slightly in the first years
-(delta -1.125 in 2026) before turning strongly positive (+4.08 in 2030,
-+7.75 in 2035) — the naive "raises GDP immediately" prior is false in the
-cached run and is gated as observed. Housing regulation is contractionary
+Green public investment shows real GDP slightly BELOW baseline in the first
+years (delta -1.125 in 2026) before turning strongly positive (+4.08 in 2030,
++7.75 in 2035). The 2023-26 part is not the policy: no switch acts before
+2027Q1 and every scenario carries the same -1.125, the effect of the
+Baseline's lower alpha_PP (test_alpha_pp_confound.py). It is gated as
+observed. Housing regulation is contractionary
 for GDP throughout (-1.6 in 2030, -2.3 in 2035) while cutting emissions.
 """
 
@@ -34,6 +36,13 @@ needs_cache = pytest.mark.skipif(
 )
 
 ALL_NAMES = [s["name"] for s in list_scenarios()]
+# Cached solves that break stock-flow consistency; run_scenario refuses them
+# (tests/test_scenario_sweep.py). Every other registered scenario is served.
+REFUSED = {
+    "fossil_fuel_ban__no_forward_guidance",
+    "fossil_fuel_ban__unexpected_enforcement",
+}
+SERVED = [n for n in ALL_NAMES if n not in REFUSED]
 
 
 def test_registry_shape():
@@ -56,7 +65,7 @@ def test_unknown_scenario_raises():
 
 
 @needs_cache
-@pytest.mark.parametrize("name", ALL_NAMES)
+@pytest.mark.parametrize("name", SERVED)
 def test_deltas_finite_and_framed(name):
     r = run_scenario(name)
     assert r["result_type"] == "scenario deltas"
@@ -149,7 +158,7 @@ def test_sign_sanity_housing_regulation():
 
 @needs_cache
 def test_sign_sanity_emissions_fall_everywhere_by_2035():
-    for name in ALL_NAMES:
+    for name in SERVED:
         assert _delta(name, "EMIS", 2035) < 0, name
 
 
@@ -189,3 +198,14 @@ _PINNED_RTOL = _REF["pinned_scenario_deltas"]["tolerance"]["rel"]
 @pytest.mark.parametrize("name,var,year,value", PINNED)
 def test_pinned_delta_points(name, var, year, value):
     assert _delta(name, var, year) == pytest.approx(value, rel=_PINNED_RTOL)
+
+
+def test_every_default_variable_states_its_units():
+    """Hermetic: delta_level is an annual mean of QUARTERLY values, so an
+    EMIS level read as MtCO2e/yr is wrong by a factor of 4 unless the
+    result says so."""
+    from define_uk import scenarios
+    for var in scenarios.DEFAULT_VARIABLES:
+        assert var in scenarios.VARIABLE_UNITS, var
+    assert "by 4" in scenarios.VARIABLE_UNITS["EMIS"]
+    assert "percentage points" in scenarios.VARIABLE_UNITS["UPLOT"]

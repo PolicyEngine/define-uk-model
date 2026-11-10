@@ -113,17 +113,22 @@ def test_reference_gpi_multiplier_is_consistent(ref):
 def test_the_multiplier_caveats_travel_with_the_number():
     """1.78 must never be served as like-for-like against IMF/OBR figures.
 
-    Two properties of our definition push it up relative to the published
-    comparators — a full-simulation cumulative horizon against their
-    short-horizon multipliers, and an endogenous denominator (SPEND_GVT
-    includes social benefits, which fall as the scenario cuts unemployment)
-    rather than the policy impulse. Hermetic, because the caveats are
-    prose and would otherwise be the easiest thing in the gate to lose.
+    Two properties of our definition separate it from the published
+    comparators: a full-simulation cumulative horizon against their
+    short-horizon multipliers (pushes it up), and a denominator that mixes
+    the policy impulse (mostly SPEND_GVTPS) with endogenous spending that
+    rises in the scenario (direction not established). Hermetic, because the
+    caveats are prose and would otherwise be the easiest thing in the gate
+    to lose.
     """
     caveats = " ".join(validation.GPI_MULTIPLIER_CAVEATS).lower()
     for needle in ("cumulative", "endogenous", "impulse", "demand-led",
-                   "not like-for-", "spend_gvt"):
+                   "not like-for-", "spend_gvt", "spend_gvtps"):
         assert needle in caveats, needle
+    # The withdrawn claims must not come back.
+    assert "upper-leaning estimate" not in caveats
+    assert "biases the ratio up" not in caveats
+    assert "imf_green_spending_multiplier" not in str(validation.gpi_multiplier.__code__.co_consts)
 
     # The decomposition the denominator caveat rests on, checked rather than
     # asserted: Table 6's own components sum to the tabulated SPEND_GVT.
@@ -131,9 +136,8 @@ def test_the_multiplier_caveats_travel_with_the_number():
     assert v["OCONS_GVT"] + v["SOCB_GVT"] + v["GCF_GVT"] == pytest.approx(
         v["SPEND_GVT"], rel=1e-3
     )
-    # Government investment — the actual green-investment lever — is an
-    # eighth of it, so the rest of the denominator is free to move
-    # endogenously.
+    # Government investment is an eighth of it at the start. (In the GPI run
+    # the impulse is mostly SPEND_GVTPS, which is zero in Table 6.)
     assert v["GCF_GVT"] / v["SPEND_GVT"] == pytest.approx(0.128, rel=1e-2)
 
 

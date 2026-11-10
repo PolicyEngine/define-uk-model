@@ -57,6 +57,11 @@ def test_manual_ref_must_be_a_parseable_citation():
 
     ok = Equation("X", "§3.3.2 eq. (84)", "identity", lambda s, l: 0.0)
     assert ok.section == "§3.3.2" and ok.number == 84
+    # A sector index tag (§3.4.7's Eqs. (398)-(401)) parses to the same number.
+    tagged = Equation("X", "§3.4.7 eq. (398)[NFC]", "identity", lambda s, l: 0.0)
+    assert tagged.section == "§3.4.7" and tagged.number == 398
+    with pytest.raises(ValueError, match="manual_ref"):
+        Equation("X", "§3.4.7 eq. (398)[]", "identity", lambda s, l: 0.0)
 
 
 def test_registry_rejects_two_equations_citing_the_same_manual_equation():
@@ -83,19 +88,24 @@ def test_every_registered_equation_has_a_parseable_unique_citation():
 
 
 def test_full_registry_builds_from_every_sector_module():
-    """Every sector module registers cleanly; the count grows per milestone.
+    """Every sector module registers cleanly; the count is exact.
 
-    Milestone 2 has landed §3.2 (Eqs. 21-43, 23 equations), §3.3.1
-    (Eqs. 44-70, 27 equations) and §3.3.2 (Eqs. 71-138, 68 equations).
-    §3.3.3 and the remaining sector modules are still stubs — update this as
-    each slice lands, and keep it exact rather than a lower bound: a
+    Since 2026-11-06 every printed equation (1)-(401) is registered: §3.1
+    (Eqs. 1-20), §3.2 (21-43), §3.3.1 (44-70), §3.3.2 (71-138), §3.3.3
+    (139-158) and §3.4.1-§3.4.7 (159-401). §3.4.7's sector-indexed Eqs.
+    (398)-(401) register once per sector (index tag "[NFC]" etc.) and Eq.
+    (397) also carries r_BOEQ (tag "[Q]", returns.MANUAL_GAPS), so 401
+    printed equations give 420 registrations. Keep it exact: a
     silently-dropped `register()` call should fail here, not pass.
     """
     registry = build_registry()
-    assert len(registry) == 23 + 27 + 68
+    assert len(registry) == 401 + 19
 
     sections = {eq.manual_ref.split(" eq.")[0] for eq in registry}
-    assert sections == {"§3.2", "§3.3.1", "§3.3.2"}
+    assert sections == {"§3.1.1", "§3.1.2", "§3.1.3", "§3.2", "§3.3.1",
+                        "§3.3.2", "§3.3.3", "§3.4.1", "§3.4.2", "§3.4.3",
+                        "§3.4.4", "§3.4.5", "§3.4.6", "§3.4.7"}
+    assert sorted({eq.number for eq in registry}) == list(range(1, 402))
 
     # No sector module may register the same endogenous variable twice; the
     # Registry raises on collision, so reaching here already proves it.
