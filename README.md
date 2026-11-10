@@ -87,11 +87,17 @@ design plus two coarse anchors from a conference version of the paper.
    The unlicensed upstream code is used only as a numerical oracle; the
    implementation is AGPL-3.0 and hostable like the suite's other adapted
    models, credited to the DEFINE authors as an independent implementation
-   of their published design. **It cannot solve a scenario yet.**
-   Milestone 1 (accounting matrices) passes; milestone 2 is not passed
-   (§3.3.3 is outstanding), and eight of the eleven sector modules (§3.4)
-   are stubs. Every number this repo serves comes from the cached upstream
-   R run.
+   of their published design. Every printed equation is now registered
+   and the whole model solves, but **it does not reproduce the oracle**:
+   baseline GDP is up to 44% below the oracle by 2040 (15 equations
+   undiagnosed, mainly the equity revaluations), and its green public
+   investment multiplier is 1.57 against the oracle's 2.30. Milestone 1
+   (accounting matrices) passes; milestone 2 is not passed. Every number
+   this repo serves comes from the cached upstream R run. That run has its
+   own caveat: its Baseline files use a different α_PP (0.2748) from its
+   policy files (0.2762), so every published policy-minus-baseline delta
+   carries part of that change; removing it moves the GPI multiplier from
+   1.78 to about 1.73–1.75 (VALIDATION.md, round 5; issue #20).
 2. **Replication gate:** reproduce the paper's headline scenario outputs
    (S1 baseline and at least two policy scenarios) and record them in
    `VALIDATION.md` with tolerances, as
