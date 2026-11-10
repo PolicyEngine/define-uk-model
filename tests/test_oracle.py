@@ -47,6 +47,7 @@ from pathlib import Path
 
 import pytest
 
+from define_uk.model.calibration import PARAMETERS
 from define_uk.model.sectors import build_registry, power
 from define_uk.scenarios import _TABLES, _run_root
 
@@ -88,6 +89,57 @@ REPRODUCED = {
     "LEND_PS", "IBLTR_PS", "MC_ELEC", "DIVP_PS", "IBATR_PS", "EQATR_PS",
     "FA_PS", "FL_PS", "K_PSR", "K_PS", "K_PSFF", "K_PSNFF", "LEV_PS",
     "GOS_PS", "RP_PS", "NW_PS",
+    # §3.3.3 input-output block (2026-11-06, round 3). alpha_PP, Eq. (139),
+    # only in the policy files: see ORACLE_FORMS.
+    "alpha_PSP", "alpha_PSPS", "alpha_OPPS", "alpha_FUELPS", "alpha_PPS",
+    "IC_PSPR", "IC_FUELPSR", "IC_OPPSR", "IC_PP", "IC_PSP", "IC_PSPS",
+    "IC_PPS", "IC_FUELPS", "IC_OPPS", "det_IA", "L_PP", "L_PPS", "L_PSP",
+    "L_PSPS",
+    # §3.1 and §3.4.1-§3.4.7 (2026-11-06, round 4): reproduce within the
+    # printing bound in all five comparison files.
+    "E", "E_P", "E_H", "E_ELEC", "E_ELECMAX", "E_ELECFF", "E_ELECP",
+    "E_ELECH", "E_NELEC", "E_NELECP", "E_NELECH", "EMIS", "EMIS_NELEC",
+    "EMIS_ELEC", "epsilon", "omega_NELEC", "omega_ELEC", "YP_NFC",
+    "INTR_NFC", "INTP_NFC", "YD_NFC", "DIVP_NFC", "RP_NFC", "GCF_NFC",
+    "GCF_NFCG", "GCF_NFCC", "GCF_NFCR", "GCF_NFCGR", "GCF_NFCCR",
+    "LENDM_NFC", "DISC_NFC", "LEND_NFC", "IBATR_NFC", "EQATR_NFC",
+    "IBLTR_NFC", "RESTR_NFC", "OTIBA_NFC", "OTEQA_NFC", "OTIBL_NFC",
+    "OTRES_NFC", "IBA_NFC", "EQA_NFC", "IBL_NFC", "EQL_NFC", "FA_NFC",
+    "FL_NFC", "FNWM_NFC", "RES_NFC", "FNW_NFC", "K_NFCCR", "K_NFCGR",
+    "K_NFCR", "K_NFC", "K_NFCC", "K_NFCG", "NW_NFC", "LEV_NFC", "ILLIQ_NFC",
+    "DSR_NFC", "CR_NFC", "LENDM_MFI", "INTR_MFI", "INTP_MFI", "DISC_MFI",
+    "LEND_MFI", "FA_MFI", "FL_MFI", "FNWM_MFI", "RES_MFI", "FNW_MFI",
+    "YD_NMFI", "INTP_NMFI", "DIVP_NMFI", "PENSR", "INSR", "SOCC_NMFI",
+    "SOCB_NMFI", "PENS_ADJ", "LENDM_NMFI", "DISC_NMFI", "LEND_NMFI",
+    "IBATR_NMFI", "EQLTR_NMFI", "EQATR_NMFI", "RESTR_NMFI", "OTIBA_NMFI",
+    "OTIBL_NMFI", "OTRES_NMFI", "OTEQA_NMFI", "OTPENS", "OTINS", "IBA_NMFI",
+    "EQA_NMFI", "IBL_NMFI", "EQL_NMFI", "FL_NMFI", "FNWM_NMFI", "RES_NMFI",
+    "FNW_NMFI", "YD_GVT", "ITAX", "ITAX_P", "ITAX_NELEC", "ITAXR_P",
+    "ITAX_PS", "ITAXR_PS", "P_ETS", "INTAX", "INTAX_NFC", "INTAX_HH",
+    "INTAXR_NFC", "INTAXR_HH", "INTR_GVT", "SOCC_GVT", "SOCCR_GVT",
+    "CONS_GVT", "OCONS_GVT", "beta_gvt", "GCF_GVTG", "GCF_GVTC",
+    "CONS_GVTR", "GCF_GVTR", "GCF_GVTGR", "GCF_GVTCR", "DISC_GVT",
+    "LEND_GVT", "IBATR_GVT", "IBLTR_GVT_MFI", "IBLTR_GVT_NMFI",
+    "IBLTR_GVT_ROW", "RESTR_GVT", "OTIBA_GVT", "OTIBL_GVT", "OTRES_GVT",
+    "IBA_GVT", "IBL_GVT", "IBL_GVT_MFI", "IBL_GVT_NMFI", "IBL_GVT_ROW",
+    "FA_GVT", "FNWM_GVT", "RES_GVT", "FNW_GVT", "K_GVTCR", "K_GVTGR",
+    "K_GVTR", "K_GVT", "K_GVTC", "K_GVTG", "NW_GVT", "YP_HH", "INTR_HH",
+    "INTP_HH", "YD_HH", "SOCC", "SOCB", "CONS_HH", "CONS_HHPR", "CONS_HHPS",
+    "CONS_HHPSR", "SAV_HH", "GCF_HHHI", "GCF_HHR", "GCF_HHNBR",
+    "GCF_HHHINR", "beta_GCFHH", "GCF_HHHIEER", "DISC_HH", "LEND_HH",
+    "IBATR_HH", "EQATR_HH", "PENSTR", "INSTR_", "IBLTR_HH", "RESTR_HH",
+    "OTIBA_HH", "OTIBL_HH", "OTRES_HH", "IBA_HH", "EQA_HH", "PENS", "INS",
+    "IBL_HH", "FA_HH", "FL_HH", "FNWM_HH", "RES_HH", "FNW_HH", "H", "HB",
+    "H_I", "H_EN", "H_EE", "HVAL", "PH", "NW_HH", "YP_ROW", "DY", "ROW_D",
+    "IMP", "EXP", "ROW_DR", "IMP_R", "EXP_R", "ER", "PF", "PE", "PI",
+    "IADJ", "REER", "INTN_ROW", "DIVN_ROW", "LENDM_ROW", "DISC_ROW",
+    "LEND_ROW", "IBNTR_ROW", "EQNTR_ROW", "RESTR_ROW", "OTIBA_ROW",
+    "OTEQN_ROW", "OTRES_ROW", "IBN_ROW", "EQN_ROW", "FNWM_ROW", "RES_ROW",
+    "FNW_ROW", "r_BOEQ", "r_BOE", "r_IBA_NFC", "r_IBA_NFCLR", "r_IBA_PS",
+    "r_IBA_NMFI", "r_IBA_NMFILR", "r_IBA_GVT", "r_IBA_GVTLR", "r_IBA_HH",
+    "r_IBA_HHLR", "r_IBN_ROW", "r_IBN_ROWLR", "r_IBL_NFC", "r_IBL_NFCLR",
+    "r_IBL_PS", "r_IBL_PSLR", "r_IBL_NMFI", "r_IBL_GVT", "r_IBL_HH",
+    "r_IBL_HHLR",
 }
 
 ALL_FILES = frozenset(ORACLE_FILES)
@@ -95,6 +147,10 @@ _EQ23 = next(e for e in build_registry() if e.name == "GCF")
 _SUBSIDY_FILES = ALL_FILES - {"gvt_investment/Variables_GPI + Green Bonds.csv"}
 _BAN_FILE = "mixed/mutual_trust/Variables_Both Regulations + Subsidies.csv"
 _BAN_FROM = 180  # 2032Q1: first quarter with zero desired fossil investment
+_BASELINE_FILE = "gvt_investment/Variables_Baseline.csv"
+# Eq. (139)'s alpha_PP in the run's Baseline files (all 7 print 0.2748 in
+# every simulated quarter); every policy file prints Table 5's 0.2762.
+ALPHA_PP_BASELINE_RUN = 0.2748
 
 # Equations where the oracle departs from the manual as printed, with the
 # form the oracle's numbers do follow. Our registry keeps the manual form
@@ -191,6 +247,32 @@ ORACLE_FORMS = {
         "output, which moves with the scenario.",
         lambda s, l, t, f: s["GO_PS"] / s["GO"] * s["EQATR_NMFI"],
     ),
+    "theta_P": (
+        ALL_FILES,
+        "Eq. (18) prints e^{-kappa3 KPG/KPC}, which gives theta_P < 0 "
+        "(-0.23 at Table 6, tabulated 0.171); the oracle uses e^{+kappa3 ...}.",
+        lambda s, l, t, f: 1.0 - (1.0 + PARAMETERS["pi3"]) / (
+            1.0 + PARAMETERS["pi3"] * math.exp(PARAMETERS["kappa3"]
+                                               * l["K_PG"] / l["K_PC"])),
+    ),
+    # Dividend closure (round 4): see empirical.py.
+    "DIVR_NFC": (
+        ALL_FILES,
+        "Eq. (163): the oracle's DIVR_NFC is the residual DIVP_NMFI - "
+        "DIVR_HH - DIVR_PS (beta_dnfc is not in Table 5).",
+        lambda s, l, t, f: s["DIVP_NMFI"] - s["DIVR_HH"] - s["DIVR_PS"],
+    ),
+    "DIVR_HH": (
+        ALL_FILES,
+        "Eq. (313) divides by EQL_NMFI; the oracle by EQL_NMFI - EQN_RoW.",
+        lambda s, l, t, f: PARAMETERS["beta_dhh"] * s["EQA_HH"]
+        / (s["EQL_NMFI"] - s["EQN_ROW"]) * s["DIVP_NMFI"],
+    ),
+    "DIVR_NMFI": (
+        ALL_FILES,
+        "Eq. (221) omits the RoW; the oracle's NMFIs pay its net dividends.",
+        lambda s, l, t, f: s["DIVP_NFC"] + s["DIVP_PS"] - s["DIVN_ROW"],
+    ),
     "DIVR_PS": (
         ALL_FILES,
         "Eq. (93) divides by EQL_NMFI; the oracle divides by EQL_NMFI - "
@@ -199,6 +281,17 @@ ORACLE_FORMS = {
         / (s["EQL_NMFI"] - s["EQN_RoW"]) * s["DIVP_NMFI"],
     ),
 }
+
+# Not a form but a coefficient: Eq. (139) sets alpha_PP to Table 5's
+# alpha_PPLR = 0.2762, which every policy file prints, while all seven
+# Baseline files print 0.2748 from 2023Q1. Policy-minus-baseline deltas
+# therefore also carry a 0.5% change in production's own-input coefficient.
+ORACLE_FORMS["alpha_PP"] = (
+    {_BASELINE_FILE},
+    "Eq. (139): the run's Baseline files use alpha_PP = 0.2748, not Table "
+    "5's alpha_PPLR = 0.2762 (which every policy file uses).",
+    lambda s, l, t, f: ALPHA_PP_BASELINE_RUN if f == _BASELINE_FILE else 0.2762,
+)
 
 # Still diverge in at least one file, and the oracle form is not known.
 # value = why
@@ -226,6 +319,54 @@ NOT_EVALUABLE = {
 }
 
 
+# §3.1 / §3.4 (2026-11-06, round 4). Forms not diagnosed unless stated.
+_GPI = "only in GPI + Green Bonds: the green-bond gilt stock IBL_GVTNMFIG " \
+       "(and its rate r_IBLGVTNMFIG, OT_IBLGVTNMFIG) has no manual equation"
+_HOUSING = "only in the two housing-subsidy files: the retrofit subsidy " \
+           "(SUBS_HH, lower C_HIENR/C_HIEER) is a policy instrument the " \
+           "manual's Eqs. (325), (331)-(334), (362)-(363) do not print"
+DIVERGENT.update({
+    "E_ELECNFF": "Eq. (6): only in GPI + Green Bonds, the one file with "
+                 "government non-fossil capacity K_GVTNFFR > 0. Eq. (5) "
+                 "counts it in capacity; Eq. (6)'s cap prints only "
+                 "CF_NFF K_PSNFFR.",
+    "CF_NFF": "Eq. (17): matches at 2023 (0.4%) but drifts to 0.5 (CF_min) "
+              "while the oracle floors at 0.6; median miss 12%.",
+    "GCF_NFCD": "Eq. (166): 3% at 2023Q1, 0.4% median.",
+    "beta_nfc": "Eq. (168): within 0.5%, 2x the printing bound.",
+    "EQLTR_NFC": "Eq. (179): (1 - theta_psb) EQATR_NMFI is ~2% low "
+                 "throughout; the oracle's PS share is GO_PS/GO "
+                 "(ORACLE_FORMS EQLTR_PS), so the NFC share is 1 - GO_PS/GO.",
+    "OTEQL_NFC": "Eq. (184): as printed DIVP_NFC/(r_IBL_GVT + beta_EQLNFC) - "
+                 "EQL_NFC_{t-1} is -1460 against +5; the equity-valuation "
+                 "form differs (cf. power-sector Eq. (113)).",
+    "DEF_NFC": "Eq. (186): within 1.5% (exponential of a printed lag).",
+    "INTR_NMFI": _GPI, "IBLTR_NMFI": _GPI, "FA_NMFI": _GPI,
+    "INTP_GVT": _GPI, "IBLTR_GVT": _GPI, "FL_GVT": _GPI,
+    "OTEQL_NMFI": "Eq. (240): same equity-valuation form gap as Eq. (184); "
+                  "the oracle prints 0 in some quarters.",
+    "SOCB_GVT": "Eq. (269): 3.3% low in every quarter (constant level gap).",
+    "CONS_HHP": "Eq. (318): 2% median, 4% max one-step miss. epsilon_CHHP is "
+                "not tabulated (households.MANUAL_GAPS, alpha3_CHHP read).",
+    "GCF_HHNB": "Eq. (324): 1% at 2023Q1, 0.3% median.",
+    "OTEQA_HH": "Eq. (344): the oracle prints OT_EQAHH = 0 in some quarters "
+                "where delta_EQAHH EQA_HH is not 0.",
+    "GCF_HH": _HOUSING, "GCF_HHHIR": _HOUSING, "GCF_HHHIER": _HOUSING,
+    "GCF_HHHIENR": _HOUSING, "LENDM_HH": _HOUSING, "CHI_ENR": _HOUSING,
+    "CHI_EER": _HOUSING,
+    "r_IBA_PSLR": "Eq. (399): spr_psa and minr_ps are not in Table 5 "
+                  "(returns.MANUAL_GAPS); held at its lag.",
+    "r_IBL_NMFILR": "Eq. (401): the undefined delta_jt (returns.MANUAL_GAPS) "
+                    "read as delta_IBLNMFI misses by 30%.",
+    "r_IBL_GVTLR": "Eq. (401): delta_jt read as delta_IBLGVT misses by 10%.",
+})
+NOT_EVALUABLE |= {
+    # Inputs the CSVs do not print: GCF_GVTBASE (Eq. (272)), GCF_GVTNFFR
+    # (Eq. (276)), SUBS_GVT (Eq. (281)).
+    "GCF_GVT", "K_GVTNFFR", "LENDM_GVT",
+}
+
+
 def _cached_run_available() -> bool:
     try:
         _run_root()
@@ -247,11 +388,26 @@ def _load(rel: str) -> list[dict[str, float]]:
     path = _run_root() / _TABLES / rel
     with path.open() as fh:
         rows = list(csv.DictReader(fh))
-    return [
+    data = [
         {k: (float(v) if v not in ("", "NA") else math.nan)
          for k, v in r.items() if k}
         for r in rows
     ]
+    # §3.1/§3.4 equations use the manual §5 Table 6 spelling; add it beside
+    # the CSV spelling (scenario.CSV_ALIASES), plus the two-quarter lags and
+    # world nominal demand (Eq. (369)) the CSVs do not print.
+    from define_uk.model.scenario import CSV_ALIASES
+    for t, r in enumerate(data):
+        for csv_name, name in CSV_ALIASES.items():
+            if csv_name in r and name not in r:
+                r[name] = r[csv_name]
+        if t > 1:
+            for name in ("K_NFC", "GCF_HHNB"):
+                r[f"{name}_LAG"] = data[t - 2][name]
+        if "ROW_DR" in r and "PF" in r:
+            r.setdefault("ROW_D", r["ROW_DR"] * r["PF"])
+        r.setdefault("t_PS", float(t))
+    return data
 
 
 # Each CSV value is printed to 4 significant figures, so it carries a
@@ -392,29 +548,19 @@ def test_divergent_equations_still_diverge():
 
 @requires_cached_run
 @pytest.mark.xfail(
-    strict=True, raises=NotImplementedError,
-    reason="milestone 2: the solved GDP-path comparison is not written",
+    strict=True, raises=AssertionError,
+    reason="milestone 2: with §3.1/§3.4 held at the oracle, solved GDP is "
+    "within 0.6% but not within printing precision (price level 1.2% off "
+    "from 2023Q1; power-sector investment misses without alpha_0GCFPS)",
 )
 def test_baseline_gdp_path_matches_oracle():
-    raise NotImplementedError(
-        "solve our registry over the oracle horizon for the S1 baseline and "
-        "compare GDP paths within a tolerance recorded in VALIDATION.md"
-    )
-
-
-def test_the_oracle_gate_cannot_pass_by_accident():
-    """Runs everywhere, including CI: the gate above is still outstanding.
-
-    Milestone 2 is not passed until ``test_baseline_gdp_path_matches_oracle``
-    is a real comparison. This test is what makes the *absence* of that
-    comparison visible in a green suite — it fails the moment the registry is
-    complete enough that a reader might assume the oracle gate has run.
-    """
-    registry = build_registry()
-    assert len(registry) > 0, "sector modules register nothing"
-
-    sections = {eq.section for eq in registry}
-    assert "§3.3.3" not in sections, (
-        "§3.3.3 has landed — the oracle comparison is now the only thing "
-        "between here and milestone 2, so write it and delete this guard"
-    )
+    """The milestone-2 gate, now a real solve (2026-11-06, round 3):
+    ``define_uk.model.scenario.solve_path`` over 2023Q1-2040Q4 on the S1
+    baseline, empirical forms, Baseline-run alpha_PP, compared within TOL."""
+    from define_uk.model.scenario import load_reference, scenario_inputs, solve_path
+    ref = scenario_inputs(load_reference(_run_root() / _TABLES / _BASELINE_FILE))
+    path = solve_path(build_registry("empirical"), ref,
+                      overrides={"alpha_PP": ALPHA_PP_BASELINE_RUN})
+    worst = max(abs(path[t]["GDP"] / ref[t]["GDP"] - 1)
+                for t in range(SIM_START, len(ref)))
+    assert worst < TOL
