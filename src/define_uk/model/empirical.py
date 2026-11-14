@@ -1,6 +1,6 @@
 """Opt-in empirically derived equation forms (NOT the manual as printed).
 
-Eighteen equations where the pinned upstream run's numbers depart from the
+Nineteen equations where the pinned upstream run's numbers depart from the
 DEFINE-UK Model Manual v1.1 as printed, with the form those numbers do
 follow. Each form was found from the cached output CSVs alone (lag swaps,
 one-column and ratio searches over every printed variable; round 2 of the
@@ -9,7 +9,7 @@ one-column and ratio searches over every printed variable; round 2 of the
 source code.
 
 The default registry is the manual as printed. ``build_registry(
-forms="empirical")`` replaces these 18 equations in place (same variable,
+forms="empirical")`` replaces these 19 equations in place (same variable,
 same manual_ref, same solve order), so a solve can be run both ways and the
 difference attributed equation by equation.
 
@@ -87,6 +87,15 @@ EMPIRICAL_FORMS: dict[str, tuple[str, Callable[[State, State], float]]] = {
         "Eq. (109) with share GO_PS/GO instead of theta_psb.",
         lambda s, l: s["GO_PS"] / s["GO"] * s["EQATR_NMFI"],
     ),
+    "EQLTR_NFC": (
+        "Eq. (179) with share 1 - GO_PS/GO instead of 1 - theta_psb, the "
+        "counterpart of the Eq. (109) form: NFC and power-sector equity "
+        "issuance then sum to EQATR_NMFI, so the equity row of the balance "
+        "sheet closes. Reproduces the cached run within the printing bound "
+        "in every quarter of the 28 stock-flow-consistent files (r9, "
+        "13 Nov 2026).",
+        lambda s, l: (1.0 - s["GO_PS"] / s["GO"]) * s["EQATR_NMFI"],
+    ),
     # Found 2026-11-06 (round 4) when §3.1/§3.4 were implemented.
     "theta_P": (
         "Eq. (18) with e^{+kappa3 x}: as printed (e^{-kappa3 x}) theta_P is "
@@ -143,7 +152,7 @@ EMPIRICAL_FORMS: dict[str, tuple[str, Callable[[State, State], float]]] = {
 
 
 def apply(registry: Registry) -> None:
-    """Replace the 18 manual equations with their empirical forms in place."""
+    """Replace the 19 manual equations with their empirical forms in place."""
     by_name = {eq.name: eq for eq in registry}
     for name, (_why, func) in EMPIRICAL_FORMS.items():
         old = by_name[name]

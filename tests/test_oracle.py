@@ -247,6 +247,14 @@ ORACLE_FORMS = {
         "output, which moves with the scenario.",
         lambda s, l, t, f: s["GO_PS"] / s["GO"] * s["EQATR_NMFI"],
     ),
+    "EQLTR_NFC": (
+        ALL_FILES,
+        "Eq. (179) prints (1 - theta_psb) EQATR_NMFI, about 2% low "
+        "throughout; the oracle's NFC share is 1 - GO_PS/GO, the "
+        "counterpart of the EQLTR_PS form, so the two issuers' shares sum "
+        "to one and the equity row of the balance sheet closes.",
+        lambda s, l, t, f: (1.0 - s["GO_PS"] / s["GO"]) * s["EQATR_NMFI"],
+    ),
     "theta_P": (
         ALL_FILES,
         "Eq. (18) prints e^{-kappa3 KPG/KPC}, which gives theta_P < 0 "
@@ -334,9 +342,6 @@ DIVERGENT.update({
               "while the oracle floors at 0.6; median miss 12%.",
     "GCF_NFCD": "Eq. (166): 3% at 2023Q1, 0.4% median.",
     "beta_nfc": "Eq. (168): within 0.5%, 2x the printing bound.",
-    "EQLTR_NFC": "Eq. (179): (1 - theta_psb) EQATR_NMFI is ~2% low "
-                 "throughout; the oracle's PS share is GO_PS/GO "
-                 "(ORACLE_FORMS EQLTR_PS), so the NFC share is 1 - GO_PS/GO.",
     "OTEQL_NFC": "Eq. (184): as printed DIVP_NFC/(r_IBL_GVT + beta_EQLNFC) - "
                  "EQL_NFC_{t-1} is -1460 against +5; the equity-valuation "
                  "form differs (cf. power-sector Eq. (113)).",
