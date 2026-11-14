@@ -106,6 +106,11 @@ GPI_MULTIPLIER_CAVEATS = (
     "A multiplier above 1 over 15 years is what this closure implies rather "
     "than a symptom of an error, which is why the number is labelled and not "
     "corrected.",
+    "Parameter mismatch (issue #20): the cached Baseline uses alpha_PPLR = "
+    "0.2748 and the GPI + Green Bonds run 0.2762, so the cumulative delta "
+    "also carries that parameter change. Treating its effect after 2026 as "
+    "zero, as its 2026Q4 level, or as its 2026Q4 share of baseline gives "
+    "1.73-1.75 for the policy alone (VALIDATION.md, round 5).",
 )
 
 

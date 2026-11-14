@@ -46,6 +46,12 @@ CAVEATS = [
     "(VALIDATION.md target 1b); emission deltas share that vintage.",
     "Unlicensed upstream: results come from a locally cached run of the "
     "upstream R code at a pinned commit; nothing is redistributed.",
+    "Parameter mismatch (issue #20): the cached run's Baseline files use "
+    "alpha_PPLR = 0.2748 and every policy file 0.2762, so every "
+    "scenario-minus-baseline delta also carries that parameter change. No "
+    "policy acts before 2027Q1, so 2023-2026 deltas are that change alone "
+    "(real GDP about -0.16% of baseline in 2025-26), not policy effects; "
+    "from 2027 the two cannot be separated (VALIDATION.md, round 5).",
 ]
 
 _TABLES = "output/tables"

@@ -139,7 +139,7 @@ publishes baseline values, which already diverge from officials in places:
 | Labour force, 2025 | 35.97m | ONS ≈ 34–35m | Slightly high. |
 | Total emissions, 2025 | 407 MtCO2e/yr | UK territorial GHG: 384 (2023), ≈ 371 provisional (2024), DESNZ | Above the actuals it should start from. |
 | Emissions, 2030 | 382 MtCO2e/yr | NDC path (68% below 1990 ≈ 260); NESO current-policy | Manual itself notes it "falls significantly short" of the NDC — by design (current-policies baseline). |
-| Green public investment cumulative multiplier | **1.78** by our own computation (cum ΔGDP 209.9 / cum ΔSPEND_GVT 118.2, nominal, full simulation; `define_uk.validation.gpi_multiplier`, pinned in `tests/test_validation.py`) | OBR capital-spending impact multiplier ≈ 1.0 (an IMF "1.1–1.5, Batini et al. 2021" comparator was withdrawn on 2026-08-13: no such publication could be located) | Above the comparator, but **not like-for-like** — see the three caveats below. Defensible as what this closure implies; not defensible as a direct comparison. The previously quoted ≈2.4 is the upstream table's real/real ratio (TotalDeltaGDP 250.76 / TotalDeltaG 104.22). It is not quoted here: its row label is shifted by one, and it uses a different impulse and real rather than nominal values (issue #16, where the impulse definition is decided). |
+| Green public investment cumulative multiplier | **1.78** by our own computation (cum ΔGDP 209.9 / cum ΔSPEND_GVT 118.2, nominal, full simulation; `define_uk.validation.gpi_multiplier`, pinned in `tests/test_validation.py`) | OBR capital-spending impact multiplier ≈ 1.0 (an IMF "1.1–1.5, Batini et al. 2021" comparator was withdrawn on 2026-08-13: no such publication could be located) | Above the comparator, but **not like-for-like** — see the four caveats below. Defensible as what this closure implies; not defensible as a direct comparison. The previously quoted ≈2.4 is the upstream table's real/real ratio (TotalDeltaGDP 250.76 / TotalDeltaG 104.22). It is not quoted here: its row label is shifted by one, and it uses a different impulse and real rather than nominal values (issue #16, where the impulse definition is decided). |
 | `Multiplier_Summary.csv` M_Impact / M_4Q / M_8Q | −32.22 / −0.88 / 2.6 **identical across all 8 scenarios** | — | **Upstream artifact confirmed unusable** (2026-08-05): scenario-invariant multiplier columns (every policy scenario sets the common `GVT_ENERGY = 1` switch, so M_Impact measures that switch, not the policy). **Corrected 2026-11-06 (issue #16):** the totals do reconcile, once the labels are read correctly. The upstream multiplier chunk labels its rows one scenario off, so the row "Green Public Investment" is `Variables_GPI + Green Bonds.csv`: TotalDeltaG 104.22 is the cumulative delta of upstream's real G, (CONS_GVT + GCF_GVT + SPEND_GVTPS) at baseline prices (104.1 by our sum), and TotalDeltaGDP 250.76 its real-GDP delta (250.6). The earlier "unreproducible" reading was wrong. Superseded by `define_uk.validation.gpi_multiplier`. |
 
 Since 2026-08-05 this table is COMPUTED, not prose: `define_uk.validation.
@@ -155,7 +155,7 @@ are annualised from the quarterly EMIS flow, 401.5 in 2024.)
 
 The number is reproducible and the arithmetic checks (209.9 / 118.2 =
 1.7758). What does *not* hold is reading it straight against published
-short-horizon figures. Three properties are carried as
+short-horizon figures. Four properties are carried as
 `define_uk.validation.GPI_MULTIPLIER_CAVEATS` and gated hermetically by
 `tests/test_committed_artifacts.py::test_the_multiplier_caveats_travel_with_the_number`:
 
@@ -184,6 +184,12 @@ short-horizon figures. Three properties are carried as
    (Eq. (31)) that makes a demand impulse raise productivity growth
    permanently, and real GDP not held to the supply ceiling (Eq. (38)). A
    multiplier above 1 over fifteen years is what this closure *implies*.
+4. **Parameter mismatch** (added 2026-11-13, issue #20). The cached Baseline
+   uses α_PPLR = 0.2748 and the GPI + Green Bonds run 0.2762, so 1.78 also
+   carries that parameter change; the policy alone gives 1.73–1.75 (round 5).
+   The same caveat now travels with every served scenario result
+   (`define_uk.scenarios.CAVEATS`), gated by
+   `tests/test_committed_artifacts.py::test_the_alpha_pp_mismatch_travels_with_every_served_number`.
 
 Verdict: not a red flag about the implementation, and not a reason to
 discount the deltas — but a reason to label the number precisely wherever it
