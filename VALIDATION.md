@@ -186,7 +186,9 @@ short-horizon figures. Four properties are carried as
    multiplier above 1 over fifteen years is what this closure *implies*.
 4. **Parameter mismatch** (added 2026-11-13, issue #20). The cached Baseline
    uses α_PPLR = 0.2748 and the GPI + Green Bonds run 0.2762, so 1.78 also
-   carries that parameter change; the policy alone gives 1.73–1.75 (round 5).
+   carries that parameter change. The policy effect alone is not observed after
+   2026; extrapolating the α_PP effect as zero, its 2026Q4 level or its 2026Q4
+   share of baseline gives 1.73–1.75 (round 5).
    The same caveat now travels with every served scenario result
    (`define_uk.scenarios.CAVEATS`), gated by
    `tests/test_committed_artifacts.py::test_the_alpha_pp_mismatch_travels_with_every_served_number`.

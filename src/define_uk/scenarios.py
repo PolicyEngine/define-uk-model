@@ -50,7 +50,7 @@ CAVEATS = [
     "alpha_PPLR = 0.2748 and every policy file 0.2762, so every "
     "scenario-minus-baseline delta also carries that parameter change. No "
     "policy acts before 2027Q1, so 2023-2026 deltas are that change alone "
-    "(real GDP about -0.16% of baseline in 2025-26), not policy effects; "
+    "(real GDP -0.10% to -0.17% of baseline in 2025-26), not policy effects; "
     "from 2027 the two cannot be separated (VALIDATION.md, round 5).",
 ]
 
