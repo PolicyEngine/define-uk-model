@@ -42,12 +42,17 @@
     ]
   },
   "gpi_multiplier": {
-    "source": "define_uk.validation.gpi_multiplier() on the cached pinned run; recorded 2026-08-05 (VALIDATION.md); replaces the unusable upstream Multiplier_Summary.csv",
-    "definition": "cum dGDP / cum dSPEND_GVT, nominal, full simulation, GPI + Green Bonds vs baseline",
-    "multiplier": 1.78,
+    "source": "define_uk.validation.gpi_multiplier() on the cached pinned run; recorded 2026-08-05 (VALIDATION.md); headline definition changed 2026-11-15 (issue #16, decided: option B); replaces the unusable upstream Multiplier_Summary.csv",
+    "definition": "cum dGDP / cum dSPEND_GVTPS (government power-sector spending, the policy instrument), nominal, full simulation, GPI + Green Bonds vs baseline",
+    "multiplier": 2.30,
     "multiplier_tolerance_abs": 0.01,
     "cum_delta_gdp": 209.9,
-    "cum_delta_spend": 118.2,
+    "cum_delta_spend": 91.2,
+    "secondary": {
+      "definition": "cum dGDP / cum dSPEND_GVT (total government spending excluding wages), nominal, full simulation; the headline until 2026-11-15",
+      "multiplier": 1.78,
+      "cum_delta_spend": 118.2
+    },
     "cum_delta_gdp_real": 250.6,
     "cum_tolerance_abs": 0.5
   },

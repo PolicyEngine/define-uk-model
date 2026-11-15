@@ -65,6 +65,21 @@ def test_gpi_multiplier_pinned():
     assert m["cum_delta_spend"] == pytest.approx(
         ref["cum_delta_spend"], abs=tol
     )
+    # Issue #16 (decided 2026-11-15): the headline divides by the policy
+    # instrument SPEND_GVTPS; total non-wage spending is the secondary ratio.
+    assert m["denominator"] == "SPEND_GVTPS"
+    sec = ref["secondary"]
+    assert m["secondary"]["multiplier"] == pytest.approx(
+        sec["multiplier"], abs=ref["multiplier_tolerance_abs"]
+    )
+    assert m["secondary"]["cum_delta_spend"] == pytest.approx(
+        sec["cum_delta_spend"], abs=tol
+    )
+    alt = validation.gpi_multiplier("total_spending")
+    assert alt["multiplier"] == m["secondary"]["multiplier"]
+    assert "secondary" not in alt
+    with pytest.raises(ValueError):
+        validation.gpi_multiplier("green_investment")
 
 
 def test_upstream_multiplier_table_is_flagged_unusable():
