@@ -35,7 +35,11 @@ MANUAL_GAPS = {
         "Eq. (159) reads the production module's gross operating surplus "
         "GOS_P, which no §3 equation defines (Table 6 cites a stale "
         "'Eq. (53)'). Implemented as the production column residual "
-        "GO_P - COST_P (Eq. (48) cost bill)."
+        "GO_P - COST_P (Eq. (48) cost bill). Registered as an equation "
+        "under Eq. (159) (tag GOS) since 2026-11-15, so a solved state "
+        "carries it; before that the returned path held the reference's "
+        "GOS_P (issue #24). The cached CSVs satisfy GOS_P = GO_P - COST_P "
+        "to their 4 s.f. printing (|gap| <= 1.0 on GOS_P ~400, GO_P ~2,900)."
     ),
     "beta_dnfc": (
         "Eq. (163) uses beta_dnfc, which §5 Table 5 does not list "
@@ -57,6 +61,10 @@ def register(registry: Registry) -> None:
     def add(name: str, number: int, kind: str, func) -> None:
         registry.add(Equation(name, f"§3.4.1 eq. ({number})", kind, func))
 
+    # MANUAL_GAPS["GOS_P"]: no printed equation; registered under the
+    # equation that reads it, with index tag GOS.
+    registry.add(Equation("GOS_P", "§3.4.1 eq. (159)[GOS]", "identity",
+                          lambda s, l: gos_p(s)))
     add("YP_NFC", 159, "identity",
         lambda s, l: gos_p(s) + s["INTR_NFC"] - s["INTP_NFC"])
     add("INTR_NFC", 160, "identity", lambda s, l: s["r_IBA_NFC"] * l["IBA_NFC"])

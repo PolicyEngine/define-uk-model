@@ -10,7 +10,7 @@ Clean-room implementation from the published manual (p. 48). The upstream
 R code is an output oracle only and is never read to write equations here
 (see REIMPLEMENTATION.md).
 
-Manual gaps (``MANUAL_GAPS``): r_BOEQ has no equation; spr_psa, minr_ps and
+Manual gaps (``MANUAL_GAPS``): r_BOEQ and INF_A have no equation; spr_psa, minr_ps and
 delta_rlhh are not in Table 5; the "delta_jt" of Eq. (401) is not defined.
 """
 
@@ -62,6 +62,21 @@ MANUAL_GAPS = {
         "Eq. (397) reads inflation INF; the model's inflation variable is "
         "INF_A (Table 6: annual CPI inflation)."
     ),
+    "INF_A": (
+        "No equation defines INF_A: the manual prints it only in Eq. (397) "
+        "and in Table 6 ('Free', 0.107, from ONS CPI data). Implemented as "
+        "annualised quarterly production-price inflation, "
+        "(P_P / P_P(-1))^4 - 1, the form the cached CSVs follow: within the "
+        "4 s.f. printing bound in all 2,160 file-quarters 2023Q1-2040Q4 of "
+        "the 30 cached files (worst 0.98 of the bound). The linear "
+        "4 (P_P / P_P(-1) - 1) and log forms exceed the bound in about 20 "
+        "and 26 file-quarters (up to 12x and 17x, served files included), "
+        "and the GDP deflator P in about a quarter of them (misses up to "
+        "0.17). P_E prints identical to P_P, so the "
+        "CSVs cannot tell the two apart. Before 2026-11-15 INF_A was read "
+        "from the reference path, so the Taylor rule never responded to a "
+        "shock (issue #24)."
+    ),
 }
 
 _DELTA_J = {"NFC": lambda s: s["DEF_NFC"], "PS": lambda s: s["DEF_PS"],
@@ -79,6 +94,9 @@ def register(registry: Registry) -> None:
     # MANUAL_GAPS["r_BOEQ"]: no printed equation; registered under the Taylor
     # rule it converts, with index tag Q.
     add("r_BOEQ", 397, "identity", lambda s, l: r_boeq(s, l), "Q")
+    # MANUAL_GAPS["INF_A"]: no printed equation; registered under the
+    # Taylor rule that reads it, with index tag INF.
+    add("INF_A", 397, "identity", lambda s, l: (s["P_P"] / l["P_P"]) ** 4 - 1.0, "INF")
     add("r_BOE", 397, "behavioural",
         lambda s, l: math.exp(L(l["r_BOE"]) + P["epsilon_rboe"] * (
             P["alpha_rboe"] * L(max(l["INF_A"], P["minr_boe"])) - L(l["r_BOE"]))))

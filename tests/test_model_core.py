@@ -94,12 +94,14 @@ def test_full_registry_builds_from_every_sector_module():
     (Eqs. 1-20), §3.2 (21-43), §3.3.1 (44-70), §3.3.2 (71-138), §3.3.3
     (139-158) and §3.4.1-§3.4.7 (159-401). §3.4.7's sector-indexed Eqs.
     (398)-(401) register once per sector (index tag "[NFC]" etc.) and Eq.
-    (397) also carries r_BOEQ (tag "[Q]", returns.MANUAL_GAPS), so 401
-    printed equations give 420 registrations. Keep it exact: a
+    (397) also carries r_BOEQ (tag "[Q]") and INF_A (tag "[INF]",
+    returns.MANUAL_GAPS), Eq. (257) the ITAX_PS split ("[NFF]", "[FF]",
+    government.MANUAL_GAPS) and Eq. (159) GOS_P ("[GOS]", nfc.MANUAL_GAPS),
+    so 401 printed equations give 424 registrations. Keep it exact: a
     silently-dropped `register()` call should fail here, not pass.
     """
     registry = build_registry()
-    assert len(registry) == 401 + 19
+    assert len(registry) == 401 + 23
 
     sections = {eq.manual_ref.split(" eq.")[0] for eq in registry}
     assert sections == {"§3.1.1", "§3.1.2", "§3.1.3", "§3.2", "§3.3.1",

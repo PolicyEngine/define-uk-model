@@ -156,7 +156,7 @@ EXOGENOUS_TO_SECTION = (
     "F_PR",                         # real production final demand (§3.3.1 (45))
     "L_PSP", "L_PSPS",              # Leontief inverse coefficients (§3.3.3)
     "IC_PPS", "IC_PSPS", "IC_OPPS", "IC_FUELPS",   # all §3.3.3
-    "ITAX_PS", "ITAX_PSFF", "ITAX_PSNFF",          # all §3.4.4
+    "ITAX_PS", "ITAX_PSFF", "ITAX_PSNFF",          # §3.4.4 (257)
     "P_P",                          # production deflator          (§3.3.1 (49))
     # Energy and emissions, Eqs. (77), (82), (85)-(88). All §3.1 ecosystem.
     "E_ELEC", "E_ELECFF", "E_ELECNFF", "E_ELECMAX",
