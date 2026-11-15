@@ -191,8 +191,9 @@ def test_empirical_whole_model_balance_sheet_closes_every_quarter(solved):
 
 @requires_cached_run
 def test_manual_as_printed_leaks_through_the_dividend_row(solved):
-    """As printed Σ LEND is 5.87 in 2023Q1 and grows to 72.9 by 2040Q4
-    (measured 2026-11-06): the dividend allocation does not close."""
+    """As printed Σ LEND is 5.87 in 2023Q1 and grows to 69.2 by 2040Q4
+    (72.9 before INF_A was made endogenous, issue #24; measured
+    2026-11-15): the dividend allocation does not close."""
     worst = max(abs(_sum_lend(solved["manual"], t)) for t in _SIM)
     assert 50.0 < worst < 100.0
     assert _sum_lend(solved["manual"], 144) == pytest.approx(5.87, abs=0.05)
@@ -280,6 +281,10 @@ def test_gpi_moves_the_policy_rate_through_endogenous_inflation(base, gpi, solve
     dr = [p[t]["r_BOE"] - b[t]["r_BOE"] for t in _SIM]
     oracle = [g["r_BOE"] - r["r_BOE"] for g, r in zip(gpi[144:], base[144:])]
     assert max(map(abs, dr)) > 1e-4  # 0.0 exactly before the fix
+    assert max(dr) == pytest.approx(0.00044, abs=2e-5)
+    assert min(dr) == pytest.approx(-0.00066, abs=2e-5)
+    # The oracle's delta also carries the alpha_PP mismatch (#20) and the
+    # rest of the GPI + Green Bonds policy, so only its size bounds ours.
     assert max(map(abs, dr)) <= max(map(abs, oracle))
 
 

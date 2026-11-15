@@ -39,7 +39,7 @@ MANUAL_GAPS = {
         "under Eq. (159) (tag GOS) since 2026-11-15, so a solved state "
         "carries it; before that the returned path held the reference's "
         "GOS_P (issue #24). The cached CSVs satisfy GOS_P = GO_P - COST_P "
-        "to their 4 s.f. printing (|gap| <= 0.9 on ~400)."
+        "to their 4 s.f. printing (|gap| <= 1.0 on GOS_P ~400, GO_P ~2,900)."
     ),
     "beta_dnfc": (
         "Eq. (163) uses beta_dnfc, which §5 Table 5 does not list "
