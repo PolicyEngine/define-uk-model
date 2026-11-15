@@ -141,6 +141,22 @@ def test_the_multiplier_caveats_travel_with_the_number():
     assert v["GCF_GVT"] / v["SPEND_GVT"] == pytest.approx(0.128, rel=1e-2)
 
 
+def test_the_alpha_pp_mismatch_travels_with_every_served_number():
+    """Issue #20: the cached Baseline files use alpha_PPLR = 0.2748 and every
+    policy file 0.2762, so every served delta and the 1.78 multiplier carry
+    a parameter change as well as the policy. README and VALIDATION.md said
+    so; the caveat lists that travel with the numbers did not (r9, 13 Nov
+    2026). Hermetic, like the multiplier caveats above."""
+    from define_uk import scenarios
+
+    served = " ".join(scenarios.CAVEATS).lower()
+    for needle in ("#20", "0.2748", "0.2762", "2027q1", "not policy effects"):
+        assert needle in served, needle
+    multiplier = " ".join(validation.GPI_MULTIPLIER_CAVEATS).lower()
+    for needle in ("#20", "0.2748", "0.2762", "1.73-1.75"):
+        assert needle in multiplier, needle
+
+
 # --- 2. baseline_vs_external.csv --------------------------------------------
 
 EXPECTED_CSV_COLUMNS = [
