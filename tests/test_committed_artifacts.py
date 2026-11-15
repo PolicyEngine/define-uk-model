@@ -106,12 +106,17 @@ def test_reference_gpi_multiplier_is_consistent(ref):
     assert g["cum_delta_gdp"] / g["cum_delta_spend"] == pytest.approx(
         g["multiplier"], abs=g["multiplier_tolerance_abs"]
     )
+    sec = g["secondary"]
+    assert g["cum_delta_gdp"] / sec["cum_delta_spend"] == pytest.approx(
+        sec["multiplier"], abs=g["multiplier_tolerance_abs"]
+    )
     assert 0 < g["multiplier_tolerance_abs"] <= 0.05
     assert 0 < g["cum_tolerance_abs"] <= 1.0
 
 
 def test_the_multiplier_caveats_travel_with_the_number():
-    """1.78 must never be served as like-for-like against IMF/OBR figures.
+    """2.30 (and the secondary 1.78) must never be served as like-for-like
+    against IMF/OBR figures.
 
     Two properties of our definition separate it from the published
     comparators: a full-simulation cumulative horizon against their
@@ -128,6 +133,10 @@ def test_the_multiplier_caveats_travel_with_the_number():
     # The withdrawn claims must not come back.
     assert "upper-leaning estimate" not in caveats
     assert "biases the ratio up" not in caveats
+    # Issue #16 is decided; the caveat names the headline and the secondary.
+    assert "has not been decided" not in caveats
+    for needle in ("#16", "2.30", "1.78"):
+        assert needle in caveats, needle
     assert "imf_green_spending_multiplier" not in str(validation.gpi_multiplier.__code__.co_consts)
 
     # The decomposition the denominator caveat rests on, checked rather than
@@ -153,7 +162,7 @@ def test_the_alpha_pp_mismatch_travels_with_every_served_number():
     for needle in ("#20", "0.2748", "0.2762", "2027q1", "not policy effects"):
         assert needle in served, needle
     multiplier = " ".join(validation.GPI_MULTIPLIER_CAVEATS).lower()
-    for needle in ("#20", "0.2748", "0.2762", "1.73-1.75"):
+    for needle in ("#20", "0.2748", "0.2762", "1.73-1.75", "2.08-2.25"):
         assert needle in multiplier, needle
 
 

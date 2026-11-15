@@ -93,3 +93,40 @@ def test_2023_26_deltas_are_the_alpha_pp_effect_alone():
     assert float(s[SIM_START]["GDP_R"]) - float(base[SIM_START]["GDP_R"]) == pytest.approx(3.1)
     # Mark-up calibrated on the last data row already differs (0.176 vs 0.1704).
     assert float(s[SIM_START - 1]["MU"]) - float(base[SIM_START - 1]["MU"]) == pytest.approx(-0.0056)
+
+
+@requires_cached_run
+def test_alpha_pp_range_for_both_multiplier_definitions():
+    """The policy-only range each GPI multiplier carries in its caveat.
+    After 2026 the alpha_PP effect is unobserved; extrapolate it as zero,
+    as its 2026Q4 level, or as its 2026Q4 share of baseline, in numerator
+    and denominator alike. Headline (SPEND_GVTPS, issue #16): 2.30 ->
+    2.08-2.25. Secondary (SPEND_GVT): 1.78 -> 1.73-1.75 (round 5)."""
+    gv = _tables() / "gvt_investment"
+    b = _rows(gv / "Variables_Baseline.csv")
+    s = _rows(gv / "Variables_GPI + Green Bonds.csv")
+    n = len(b)
+
+    def d(v, t):
+        return float(s[t][v]) - float(b[t][v])
+
+    def adjusted(den):
+        g = sum(d("GDP", t) for t in range(SIM_START, n))
+        x = sum(d(den, t) for t in range(SIM_START, n))
+        pg = sum(d("GDP", t) for t in range(SIM_START, POLICY_START))
+        px = sum(d(den, t) for t in range(SIM_START, POLICY_START))
+        q = POLICY_START - 1
+        sg = d("GDP", q) / float(b[q]["GDP"])
+        # SPEND_GVTPS is zero in the 2026Q4 Baseline (its delta is zero too).
+        sx = d(den, q) / float(b[q][den]) if float(b[q][den]) else 0.0
+        return [
+            (g - pg) / (x - px),
+            (g - pg - d("GDP", q) * (n - POLICY_START))
+            / (x - px - d(den, q) * (n - POLICY_START)),
+            (g - pg - sum(sg * float(b[t]["GDP"]) for t in range(POLICY_START, n)))
+            / (x - px - sum(sx * float(b[t][den]) for t in range(POLICY_START, n))),
+        ]
+
+    head, sec = adjusted("SPEND_GVTPS"), adjusted("SPEND_GVT")
+    assert (round(min(head), 2), round(max(head), 2)) == (2.08, 2.25)
+    assert (round(min(sec), 2), round(max(sec), 2)) == (1.73, 1.75)

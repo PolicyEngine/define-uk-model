@@ -100,8 +100,13 @@ design plus two coarse anchors from a conference version of the paper.
    this repo serves comes from the cached upstream R run. That run has its
    own caveat: its Baseline files use a different α_PP (0.2748) from its
    policy files (0.2762), so every published policy-minus-baseline delta
-   carries part of that change; removing it moves the GPI multiplier from
-   1.78 to about 1.73–1.75 (VALIDATION.md, round 5; issue #20).
+   carries part of that change. The served green public investment
+   multiplier is 2.30: cumulative nominal ΔGDP over cumulative
+   ΔSPEND_GVTPS, the government power-sector spending the policy switch
+   sets (issue #16, decided 2026-11-15). Per pound of total non-wage
+   government spending it is 1.78, which was the headline until then.
+   Removing the α_PP change moves them to about 2.08–2.25 and 1.73–1.75
+   (VALIDATION.md, round 5; issue #20).
 2. **Replication gate:** reproduce the paper's headline scenario outputs
    (S1 baseline and at least two policy scenarios) and record them in
    `VALIDATION.md` with tolerances, as

@@ -18,7 +18,10 @@ Two kinds of quantity live here:
   row labels are shifted by one scenario: TotalDeltaG (104.22) is upstream's
   real G for GPI + Green Bonds, a different impulse from ours (issue #16).
   So we recompute from the delta paths with an explicit, reproducible
-  definition.
+  definition. Since 2026-11-15 (issue #16, decided) the headline divides by
+  the policy instrument, government power-sector spending SPEND_GVTPS
+  (2.30); total non-wage government spending SPEND_GVT (1.78) is kept as a
+  secondary ratio.
 
 External values are pinned with source and date; update them only with a
 newer official release, never to make a comparison look better.
@@ -72,7 +75,8 @@ EXTERNAL = {
 
 # What the multiplier is and is not. Kept as a module constant so the
 # hermetic gate can assert it still travels with the number, and so nothing
-# quotes 1.78 against published multipliers without them.
+# quotes 2.30 (or the secondary 1.78) against published multipliers
+# without them.
 GPI_MULTIPLIER_CAVEATS = (
     "Horizon: this is a CUMULATIVE ratio over the whole simulation to 2040, "
     "not an impact or 1-year multiplier. Published green-spending multipliers "
@@ -84,7 +88,13 @@ GPI_MULTIPLIER_CAVEATS = (
     "(2014), a different paper reporting a different quantity (0-1, first "
     "year, advanced economies). The attribution is withdrawn rather than "
     "repaired, because an unidentifiable citation is worse than none.",
-    "Denominator: SPEND_GVT is total government spending excluding wages, "
+    "Denominator (issue #16, decided 2026-11-15): the headline 2.30 divides "
+    "by SPEND_GVTPS, government power-sector spending, which is the variable "
+    "the GPI policy switch sets; its cumulative delta is 91.2. It leaves out "
+    "the induced responses of other spending, including green public GCF "
+    "(GCF_GVTG +17.0, offset by conventional GCF_GVTC -19.3). The secondary "
+    "1.78 divides by SPEND_GVT, "
+    "total government spending excluding wages, "
     "OCONS_GVT + SOCB_GVT + GCF_GVT + SPEND_GVTPS (Table 6's components "
     "omit SPEND_GVTPS, which is zero at the start: 58.03 + 82.8 + 20.76 = "
     "161.59 against a tabulated 161.6). In the cached GPI + Green Bonds run "
@@ -99,7 +109,8 @@ GPI_MULTIPLIER_CAVEATS = (
     "fall and that 1.78 is upper-leaning; the cached run contradicts both, "
     "and both are withdrawn. cum dGDP / cum dGCF_GVTG is not a usable "
     "impulse ratio either: green GCF is a small, offset share of the "
-    "impulse. Which impulse definition to use has not been decided.",
+    "impulse. 1.78 is therefore a ratio per pound of total non-wage "
+    "spending, not an impulse multiplier.",
     "Closure: the model is demand-led with a Kaldor-Verdoorn productivity "
     "equation (Eq. (31)), so a demand impulse raises productivity growth "
     "permanently and real GDP is not held to the supply ceiling (Eq. (38)). "
@@ -110,7 +121,9 @@ GPI_MULTIPLIER_CAVEATS = (
     "0.2748 and the GPI + Green Bonds run 0.2762, so the cumulative delta "
     "also carries that parameter change. Treating its effect after 2026 as "
     "zero, as its 2026Q4 level, or as its 2026Q4 share of baseline gives "
-    "1.73-1.75 for the policy alone (VALIDATION.md, round 5).",
+    "1.73-1.75 for the policy alone (VALIDATION.md, round 5), and 2.08-2.25 "
+    "for the headline 2.30: the SPEND_GVTPS denominator has no pre-2027 "
+    "delta to offset the parameter change in the numerator.",
 )
 
 
@@ -170,21 +183,44 @@ def baseline_calibration() -> list[dict]:
     return rows
 
 
-def gpi_multiplier() -> dict:
+# Denominators for gpi_multiplier(). Issue #16 (decided 2026-11-15): the
+# headline is the impulse definition; total non-wage spending is secondary.
+MULTIPLIER_DEFINITIONS = {
+    "impulse": (
+        "SPEND_GVTPS",
+        "cum dGDP / cum dSPEND_GVTPS (government power-sector spending, the "
+        "policy instrument), nominal, full simulation",
+    ),
+    "total_spending": (
+        "SPEND_GVT",
+        "cum dGDP / cum dSPEND_GVT (total government spending excluding "
+        "wages), nominal, full simulation",
+    ),
+}
+HEADLINE_DEFINITION = "impulse"
+
+
+def gpi_multiplier(definition: str = HEADLINE_DEFINITION) -> dict:
     """Cumulative green-public-investment multiplier, computed by us.
 
-    Definition: cumulative nominal GDP delta divided by cumulative nominal
-    total government spending delta (SPEND_GVT), GPI + Green Bonds scenario
-    vs baseline, summed over the full simulation. Reported alongside the
+    Cumulative nominal GDP delta over a cumulative nominal spending delta,
+    GPI + Green Bonds scenario vs baseline, summed over the full
+    simulation. ``definition`` picks the denominator
+    (``MULTIPLIER_DEFINITIONS``): "impulse" (the headline since issue #16,
+    SPEND_GVTPS, 2.30) or "total_spending" (SPEND_GVT, 1.78). The headline
+    result carries the other as ``secondary``. Reported alongside the
     real-GDP cumulative delta so the number is reproducible from the
     scenario file alone.
 
     Read ``GPI_MULTIPLIER_CAVEATS`` before quoting the number against any
     published figure: this is a full-horizon cumulative ratio (which pushes
-    it above a short-horizon multiplier) with a denominator that mixes the
-    policy impulse with endogenous spending (direction of that bias not
-    established).
+    it above a short-horizon multiplier) under a demand-led closure, and
+    the cached run's Baseline/policy alpha_PP mismatch (issue #20) sits in
+    the numerator.
     """
+    if definition not in MULTIPLIER_DEFINITIONS:
+        raise ValueError(f"definition must be one of {sorted(MULTIPLIER_DEFINITIONS)}, "
+                         f"not {definition!r}")
     root = _run_root() / _TABLES / _BASE_FOLDER
     scen = root / "Variables_GPI + Green Bonds.csv"
     base = root / "Variables_Baseline.csv"
@@ -196,9 +232,11 @@ def gpi_multiplier() -> dict:
                    if sv is not None and bv is not None)
 
     d_gdp = cum_delta("GDP")
-    d_spend = cum_delta("SPEND_GVT")
-    return {
-        "definition": "cum dGDP / cum dSPEND_GVT, nominal, full simulation",
+    var, text = MULTIPLIER_DEFINITIONS[definition]
+    d_spend = cum_delta(var)
+    out = {
+        "definition": text,
+        "denominator": var,
         "cum_delta_gdp": round(d_gdp, 1),
         "cum_delta_spend": round(d_spend, 1),
         "multiplier": round(d_gdp / d_spend, 2),
@@ -211,10 +249,24 @@ def gpi_multiplier() -> dict:
         "caveats": GPI_MULTIPLIER_CAVEATS,
         "upstream_table_unusable": (
             "Multiplier_Summary.csv M_Impact/M_4Q/M_8Q identical across all "
-            "8 scenarios (M_Impact=-32.22); TotalDeltaG=104.22 matches no "
-            "variable's cumulative delta in the scenario file"
+            "8 scenarios (M_Impact=-32.22: the common GVT_ENERGY switch); its "
+            "row labels are shifted by one scenario, so its 'Green Public "
+            "Investment' row is GPI + Green Bonds, and TotalDeltaG=104.22 is "
+            "upstream's real G (CONS_GVT + GCF_GVT + SPEND_GVTPS at baseline "
+            "prices, 104.1 recomputed), a real/real impulse not comparable "
+            "with this nominal ratio"
         ),
     }
+    if definition == HEADLINE_DEFINITION:
+        sec_var, sec_text = MULTIPLIER_DEFINITIONS["total_spending"]
+        d_sec = cum_delta(sec_var)
+        out["secondary"] = {
+            "definition": sec_text,
+            "denominator": sec_var,
+            "cum_delta_spend": round(d_sec, 1),
+            "multiplier": round(d_gdp / d_sec, 2),
+        }
+    return out
 
 
 def write_artifact(path: str | Path) -> Path:
