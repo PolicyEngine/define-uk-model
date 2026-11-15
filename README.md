@@ -51,6 +51,12 @@ src/define_uk/
   upstream.py   # pinned-commit fetch + cache of DEFINE-model/DEFINE_UK_1.1
   runner.py     # runs the upstream Rmd scenarios via Rscript (subprocess)
   scenarios.py  # curated scenario surface over the CACHED upstream run
+  validation.py # computed validation tables and the GPI multiplier, with caveats
+  model/        # clean-room reimplementation from the Model Manual v1.1
+    registry.py, solver.py, scenario.py  # equation registry, period solver, path solver
+    accounting.py, calibration.py        # §2.2 matrices, §5 Tables 5-6
+    empirical.py                         # forms the oracle follows where the manual departs
+    sectors/                             # one module per manual §3 section
 ```
 
 ### Scenario surface (`define_uk.scenarios`)
