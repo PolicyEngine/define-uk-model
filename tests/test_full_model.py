@@ -98,7 +98,7 @@ _SIM = range(144, 216)
 # Equations whose oracle form is not known (test_oracle.DIVERGENT, plus the
 # §3.3.2 parameter gaps). Holding them at the oracle is a diagnostic of how
 # much of the baseline gap they carry, not a model mode.
-UNDIAGNOSED = ("GCF_NFCD", "EQLTR_NFC", "OTEQL_NFC", "OTEQL_NMFI", "SOCB_GVT",
+UNDIAGNOSED = ("GCF_NFCD", "OTEQL_NFC", "OTEQL_NMFI", "SOCB_GVT",
                "CONS_HHP", "OTEQA_HH", "CF_NFF", "r_IBA_PSLR", "r_IBL_NMFILR",
                "r_IBL_GVTLR", "prop_NFF", "CR_PS", "GCF_PSD", "OTEQL_PS")
 
@@ -158,6 +158,35 @@ def test_empirical_whole_model_is_stock_flow_consistent_every_quarter(solved):
     assert max(abs(_sum_lend(solved["empirical"], t)) for t in _SIM) < 1e-8
 
 
+def _fnw_spread(path):
+    """Spread of the economy-wide financial net worth Σ_s FNW_s over the
+    solved quarters, and the largest |residual| of every other financial
+    row of Table 2. Σ FNW_s is constant, not zero: the solve starts from
+    stocks the CSVs print at 4 s.f. plus Table 6 values for the
+    power-sector stocks they do not print (0.200 at Table 6)."""
+    from define_uk.model.accounting import balance_sheet_residuals
+    res = [balance_sheet_residuals(path[t]) for t in _SIM]
+    fnw = [r["totals"]["fnw_total"] for r in res]
+    eq = [r["rows"]["equity_liabilities"] for r in res]
+    other = max(abs(v) for r in res for k, v in r["rows"].items()
+                if k != "equity_liabilities")
+    return max(fnw) - min(fnw), max(eq) - min(eq), other
+
+
+@requires_cached_run
+def test_empirical_whole_model_balance_sheet_closes_every_quarter(solved):
+    """Σ LEND = 0 checks the flows only. The stocks must close too: with
+    the Eq. (109) form alone (power sector's equity share GO_PS/GO) and the
+    manual Eq. (179) (NFC share 1 - theta_psb), the two issuers' shares did
+    not sum to one and Σ FNW_s drifted from 0.2 to -18.5 by 2040Q4 through
+    the equity row (r9, 13 Nov 2026). The paired Eq. (179) form holds every
+    financial row and Σ FNW_s fixed to rounding."""
+    fnw, eq, other = _fnw_spread(solved["empirical"])
+    # Σ FNW_s sums stocks of order 1e4, so float accumulation reaches 1.2e-8;
+    # before the Eq. (179) form the spread was 18.7.
+    assert fnw < 1e-6 and eq < 1e-8 and other < 1e-8
+
+
 @requires_cached_run
 def test_manual_as_printed_leaks_through_the_dividend_row(solved):
     """As printed Σ LEND is 5.87 in 2023Q1 and grows to 72.9 by 2040Q4
@@ -178,7 +207,7 @@ def test_whole_model_baseline_gdp_within_1_percent(solved, base):
 
 @requires_cached_run
 def test_undiagnosed_equations_carry_the_baseline_gap(base):
-    """Holding the 15 undiagnosed equations at the oracle (diagnostic only):
+    """Holding the 14 undiagnosed equations at the oracle (diagnostic only):
     GDP within 2.2% of the oracle every quarter, household consumption
     within 0.1%, and Σ LEND still 0 (measured 2026-11-06)."""
     p = _solve(base, "empirical", hold=UNDIAGNOSED)
@@ -202,6 +231,7 @@ def gpi_cum(base, gpi, solved):
             out[forms, k] = {v: sum(p[t][v] - solved[forms][t][v] for t in _SIM)
                              for v in ("GDP", "GDP_R", "CONS_HH", "LEND_GVT")}
             out[forms, k]["sfc"] = max(abs(_sum_lend(p, t)) for t in _SIM)
+            out[forms, k]["fnw"] = _fnw_spread(p)[0]
     return out
 
 
@@ -216,9 +246,10 @@ def test_gpi_never_reaches_the_economy_under_the_manual_as_printed(gpi_cum):
 
 @requires_cached_run
 def test_gpi_whole_model_sign_linearity_symmetry_and_sfc(gpi_cum):
-    """+100% of the GPI path (cum 91.23bn): cum nominal GDP +143.0 (1.57 per
-    pound), household consumption +68.2, real GDP +27.1, government net
-    lending -152.5; linear within 0.5% for nominal GDP."""
+    """+100% of the GPI path (cum 91.23bn): cum nominal GDP +142.7 (1.56 per
+    pound), household consumption +68.1, real GDP +27.1, government net
+    lending -152.5; linear within 0.5% for nominal GDP (measured 13 Nov
+    2026, after the Eq. (179) form: 143.0 / 1.57 / 68.2 before)."""
     s = {k: gpi_cum["empirical", k] for k in (-1.0, -0.5, 0.5, 1.0)}
     for v in ("GDP", "CONS_HH"):
         assert s[1.0][v] > 0
@@ -229,6 +260,7 @@ def test_gpi_whole_model_sign_linearity_symmetry_and_sfc(gpi_cum):
         assert -s[-1.0][v] / s[1.0][v] == pytest.approx(1.0, abs=0.12)
     assert s[1.0]["LEND_GVT"] < 0  # the government borrows for it
     assert all(c["sfc"] < 1e-8 for c in s.values())
+    assert all(c["fnw"] < 1e-6 for c in s.values())
 
 
 @requires_cached_run
