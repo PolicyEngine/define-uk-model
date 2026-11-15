@@ -140,6 +140,9 @@ REPRODUCED = {
     "r_IBA_HHLR", "r_IBN_ROW", "r_IBN_ROWLR", "r_IBL_NFC", "r_IBL_NFCLR",
     "r_IBL_PS", "r_IBL_PSLR", "r_IBL_NMFI", "r_IBL_GVT", "r_IBL_HH",
     "r_IBL_HHLR",
+    # Manual gaps closed on 2026-11-15 (issue #24): no printed equation,
+    # forms found from the CSVs (returns/government/nfc.MANUAL_GAPS).
+    "INF_A", "ITAX_PSNFF", "ITAX_PSFF", "GOS_P",
 }
 
 ALL_FILES = frozenset(ORACLE_FILES)

@@ -91,7 +91,11 @@ design plus two coarse anchors from a conference version of the paper.
    and the whole model solves, but **it does not reproduce the oracle**:
    baseline GDP is up to 44% below the oracle by 2040 (14 equations
    undiagnosed, mainly the equity revaluations), and its green public
-   investment multiplier is 1.56 against the oracle's 2.30. Milestone 1
+   investment multiplier is 1.52 against the oracle's 2.30 (1.56 until
+   2026-11-15, when the Taylor rule still read the oracle's inflation,
+   issue #24; INF_A's form is inferred from the cached CSVs, since the
+   manual prints no equation for it, and r_KFF/r_KNFF are still read from
+   the oracle). Milestone 1
    (accounting matrices) passes; milestone 2 is not passed. Every number
    this repo serves comes from the cached upstream R run. That run has its
    own caveat: its Baseline files use a different α_PP (0.2748) from its

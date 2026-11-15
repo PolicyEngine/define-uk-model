@@ -34,6 +34,21 @@ MANUAL_GAPS = {
         "move it, so under the manual as printed government power "
         "investment never reaches GCF (Eq. (23)) or the budget (Eq. (281))."
     ),
+    "ITAX_PS_split": (
+        "Eqs. (78)-(79) read the power sector's indirect tax by technology, "
+        "ITAX_PSNFF and ITAX_PSFF, which no equation defines (Table 6 cites "
+        "Eqs. (281)-(282), which are the government lending equations). "
+        "Implemented as the split of Eq. (257) the cached CSVs follow: "
+        "ITAX_PSNFF = ITAXR_PS GO_PS beta_NFF and ITAX_PSFF = ITAXR_PS GO_PS "
+        "(1 - beta_NFF) + COV_ETSPS P_ETS EMIS_ELEC, i.e. the carbon tax "
+        "falls on fossil generation only. Both use the current beta_NFF "
+        "(Eq. (77)), not the lag Eqs. (78)-(79) use for intermediate "
+        "consumption. Within ~1e-3 relative (4 s.f. printing) in every "
+        "quarter 2023Q1-2040Q4 of all 30 cached files; the lagged-beta form "
+        "misses by up to 19%. The two sum to Eq. (257) exactly and reproduce "
+        "Table 6 (0.7432 + 0.5461 = 1.289). Before 2026-11-15 both were read "
+        "from the reference path, so a shock never moved them (issue #24)."
+    ),
 }
 
 
@@ -59,6 +74,15 @@ def register(registry: Registry) -> None:
     add("ITAX_PS", 257, "identity",
         lambda s, l: s["ITAXR_PS"] * s["GO_PS"]
         + s["COV_ETSPS"] * s["P_ETS"] * s["EMIS_ELEC"])
+    # MANUAL_GAPS["ITAX_PS_split"]: no printed equation; registered under
+    # Eq. (257), which they split, with index tags NFF and FF.
+    registry.add(Equation(
+        "ITAX_PSNFF", "§3.4.4 eq. (257)[NFF]", "identity",
+        lambda s, l: s["ITAXR_PS"] * s["GO_PS"] * s["beta_NFF"]))
+    registry.add(Equation(
+        "ITAX_PSFF", "§3.4.4 eq. (257)[FF]", "identity",
+        lambda s, l: s["ITAXR_PS"] * s["GO_PS"] * (1.0 - s["beta_NFF"])
+        + s["COV_ETSPS"] * s["P_ETS"] * s["EMIS_ELEC"]))
     add("ITAXR_PS", 258, "calibrated", _converge("ITAXR_PS", "ITAXR_PSLR"))
     add("P_ETS", 259, "identity", lambda s, l: s["P_ETSRB"])
     add("INTAX", 260, "identity", lambda s, l: s["INTAX_NFC"] + s["INTAX_HH"])

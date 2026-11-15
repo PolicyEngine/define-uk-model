@@ -47,8 +47,10 @@ def test_every_printed_equation_is_registered_and_indexed_refs_parse():
     reg = build_registry()
     assert sorted({e.number for e in reg}) == list(range(1, 402))
     tagged = [e for e in reg if e.manual_ref.endswith("]")]
-    assert {e.number for e in tagged} == {397, 398, 399, 400, 401}
-    assert len(tagged) == 1 + 6 + 6 + 5 + 5  # r_BOEQ [Q]; 6 asset, 5 liability
+    assert {e.number for e in tagged} == {159, 257, 397, 398, 399, 400, 401}
+    # GOS_P [GOS]; ITAX_PS split [NFF]/[FF]; r_BOEQ [Q], INF_A [INF];
+    # 6 asset, 5 liability (the manual gaps closed for issue #24).
+    assert len(tagged) == 1 + 2 + 2 + 6 + 6 + 5 + 5
 
 
 def test_mfi_discrepancy_is_minus_the_sum_of_the_others():
@@ -246,21 +248,53 @@ def test_gpi_never_reaches_the_economy_under_the_manual_as_printed(gpi_cum):
 
 @requires_cached_run
 def test_gpi_whole_model_sign_linearity_symmetry_and_sfc(gpi_cum):
-    """+100% of the GPI path (cum 91.23bn): cum nominal GDP +142.7 (1.56 per
-    pound), household consumption +68.1, real GDP +27.1, government net
-    lending -152.5; linear within 0.5% for nominal GDP (measured 13 Nov
-    2026, after the Eq. (179) form: 143.0 / 1.57 / 68.2 before)."""
+    """+100% of the GPI path (cum 91.23bn): cum nominal GDP +139.1 (1.52 per
+    pound), household consumption +65.1, real GDP +26.3, government net
+    lending -126.2; linear within 1% for nominal GDP (measured 2026-11-15,
+    with the Eq. (179) equity form (#23) and INF_A endogenous (#24);
+    143.0 / 1.57 before both, 142.7 / 1.56 with #23 alone)."""
     s = {k: gpi_cum["empirical", k] for k in (-1.0, -0.5, 0.5, 1.0)}
     for v in ("GDP", "CONS_HH"):
         assert s[1.0][v] > 0
         assert s[1.0][v] / (2 * s[0.5][v]) == pytest.approx(1.0, abs=0.01)
-        # Not symmetric to 7%: -1x/+1x is 1.09 (GDP) and 1.07 (CONS_HH),
-        # 1.93 for real GDP, because the response sits on a baseline that
-        # drifts 44% off the oracle (measured 2026-11-06).
+        # Not symmetric to 10%: -1x/+1x is 1.11 (GDP) and 1.10 (CONS_HH),
+        # 1.99 for real GDP, because the response sits on a baseline that
+        # drifts 44% off the oracle (measured 2026-11-15).
         assert -s[-1.0][v] / s[1.0][v] == pytest.approx(1.0, abs=0.12)
     assert s[1.0]["LEND_GVT"] < 0  # the government borrows for it
     assert all(c["sfc"] < 1e-8 for c in s.values())
     assert all(c["fnw"] < 1e-6 for c in s.values())
+
+
+@requires_cached_run
+def test_gpi_moves_the_policy_rate_through_endogenous_inflation(base, gpi, solved):
+    """Issue #24: INF_A, the Taylor rule's input (Eq. (397)), was read from
+    the oracle's baseline, so r_BOE moved by exactly 0 under GPI. With
+    INF_A = (P_P / P_P(-1))^4 - 1 (returns.MANUAL_GAPS) it follows the
+    solved price level, and r_BOE responds: +0.044pp / -0.066pp at the
+    extremes against the oracle's +0.076pp / -0.194pp (2026-11-15)."""
+    b = solved["empirical"]
+    p = _solve(base, "empirical", gpi=gpi, k=1.0)
+    for t in _SIM:
+        assert b[t]["INF_A"] == pytest.approx((b[t]["P_P"] / b[t - 1]["P_P"]) ** 4 - 1.0)
+    dr = [p[t]["r_BOE"] - b[t]["r_BOE"] for t in _SIM]
+    oracle = [g["r_BOE"] - r["r_BOE"] for g, r in zip(gpi[144:], base[144:])]
+    assert max(map(abs, dr)) > 1e-4  # 0.0 exactly before the fix
+    assert max(map(abs, dr)) <= max(map(abs, oracle))
+
+
+@requires_cached_run
+def test_solved_state_carries_its_own_closures(solved, base):
+    """Issue #24: GOS_P and the ITAX_PS split are model values in a solved
+    state, not the reference's (GOS_P was the oracle's 417.1 against 245.6
+    = GO_P - COST_P in 2040Q4)."""
+    for forms in ("manual", "empirical"):
+        path = solved[forms]
+        for t in _SIM:
+            s = path[t]
+            assert s["GOS_P"] == pytest.approx(s["GO_P"] - s["COST_P"], rel=1e-12)
+            assert s["ITAX_PSFF"] + s["ITAX_PSNFF"] == pytest.approx(s["ITAX_PS"], rel=1e-9)
+    assert abs(solved["empirical"][-1]["GOS_P"] - base[-1]["GOS_P"]) > 100
 
 
 @requires_cached_run
