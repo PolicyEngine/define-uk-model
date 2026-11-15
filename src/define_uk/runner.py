@@ -1,9 +1,9 @@
 """Run the upstream DEFINE-UK Rmd with R.
 
-Pre-replication scaffold: this runner executes the upstream notebook as-is
-and reports where its outputs land. It deliberately does NOT parse or
-reinterpret results yet — that begins only once VALIDATION.md records a
-passing replication of the published scenarios.
+This runner executes the upstream notebook as-is and reports where its
+outputs land. It does not parse or reinterpret results: reading the cached
+outputs is ``define_uk.scenarios``' job, and the clean-room reimplementation
+in ``define_uk.model`` never calls it.
 """
 
 from __future__ import annotations

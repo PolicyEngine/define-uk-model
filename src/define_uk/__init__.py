@@ -1,4 +1,4 @@
-"""DEFINE-UK adapter for the PolicyEngine Macro suite (pre-replication)."""
+"""DEFINE-UK adapter for the PolicyEngine Macro suite."""
 
 from .upstream import UPSTREAM_COMMIT, UPSTREAM_URL, fetch
 from .runner import check_r, run
