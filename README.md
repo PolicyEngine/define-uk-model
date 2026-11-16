@@ -68,7 +68,10 @@ src/define_uk/
 `gvt_investment`, `housing_regulation`, `power_sector_regulation` under
 five expectation regimes, and `mixed`). `run_scenario(name)` returns
 annualised **scenario-minus-baseline delta paths** (level and %) for
-`GDP_R`, `EMIS`, `UPLOT`, `CONS_R` by default, with calendar years
+`GDP_R`, `EMIS`, `UPLOT`, `CONS_R` by default, from the year the policy
+starts (2027; `policy_start_year`, read from the cache) to 2040. Earlier
+years carry only the α_PP mismatch (issue #20) and are returned only with
+`include_pre_policy=True`, flagged `policy_active=False`, with calendar years
 (run anchored 1987Q1–2040Q4), provenance (pinned commit, cache path, R
 run date), `result_type="scenario deltas"`, and mandatory caveats.
 It only ever reads the locally cached run produced by

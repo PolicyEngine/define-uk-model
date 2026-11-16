@@ -6,15 +6,17 @@ presents as meaningful (VALIDATION.md).
 
 Sign-sanity notes (grounded in the cached numbers, not priors): every
 policy scenario REDUCES emissions relative to baseline by 2030 and beyond.
-Green public investment shows real GDP slightly BELOW baseline in the first
-years (delta -1.125 in 2026) before turning strongly positive (+4.08 in 2030,
-+7.75 in 2035). The 2023-26 part is not the policy: no switch acts before
-2027Q1 and every scenario carries the same -1.125, the effect of the
-Baseline's lower alpha_PP (test_alpha_pp_confound.py). It is gated as
-observed. Housing regulation is contractionary
+Green public investment shows real GDP strongly positive by 2030 (+4.08)
+and 2035 (+7.75). The cached files also show it BELOW baseline before that
+(-1.125 in 2026), but that is not the policy: no switch acts before 2027Q1
+and every scenario carries the same -1.125, the effect of the Baseline's
+lower alpha_PP (test_alpha_pp_confound.py). Since 2026-11-16 served paths
+start at the policy start (2027); the pre-policy years are reachable only
+with include_pre_policy=True and are flagged policy_active=False. Housing regulation is contractionary
 for GDP throughout (-1.6 in 2030, -2.3 in 2035) while cutting emissions.
 """
 
+import csv
 import math
 from pathlib import Path
 
@@ -75,7 +77,11 @@ def test_deltas_finite_and_framed(name):
     assert any("vintage" in c for c in r["caveats"])
     assert any("xperimental" in c for c in r["caveats"])
     assert r["provenance"]["upstream_commit"] == UPSTREAM_COMMIT
-    assert r["years"] == list(range(2023, 2038))  # policy start + 15y
+    # Policy start (2027Q1, read from the cache) to the end of the run.
+    assert r["years"] == list(range(2027, 2041))
+    assert r["policy_start_year"] == 2027
+    assert all(r["policy_active"])
+    assert r["baseline_parameter_mismatch"]["parameter"] == "alpha_PPLR"
     for var in DEFAULT_VARIABLES:
         block = r["variables"][var]
         assert len(block["delta_level"]) == len(r["years"])
@@ -105,32 +111,43 @@ def test_baseline_consistent_across_blocks():
         r = run_scenario(name)
         lev = r["variables"]["GDP_R"]["delta_level"]
         pct = r["variables"]["GDP_R"]["delta_pct"]
-        base = [
-            100 * l / p
-            for l, p in zip(lev, pct)
+        # Keyed by year: a year where the delta is ~0 cannot recover the
+        # level and is skipped, so positions differ across blocks.
+        base = {
+            y: 100 * l / p
+            for y, l, p in zip(r["years"], lev, pct)
             if l is not None and p not in (None, 0.0) and abs(p) > 1e-9
-        ]
+        }
         per_block[r["block"]] = base
     ref = per_block.pop("gvt_investment")
     for block, base in per_block.items():
-        for a, b in zip(ref, base):
-            assert a == pytest.approx(b, rel=1e-6), block
+        common = set(ref) & set(base)
+        assert len(common) >= 10, block
+        for y in common:
+            assert ref[y] == pytest.approx(base[y], rel=1e-6), (block, y)
 
 
 def _delta(name, var, year):
-    r = run_scenario(name)
+    # include_pre_policy: the pinned points reproduce the cached run,
+    # including one pre-policy year (2026).
+    r = run_scenario(name, include_pre_policy=True)
     return dict(zip(r["years"], r["variables"][var]["delta_level"]))[year]
 
 
 @needs_cache
 def test_sign_sanity_green_public_investment():
-    """GPI: early-year GDP dip, strong medium-run gain; emissions fall.
+    """GPI: strong medium-run GDP gain; emissions fall.
 
-    Cached numbers: GDP_R delta -1.125 (2026), +4.075 (2030), +7.75
-    (2035); EMIS delta -12.28 (2030), -13.54 (2035); unemployment delta
-    negative by 2035 (-0.2195).
+    Cached numbers: GDP_R delta +4.075 (2030), +7.75 (2035); EMIS delta
+    -12.28 (2030), -13.54 (2035); unemployment delta negative by 2035
+    (-0.2195). The 2026 GDP dip (-1.125) is the alpha_PP mismatch, not the
+    policy, so it is not a sign-sanity claim: it is outside the default
+    path and flagged policy_active=False.
     """
-    assert _delta("green_public_investment", "GDP_R", 2026) < 0
+    pre = run_scenario("green_public_investment", include_pre_policy=True)
+    flags = dict(zip(pre["years"], pre["policy_active"]))
+    assert flags[2026] is False and flags[2027] is True
+    assert 2026 not in run_scenario("green_public_investment")["years"]
     assert _delta("green_public_investment", "GDP_R", 2030) > 0
     assert _delta("green_public_investment", "GDP_R", 2035) > 0
     assert _delta("green_public_investment", "EMIS", 2030) < 0
@@ -209,3 +226,34 @@ def test_every_default_variable_states_its_units():
         assert var in scenarios.VARIABLE_UNITS, var
     assert "by 4" in scenarios.VARIABLE_UNITS["EMIS"]
     assert "percentage points" in scenarios.VARIABLE_UNITS["UPLOT"]
+
+
+@needs_cache
+def test_policy_start_is_read_from_the_cache_and_starts_a_year():
+    """The policy start is the first quarter the cached policy files stop
+    being identical: 2027Q1, the first quarter of its year, so no served
+    year mixes pre-policy and policy quarters."""
+    from define_uk import scenarios
+    root = str(scenarios._run_root())
+    assert scenarios._policy_start_year(root) == 2027
+    paths = {
+        scenarios._run_root() / scenarios._TABLES / folder / f"Variables_{label}.csv"
+        for _, _, folder, label, _ in scenarios._REGISTRY
+    }
+    rows = [list(csv.reader(p.open()))[1:] for p in sorted(paths)]
+    t = next(t for t in range(216) if len({tuple(r[t]) for r in rows}) > 1)
+    assert t % 4 == 0 and scenarios.START_YEAR + t // 4 == 2027
+
+
+@needs_cache
+@pytest.mark.parametrize("name", SERVED)
+def test_pre_policy_years_are_opt_in_and_flagged(name):
+    full = run_scenario(name, include_pre_policy=True, horizon_years=18)
+    served = run_scenario(name)
+    assert full["years"][0] == 2023
+    assert [y for y, a in zip(full["years"], full["policy_active"]) if not a] \
+        == [2023, 2024, 2025, 2026]
+    # The served path is the policy-active tail of the full one, value for value.
+    tail = dict(zip(full["years"], full["variables"]["GDP_R"]["delta_level"]))
+    assert served["variables"]["GDP_R"]["delta_level"] == [
+        tail[y] for y in served["years"]]
