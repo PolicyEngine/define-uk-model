@@ -88,7 +88,8 @@ def test_the_known_divergences_stay_labelled():
                 "imports_pct_gdp", "exports_pct_gdp"):
         for stat in validation.TABLE4_STATS:
             assert status[var, stat] == "DIVERGENCE", (var, stat)
-    assert status["nfc_credit_rationing_pct", "2040"] == "DIVERGENCE"
+    for stat in ("2040", "mean", "sd"):
+        assert status["nfc_credit_rationing_pct", stat] == "DIVERGENCE"
     assert status["green_investment_pct_gdp", "2025"] == "NOT COMPARABLE"
 
 

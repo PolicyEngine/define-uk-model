@@ -1,14 +1,14 @@
 variable,label,statistic,published,run,gap,status,tolerance_abs,how_read
-real_gdp_growth_pct,Real GDP growth (%),2025,4.96,4.664,-0.296,MATCH,0.31,y/y growth of the annual mean of GDP_R
-real_gdp_growth_pct,Real GDP growth (%),2030,2.35,2.35,-0.0,MATCH,0.31,y/y growth of the annual mean of GDP_R
-real_gdp_growth_pct,Real GDP growth (%),2040,2.01,2.073,0.063,MATCH,0.31,y/y growth of the annual mean of GDP_R
-real_gdp_growth_pct,Real GDP growth (%),mean,2.35,2.398,0.048,MATCH,0.31,y/y growth of the annual mean of GDP_R
-real_gdp_growth_pct,Real GDP growth (%),sd,0.71,0.616,-0.094,MATCH,0.31,y/y growth of the annual mean of GDP_R
-unemployment_pct,Unemployment (%),2025,4.31,4.39,0.08,MATCH,0.2,UPLOT
-unemployment_pct,Unemployment (%),2030,4.73,4.81,0.08,MATCH,0.2,UPLOT
-unemployment_pct,Unemployment (%),2040,4.72,4.53,-0.19,MATCH,0.2,UPLOT
-unemployment_pct,Unemployment (%),mean,4.71,4.721,0.011,MATCH,0.2,UPLOT
-unemployment_pct,Unemployment (%),sd,0.14,0.139,-0.001,MATCH,0.2,UPLOT
+real_gdp_growth_pct,Real GDP growth (%),2025,4.96,4.664,-0.296,MATCH,0.31,"y/y growth of the annual mean of GDP_R; the +/-0.31pp band was set at the 2025 miss (0.30pp) in 2026-08, so 2025 is a match only by construction (2030 exact, 2040 0.06pp)"
+real_gdp_growth_pct,Real GDP growth (%),2030,2.35,2.35,-0.0,MATCH,0.31,"y/y growth of the annual mean of GDP_R; the +/-0.31pp band was set at the 2025 miss (0.30pp) in 2026-08, so 2025 is a match only by construction (2030 exact, 2040 0.06pp)"
+real_gdp_growth_pct,Real GDP growth (%),2040,2.01,2.073,0.063,MATCH,0.31,"y/y growth of the annual mean of GDP_R; the +/-0.31pp band was set at the 2025 miss (0.30pp) in 2026-08, so 2025 is a match only by construction (2030 exact, 2040 0.06pp)"
+real_gdp_growth_pct,Real GDP growth (%),mean,2.35,2.398,0.048,MATCH,0.31,"y/y growth of the annual mean of GDP_R; the +/-0.31pp band was set at the 2025 miss (0.30pp) in 2026-08, so 2025 is a match only by construction (2030 exact, 2040 0.06pp)"
+real_gdp_growth_pct,Real GDP growth (%),sd,0.71,0.616,-0.094,MATCH,0.31,"y/y growth of the annual mean of GDP_R; the +/-0.31pp band was set at the 2025 miss (0.30pp) in 2026-08, so 2025 is a match only by construction (2030 exact, 2040 0.06pp)"
+unemployment_pct,Unemployment (%),2025,4.31,4.39,0.08,MATCH,0.2,UPLOT; low-information on the sd: the tolerance exceeds the series sd (0.14)
+unemployment_pct,Unemployment (%),2030,4.73,4.81,0.08,MATCH,0.2,UPLOT; low-information on the sd: the tolerance exceeds the series sd (0.14)
+unemployment_pct,Unemployment (%),2040,4.72,4.53,-0.19,MATCH,0.2,UPLOT; low-information on the sd: the tolerance exceeds the series sd (0.14)
+unemployment_pct,Unemployment (%),mean,4.71,4.721,0.011,MATCH,0.2,UPLOT; low-information on the sd: the tolerance exceeds the series sd (0.14)
+unemployment_pct,Unemployment (%),sd,0.14,0.139,-0.001,MATCH,0.2,UPLOT; low-information on the sd: the tolerance exceeds the series sd (0.14)
 population_16plus_m,Population (millions),2025,55.66,55.655,-0.005,MATCH,0.01,POP
 population_16plus_m,Population (millions),2030,57.74,57.735,-0.005,MATCH,0.01,POP
 population_16plus_m,Population (millions),2040,61.61,61.612,0.002,MATCH,0.01,POP
@@ -44,11 +44,11 @@ nfc_default_rate_pct,NFC default rate (%),2030,0.33,0.332,0.002,MATCH,0.02,400 x
 nfc_default_rate_pct,NFC default rate (%),2040,0.45,0.439,-0.011,MATCH,0.02,400 x DEF_NFC (quarterly rate annualised)
 nfc_default_rate_pct,NFC default rate (%),mean,0.36,0.361,0.001,MATCH,0.02,400 x DEF_NFC (quarterly rate annualised)
 nfc_default_rate_pct,NFC default rate (%),sd,0.05,0.051,0.001,MATCH,0.02,400 x DEF_NFC (quarterly rate annualised)
-nfc_credit_rationing_pct,NFC credit rationing (%),2025,3.81,3.855,0.045,MATCH,0.25,100 x CR_NFC
-nfc_credit_rationing_pct,NFC credit rationing (%),2030,2.56,2.531,-0.029,MATCH,0.25,100 x CR_NFC
-nfc_credit_rationing_pct,NFC credit rationing (%),2040,4.79,4.144,-0.646,DIVERGENCE,,100 x CR_NFC
-nfc_credit_rationing_pct,NFC credit rationing (%),mean,3.49,3.279,-0.211,MATCH,0.25,100 x CR_NFC
-nfc_credit_rationing_pct,NFC credit rationing (%),sd,0.74,0.614,-0.126,DIVERGENCE,,100 x CR_NFC
+nfc_credit_rationing_pct,NFC credit rationing (%),2025,3.81,3.855,0.045,MATCH,0.25,"100 x CR_NFC; matches to 2030, diverges after (mean and sd carry the 2040 miss)"
+nfc_credit_rationing_pct,NFC credit rationing (%),2030,2.56,2.531,-0.029,MATCH,0.25,"100 x CR_NFC; matches to 2030, diverges after (mean and sd carry the 2040 miss)"
+nfc_credit_rationing_pct,NFC credit rationing (%),2040,4.79,4.144,-0.646,DIVERGENCE,,"100 x CR_NFC; matches to 2030, diverges after (mean and sd carry the 2040 miss)"
+nfc_credit_rationing_pct,NFC credit rationing (%),mean,3.49,3.279,-0.211,DIVERGENCE,,"100 x CR_NFC; matches to 2030, diverges after (mean and sd carry the 2040 miss)"
+nfc_credit_rationing_pct,NFC credit rationing (%),sd,0.74,0.614,-0.126,DIVERGENCE,,"100 x CR_NFC; matches to 2030, diverges after (mean and sd carry the 2040 miss)"
 ps_default_rate_pct,Power sector default rate (%),2025,0.16,0.151,-0.009,DIVERGENCE,,400 x DEF_PS (quarterly rate annualised)
 ps_default_rate_pct,Power sector default rate (%),2030,0.11,0.145,0.035,DIVERGENCE,,400 x DEF_PS (quarterly rate annualised)
 ps_default_rate_pct,Power sector default rate (%),2040,0.13,0.297,0.167,DIVERGENCE,,400 x DEF_PS (quarterly rate annualised)

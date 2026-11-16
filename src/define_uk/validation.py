@@ -301,14 +301,17 @@ def _all(status, tol):
 TABLE4 = {
     "real_gdp_growth_pct": (
         "Real GDP growth (%)", (4.96, 2.35, 2.01, 2.35, 0.71),
-        "y/y growth of the annual mean of GDP_R",
+        "y/y growth of the annual mean of GDP_R; the +/-0.31pp band was "
+        "set at the 2025 miss (0.30pp) in 2026-08, so 2025 is a match only "
+        "by construction (2030 exact, 2040 0.06pp)",
         # +/-0.31pp: 2030 is exact, 2040 0.06pp, 2025 0.30pp. No single
         # annualisation convention reproduces all three years (VALIDATION.md
         # target 1a); the band is the 2025 miss, unchanged since 2026-08-04.
         _all(_M, 0.31)),
     "unemployment_pct": (
         "Unemployment (%)", (4.31, 4.73, 4.72, 4.71, 0.14),
-        "UPLOT", _all(_M, 0.2)),
+        "UPLOT; low-information on the sd: the tolerance exceeds the "
+        "series sd (0.14)", _all(_M, 0.2)),
     "population_16plus_m": (
         "Population (millions)", (55.66, 57.74, 61.61, 58.68, 1.87),
         "POP", _all(_M, 0.01)),
@@ -334,8 +337,9 @@ TABLE4 = {
         "400 x DEF_NFC (quarterly rate annualised)", _all(_M, 0.02)),
     "nfc_credit_rationing_pct": (
         "NFC credit rationing (%)", (3.81, 2.56, 4.79, 3.49, 0.74),
-        "100 x CR_NFC",
-        {"2025": (_M, 0.25), "2030": (_M, 0.25), "mean": (_M, 0.25),
+        "100 x CR_NFC; matches to 2030, diverges after (mean and sd carry "
+        "the 2040 miss)",
+        {"2025": (_M, 0.25), "2030": (_M, 0.25), "mean": (_D, None),
          "2040": (_D, None), "sd": (_D, None)}),
     "ps_default_rate_pct": (
         "Power sector default rate (%)", (0.16, 0.11, 0.13, 0.12, 0.01),

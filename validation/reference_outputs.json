@@ -9,7 +9,7 @@
     "tolerances": {
       "population_16plus_m": {"abs": 0.01},
       "labour_force_m": {"abs": 0.01},
-      "real_gdp_growth_pct": {"abs": 0.31, "note": "no single growth convention reproduces all three years (2030 matches annual-mean y/y exactly, 2040 is 0.06pp off it and matches the mean of 4x quarterly growth instead, 2025 matches neither); 2025 sits in the post-2022 start-up transient (quarterly y/y 6.2, 5.1, 4.2, 3.3 within 2025); the band is the 2025 miss, unchanged since 2026-08-04"},
+      "real_gdp_growth_pct": {"abs": 0.31, "note": "no single growth convention reproduces all three years (2030 matches annual-mean y/y exactly, 2040 is 0.06pp off it and matches the mean of 4x quarterly growth instead, 2025 matches neither); 2025 sits in the post-2022 start-up transient (quarterly y/y 6.2, 5.1, 4.1, 3.3 within 2025); the band is the 2025 miss, unchanged since 2026-08-04"},
       "unemployment_pct": {"abs": 0.2}
     },
     "years": {
@@ -19,7 +19,7 @@
     }
   },
   "emissions_divergence": {
-    "source": "VALIDATION.md target 1b: pinned commit's baseline EMIS runs below Table 4, widening with horizon (vintage/calibration gap, not extraction error); gated at the observed ratios so further drift fails loudly",
+    "source": "VALIDATION.md target 1b: pinned commit's baseline EMIS runs below Table 4, widening with horizon (consistent with a different vintage but not proven; not an extraction error); gated at the observed ratios so further drift fails loudly",
     "ratio_run_over_table4": {"2025": 0.965, "2030": 0.898, "2040": 0.767},
     "tolerance": {"abs": 0.02}
   },
