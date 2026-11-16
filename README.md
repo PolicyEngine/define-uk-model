@@ -71,9 +71,10 @@ annualised **scenario-minus-baseline delta paths** (level and %) for
 `GDP_R`, `EMIS`, `UPLOT`, `CONS_R` by default, from the year the policy
 starts (2027; `policy_start_year`, read from the cache) to 2040. Earlier
 years carry only the α_PP mismatch (issue #20) and are returned only with
-`include_pre_policy=True`, flagged `policy_active=False`, with calendar years
-(run anchored 1987Q1–2040Q4), provenance (pinned commit, cache path, R
-run date), `result_type="scenario deltas"`, and mandatory caveats.
+`include_pre_policy=True`, flagged `policy_active=False`. Each result also
+carries calendar years (run anchored 1987Q1–2040Q4), provenance (pinned
+commit, cache path, R run date), `result_type="scenario deltas"`, and
+mandatory caveats.
 It only ever reads the locally cached run produced by
 `define_uk.runner.run()` — it never runs R, and raises with instructions
 when no cache exists. Every result carries `sfc_check`, and two scenarios

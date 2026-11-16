@@ -411,6 +411,13 @@ def run_scenario(
         }
 
     caveats = list(CAVEATS)
+    if policy_start is None:
+        caveats.insert(0, (
+            "Policy start unknown: fewer than two policy files are cached, so "
+            "the pre-policy years (2023-2026 in the pinned run, the alpha_PP "
+            "mismatch alone) cannot be told apart and are included; "
+            "policy_active is None for every year."
+        ))
     if failed:
         caveats.insert(0, (
             "NOT STOCK-FLOW CONSISTENT: sectoral net lending does not sum to "
@@ -426,8 +433,10 @@ def run_scenario(
         "delta_convention": "scenario minus baseline (same block folder)",
         "years": years,
         "policy_start_year": policy_start,
+        # None per year when the policy start cannot be read from the cache
+        # (fewer than two policy files cached): unknown, not "active".
         "policy_active": [
-            policy_start is None or y >= policy_start for y in years
+            None if policy_start is None else y >= policy_start for y in years
         ],
         "baseline_parameter_mismatch": dict(BASELINE_PARAMETER_MISMATCH),
         "variables": per_variable,
