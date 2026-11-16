@@ -43,6 +43,7 @@ the cached run; useful, but not a comparison with anything published).
 | Table 4: green investment | NOT COMPARABLE (definition not stated) | scorecard |
 | Published v1.1 scenario results | NOT POSSIBLE: none are published; scenario design and two coarse FMM 2023 anchors are gated instead (targets 2 and 3) | `tests/test_scenario_design.py` |
 | Served scenario deltas reproduce the cached run | INTERNAL CHECK at rel 1e-6 (11 pinned points) | `tests/test_scenarios.py`, `validation/reference_outputs.json` |
+| Served scenario paths start when a policy starts (2027); the α_PP mismatch (#20) is flagged on every result | INTERNAL CHECK: default path is exactly the policy-active part of the full path, every served scenario | `tests/test_scenarios.py::test_pre_policy_years_are_opt_in_and_flagged` |
 | Every served scenario is stock-flow consistent | 28 of 30 cached solves pass; the 2 that fail are refused | `define_uk.scenarios.sfc_check`, `tests/test_scenarios.py` |
 | GPI multiplier 2.30 (headline), 1.78 (secondary) | Own computation, pinned ±0.01; caveats travel with it | `define_uk.validation.gpi_multiplier`, `tests/test_validation.py` |
 | Baseline levels vs ONS/DESNZ/OBR outturns | DIVERGENCE by design: why the adapter serves deltas only | [`validation/baseline_vs_external.csv`](validation/baseline_vs_external.csv) |
