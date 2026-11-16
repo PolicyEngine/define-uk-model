@@ -8,7 +8,10 @@ of the UK economy by Dafermos, Nikolaidi and co-authors
 > **Status: partially validated** (see `VALIDATION.md`). The baseline
 > macro block reproduces the manual's Table 4 within tolerance (2025 growth
 > −0.30pp against a ±0.31pp tolerance); baseline emissions run below the
-> table, by 23% in 2040. The scenario surface is gated against the pinned
+> table, by 23% in 2040, along with the rest of the power and energy block.
+> Every cell of Table 4 and every other claim, with its status and evidence:
+> [VALIDATION.md, "Proof at a glance"](VALIDATION.md#proof-at-a-glance) and
+> [`validation/table4_scorecard.csv`](validation/table4_scorecard.csv). The scenario surface is gated against the pinned
 > oracle run only: no machine-readable published scenario results exist. The scenario
 > surface is **local-only** — it reads a locally cached run of the
 > unlicensed upstream code; nothing is hosted or redistributed — and

@@ -269,6 +269,176 @@ def gpi_multiplier(definition: str = HEADLINE_DEFINITION) -> dict:
     return out
 
 
+# --- Manual Table 4, all fifteen rows ---------------------------------------
+#
+# Manual v1.1 Table 4 (p. 50) prints 15 baseline variables at 2025, 2030 and
+# 2040 plus their 2025-2040 mean and standard deviation; its note says "All
+# quarterly values are annualised and the mean and standard deviation are
+# calculated from 2025-2040". Read from the cached run as: annual means of
+# the quarterly values; quarterly flows and quarterly rates (EMIS, default
+# rates) x 4; mean and SAMPLE sd of the 16 annual values 2025-2040 (this
+# reproduces the table's population sd, 1.873 vs 1.87, and labour-force sd,
+# 1.003 vs 1.00; the population sd of the same values gives 1.81 and 0.97).
+#
+# Status per cell (decided 2026-11-16 with the run's decision log, PR body):
+#   MATCH          within the stated tolerance;
+#   DIVERGENCE     outside any defensible tolerance: pinned at the run's own
+#                  observed value so drift fails (a regression pin, NOT
+#                  validation);
+#   NOT COMPARABLE the table does not state the definition.
+TABLE4_YEARS = (2025, 2030, 2040)
+TABLE4_STATS = ("2025", "2030", "2040", "mean", "sd")
+
+# row -> (label, published 2025/2030/2040/mean/sd, how to read it from the
+#         run, {stat: (status, tolerance_abs)})
+_M, _D, _NC = "MATCH", "DIVERGENCE", "NOT COMPARABLE"
+
+
+def _all(status, tol):
+    return {k: (status, tol) for k in TABLE4_STATS}
+
+
+TABLE4 = {
+    "real_gdp_growth_pct": (
+        "Real GDP growth (%)", (4.96, 2.35, 2.01, 2.35, 0.71),
+        "y/y growth of the annual mean of GDP_R",
+        # +/-0.31pp: 2030 is exact, 2040 0.06pp, 2025 0.30pp. No single
+        # annualisation convention reproduces all three years (VALIDATION.md
+        # target 1a); the band is the 2025 miss, unchanged since 2026-08-04.
+        _all(_M, 0.31)),
+    "unemployment_pct": (
+        "Unemployment (%)", (4.31, 4.73, 4.72, 4.71, 0.14),
+        "UPLOT", _all(_M, 0.2)),
+    "population_16plus_m": (
+        "Population (millions)", (55.66, 57.74, 61.61, 58.68, 1.87),
+        "POP", _all(_M, 0.01)),
+    "labour_force_m": (
+        "Labour Force (millions)", (35.97, 37.12, 39.13, 37.62, 1.00),
+        "LF", _all(_M, 0.01)),
+    "non_fossil_electricity_share_pct": (
+        "Proportion of non-fossil electricity generation (%)",
+        (57.93, 61.77, 77.14, 65.92, 6.35),
+        "100 x beta_NFF", _all(_D, None)),
+    "emissions_mtco2e_yr": (
+        "Total emissions (MtCO2e/year)", (407.32, 381.76, 324.37, 367.10, 25.46),
+        "4 x EMIS", _all(_D, None)),
+    "emission_price_gbp_t": (
+        "Emission price (GBP/tCO2e)", (8.01, 10.58, 15.71, 11.86, 2.44),
+        "1000 x P_ETS", _all(_M, 0.01)),
+    "green_investment_pct_gdp": (
+        "Green investment (% of GDP)", (1.00, 1.07, 1.30, 1.13, 0.10),
+        "definition not stated; no combination of the printed green GCF "
+        "columns reproduces it", _all(_NC, None)),
+    "nfc_default_rate_pct": (
+        "NFC default rate (%)", (0.28, 0.33, 0.45, 0.36, 0.05),
+        "400 x DEF_NFC (quarterly rate annualised)", _all(_M, 0.02)),
+    "nfc_credit_rationing_pct": (
+        "NFC credit rationing (%)", (3.81, 2.56, 4.79, 3.49, 0.74),
+        "100 x CR_NFC",
+        {"2025": (_M, 0.25), "2030": (_M, 0.25), "mean": (_M, 0.25),
+         "2040": (_D, None), "sd": (_D, None)}),
+    "ps_default_rate_pct": (
+        "Power sector default rate (%)", (0.16, 0.11, 0.13, 0.12, 0.01),
+        "400 x DEF_PS (quarterly rate annualised)", _all(_D, None)),
+    "ps_credit_rationing_pct": (
+        "Power sector credit rationing (%)", (47.22, 35.44, 21.09, 30.64, 9.04),
+        "100 x CR_PS; the means agree (30.15 vs 30.64) but the trends are "
+        "opposite, so the mean is not read as a match", _all(_D, None)),
+    "imports_pct_gdp": (
+        "Imports (% of GDP)", (39.99, 39.97, 41.18, 40.31, 0.51),
+        "100 x IMP / GDP", _all(_D, None)),
+    "exports_pct_gdp": (
+        "Exports (% of GDP)", (38.58, 40.19, 44.15, 41.21, 1.80),
+        "100 x EXP / GDP", _all(_D, None)),
+    "reer_index": (
+        "Real effective exchange rate (index, 2022 = 1)",
+        (1.00, 1.00, 0.98, 0.99, 0.01),
+        "REER; low-information match: the tolerance is twice the series sd",
+        _all(_M, 0.02)),
+}
+
+
+def _table4_series() -> dict[str, dict[int, float] | None]:
+    """Annual values 2024-2040 of every Table 4 row, from the cached run."""
+    base = _baseline_path()
+
+    def ann(var, scale=1.0):
+        a = _annual_means(_read_column(base, var))
+        return {y: scale * v for y, v in a.items() if v is not None}
+
+    gdp_r, gdp = ann("GDP_R"), ann("GDP")
+    imp, exp_ = ann("IMP"), ann("EXP")
+    return {
+        "real_gdp_growth_pct": {
+            y: 100.0 * (gdp_r[y] / gdp_r[y - 1] - 1.0)
+            for y in gdp_r if y - 1 in gdp_r},
+        "unemployment_pct": ann("UPLOT"),
+        "population_16plus_m": ann("POP"),
+        "labour_force_m": ann("LF"),
+        "non_fossil_electricity_share_pct": ann("beta_NFF", 100.0),
+        "emissions_mtco2e_yr": ann("EMIS", 4.0),
+        "emission_price_gbp_t": ann("P_ETS", 1000.0),
+        "green_investment_pct_gdp": None,
+        "nfc_default_rate_pct": ann("DEF_NFC", 400.0),
+        "nfc_credit_rationing_pct": ann("CR_NFC", 100.0),
+        "ps_default_rate_pct": ann("DEF_PS", 400.0),
+        "ps_credit_rationing_pct": ann("CR_PS", 100.0),
+        "imports_pct_gdp": {y: 100.0 * imp[y] / gdp[y] for y in imp if y in gdp},
+        "exports_pct_gdp": {y: 100.0 * exp_[y] / gdp[y] for y in exp_ if y in gdp},
+        "reer_index": ann("REER"),
+    }
+
+
+def table4_scorecard() -> list[dict]:
+    """Every cell of manual Table 4 against the cached run, with a status.
+
+    One row per (variable, statistic): published value, run value, gap
+    (run - published), status (MATCH / DIVERGENCE / NOT COMPARABLE),
+    tolerance (MATCH cells only) and how the run value is read. The
+    committed copy is validation/table4_scorecard.csv; regenerate it with
+    ``python -m define_uk.validation --table4`` after a deliberate change.
+    """
+    import statistics
+
+    series = _table4_series()
+    rows = []
+    for key, (label, published, how, status) in TABLE4.items():
+        s = series[key]
+        run = {}
+        if s is not None:
+            years = [s[y] for y in range(2025, 2041)]
+            run = {str(y): s[y] for y in TABLE4_YEARS}
+            run["mean"] = statistics.mean(years)
+            run["sd"] = statistics.stdev(years)
+        for stat, pub in zip(TABLE4_STATS, published):
+            st_, tol = status[stat]
+            value = run.get(stat)
+            rows.append({
+                "variable": key,
+                "label": label,
+                "statistic": stat,
+                "published": pub,
+                "run": None if value is None else round(value, 3),
+                "gap": None if value is None else round(value - pub, 3),
+                "status": st_,
+                "tolerance_abs": tol,
+                "how_read": how,
+            })
+    return rows
+
+
+def write_table4_scorecard(path: str | Path) -> Path:
+    """Write validation/table4_scorecard.csv (committed, regression-tested)."""
+    path = Path(path)
+    rows = table4_scorecard()
+    with path.open("w", newline="") as fh:
+        w = csv.DictWriter(fh, fieldnames=list(rows[0]))
+        w.writeheader()
+        for r in rows:
+            w.writerow({k: "" if v is None else v for k, v in r.items()})
+    return path
+
+
 def write_artifact(path: str | Path) -> Path:
     """Write baseline_vs_external.csv (committed, regression-tested)."""
     path = Path(path)
@@ -278,3 +448,13 @@ def write_artifact(path: str | Path) -> Path:
         w.writeheader()
         w.writerows(rows)
     return path
+
+
+if __name__ == "__main__":  # explicit regeneration of the committed artifacts
+    import sys
+
+    root = Path(__file__).resolve().parents[2] / "validation"
+    if "--table4" in sys.argv:
+        print(write_table4_scorecard(root / "table4_scorecard.csv"))
+    else:
+        print("usage: python -m define_uk.validation --table4")
