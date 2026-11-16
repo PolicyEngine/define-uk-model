@@ -20,6 +20,42 @@ of the UK economy by Dafermos, Nikolaidi and co-authors
 > scenario-minus-baseline deltas under the model's demand-led closure,
 > with the caveats every result carries.
 
+## Quick start
+
+```bash
+pip install -e .            # Python 3.11+; no Python dependencies
+```
+
+The scenario surface reads a locally cached run of the upstream R model.
+Producing that cache needs R 4.0+ and the upstream's R packages, and the
+render takes a long time:
+
+```python
+from define_uk import runner
+runner.check_r()   # lists any missing R packages; installing them is your call
+runner.run()       # fetches the pinned upstream commit and renders it once
+```
+
+Then, from the cache (no R needed):
+
+```python
+from define_uk import scenarios
+
+scenarios.list_scenarios()                       # the 22 scenarios
+r = scenarios.run_scenario("green_public_investment")
+r["years"]                  # 2027 ... 2040: from the policy start
+r["policy_active"]          # True for every served year
+r["caveats"]                # read these before quoting any number
+gdp = dict(zip(r["years"], r["variables"]["GDP_R"]["delta_pct"]))
+emis = dict(zip(r["years"], r["variables"]["EMIS"]["delta_level"]))
+gdp[2030]                   # +0.53: real GDP, % of baseline
+4 * emis[2030]              # -49.1: MtCO2e per year (EMIS is quarterly)
+```
+
+Every result is a **delta against the model's own baseline**, never a
+level or a forecast. What each number rests on: VALIDATION.md,
+[Proof at a glance](VALIDATION.md#proof-at-a-glance).
+
 ## What DEFINE-UK is
 
 An ecological stock-flow consistent macro model calibrated to UK national
