@@ -111,8 +111,16 @@ def test_committed_scorecard_is_not_stale():
     for c, k in zip(computed, committed):
         for field in ("variable", "statistic", "status", "how_read"):
             assert str(c[field]) == k[field], (field, c, k)
-        for field in ("published", "run", "gap", "tolerance_abs"):
+        for field in ("published", "tolerance_abs"):
             assert c[field] == _f(k[field]), (field, c, k)
+        # One unit of the third decimal: Python 3.12's sum() is compensated
+        # and 3.11's is not, so a cell on a rounding boundary can differ by
+        # 0.001 between interpreters (non_fossil 2030: 75.307 vs 75.308).
+        for field in ("run", "gap"):
+            if c[field] is None or _f(k[field]) is None:
+                assert c[field] is None and _f(k[field]) is None, (field, c, k)
+            else:
+                assert abs(c[field] - _f(k[field])) <= 1.0001e-3, (field, c, k)
 
 
 @pytest.mark.skipif(not HAVE_RUN, reason="no cached DEFINE-UK run")
