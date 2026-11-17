@@ -107,7 +107,10 @@ annualised **scenario-minus-baseline delta paths** (level and %) for
 `GDP_R`, `EMIS`, `UPLOT`, `CONS_R` by default, from the year the policy
 starts (2027; `policy_start_year`, read from the cache) to 2040. Earlier
 years carry only the α_PP mismatch (issue #20) and are returned only with
-`include_pre_policy=True`, flagged `policy_active=False`. Each result also
+`include_pre_policy=True`, flagged `policy_active=False`. Years in which
+electricity generation sits at the capacity ceiling are flagged
+`capacity_constrained` (a price-regime switch, not a smooth response).
+`EMIS_ELEC` and `EMIS_NELEC` split the emissions delta. Each result also
 carries calendar years (run anchored 1987Q1–2040Q4), provenance (pinned
 commit, cache path, R run date), `result_type="scenario deltas"`, and
 mandatory caveats.

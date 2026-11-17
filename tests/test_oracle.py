@@ -151,7 +151,7 @@ _SUBSIDY_FILES = ALL_FILES - {"gvt_investment/Variables_GPI + Green Bonds.csv"}
 _BAN_FILE = "mixed/mutual_trust/Variables_Both Regulations + Subsidies.csv"
 _BAN_FROM = 180  # 2032Q1: first quarter with zero desired fossil investment
 _BASELINE_FILE = "gvt_investment/Variables_Baseline.csv"
-# Eq. (139)'s alpha_PP in the run's Baseline files (all 7 print 0.2748 in
+# Eq. (139)'s alpha_PP in the run's Baseline files (all 8 print 0.2748 in
 # every simulated quarter); every policy file prints Table 5's 0.2762.
 ALPHA_PP_BASELINE_RUN = 0.2748
 

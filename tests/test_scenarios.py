@@ -257,3 +257,43 @@ def test_pre_policy_years_are_opt_in_and_flagged(name):
     tail = dict(zip(full["years"], full["variables"]["GDP_R"]["delta_level"]))
     assert served["variables"]["GDP_R"]["delta_level"] == [
         tail[y] for y in served["years"]]
+
+
+
+@needs_cache
+def test_capacity_constrained_years_are_flagged():
+    """Generation at the capacity ceiling (the regime that breaks stock-flow
+    consistency in the two refused solves) is flagged per year and in a
+    leading caveat; green public investment never reaches it."""
+    r = run_scenario("fossil_fuel_ban_subsidy__no_forward_guidance")
+    flagged = [y for y, c in zip(r["years"], r["capacity_constrained"]) if c]
+    assert flagged == [2032]
+    assert r["caveats"][0].startswith("Capacity-constrained years")
+    gdp = dict(zip(r["years"], r["variables"]["GDP_R"]["delta_pct"]))
+    assert gdp[2032] < -5  # the crash the 2030/2035 snapshots hide
+    g = run_scenario("green_public_investment")
+    assert not any(g["capacity_constrained"])
+
+
+@needs_cache
+def test_every_subsidy_scenario_lowers_real_gdp_cumulatively():
+    """Pins the served 'Subsidies lower real GDP' caveat (2027-2040 sums of
+    the quarterly GDP_R delta, cached run)."""
+    from define_uk import scenarios as sc
+
+    base = sc._read_column(
+        sc._run_root() / sc._TABLES / "gvt_investment" / "Variables_Baseline.csv",
+        "GDP_R")
+
+    def cum(name):
+        _, _, folder, label, _ = sc._BY_NAME[name]
+        s = sc._read_column(
+            sc._run_root() / sc._TABLES / folder / f"Variables_{label}.csv", "GDP_R")
+        return sum(s[t] - base[t] for t in range(160, 216))
+
+    for name in sc._BY_NAME:
+        if "subsid" in name:
+            assert cum(name) < 0, name
+    assert cum("green_power_subsidy") == pytest.approx(-47.3, abs=0.5)
+    assert cum("green_public_investment") == pytest.approx(252.2, abs=0.5)
+    assert cum("housing_regulation_subsidy") < cum("housing_regulation") < 0

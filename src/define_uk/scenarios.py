@@ -40,8 +40,19 @@ CAVEATS = [
     "Deltas only: baseline LEVELS are not validated against outturns "
     "(e.g. baseline 2025 real GDP growth ~5% vs ~1% outturn) and must "
     "never be presented as forecasts.",
-    "Demand-led closure: DEFINE-UK is a demand-led ecological SFC model; "
-    "multipliers sit above mainstream estimates (VALIDATION.md).",
+    "Demand-led closure: DEFINE-UK is a demand-led ecological SFC model, "
+    "so demand impulses have lasting output effects (Kaldor-Verdoorn "
+    "productivity, Eq. (31)). Its cumulative GPI multiplier is back-loaded: "
+    "below 1 for the first five years from the policy start, 2.25 by 2040 "
+    "(define_uk.validation.gpi_multiplier, horizon_profile).",
+    "Subsidies lower real GDP in this run: every scenario with a subsidy "
+    "has a negative cumulative real GDP delta over 2027-2040 (green power "
+    "subsidy -47 against +252 for green public investment with a similar "
+    "spending path; housing regulation with subsidy -150 against -104 "
+    "without; GBP bn at 2022 prices, quarterly flows summed). The cached "
+    "outputs show the contraction through consumption and imports; the "
+    "mechanism is not confirmed and is drafted as a query to the authors "
+    "(VALIDATION.md, upstream queries). Treat subsidy GDP deltas with care.",
     "Emissions divergence: the pinned commit's baseline EMIS path runs "
     "below the manual's Table 4 (-23% by 2040), along with the rest of the "
     "power and energy block; consistent with, but not proof of, a different "
@@ -146,6 +157,10 @@ VARIABLE_UNITS = {
               "delta_pct is % of baseline",
     "EMIS": "MtCO2e per QUARTER (annual mean of the quarterly flow); multiply "
             "delta_level by 4 for MtCO2e per year",
+    "EMIS_ELEC": "electricity-generation emissions, MtCO2e per QUARTER (x4 "
+                 "per year); EMIS = EMIS_ELEC + EMIS_NELEC",
+    "EMIS_NELEC": "non-electricity emissions (direct energy use), MtCO2e per "
+                  "QUARTER (x4 per year); EMIS = EMIS_ELEC + EMIS_NELEC",
     "UPLOT": "unemployment rate in %, so delta_level is in percentage points; "
              "delta_pct is % of the baseline RATE, not pp",
 }
@@ -279,6 +294,27 @@ def _annual_means(quarterly: list[float | None]) -> dict[int, float | None]:
     return out
 
 
+# A quarter is capacity-constrained when generation sits at the power
+# sector's capacity ceiling, E_ELEC = E_ELECMAX to printing precision (two
+# 4-s.f. values: ratio >= 0.999). That is the regime in which the two
+# refused fossil-fuel-ban solves break stock-flow consistency, and served
+# scenarios reach it too (fossil_fuel_ban_subsidy__no_forward_guidance,
+# 2032: GDP -5.7%, electricity price doubling). Flagged per year.
+CAPACITY_RATIO = 0.999
+
+
+def _capacity_years(path: Path) -> set[int]:
+    try:
+        gen, cap = _read_column(path, "E_ELEC"), _read_column(path, "E_ELECMAX")
+    except KeyError:  # a file without the power block cannot be checked
+        return set()
+    return {
+        START_YEAR + t // 4
+        for t, (e, m) in enumerate(zip(gen, cap))
+        if e is not None and m and e >= CAPACITY_RATIO * m
+    }
+
+
 @functools.lru_cache(maxsize=4)
 def _policy_start_year(root: str) -> int | None:
     """First calendar year in which any policy acts, read from the cache.
@@ -410,7 +446,18 @@ def run_scenario(
                 var, "model units, annual mean of quarterly values"),
         }
 
+    capacity = _capacity_years(scen_path)
     caveats = list(CAVEATS)
+    if capacity & set(years):
+        caveats.insert(0, (
+            "Capacity-constrained years: electricity generation sits at the "
+            "power sector's capacity ceiling in "
+            + ", ".join(str(y) for y in sorted(capacity & set(years)))
+            + " (capacity_constrained). Deltas in those years reflect a "
+            "price-regime switch (the regime that breaks stock-flow "
+            "consistency in the two refused solves), not a smooth policy "
+            "response."
+        ))
     if policy_start is None:
         caveats.insert(0, (
             "Policy start unknown: fewer than two policy files are cached, so "
@@ -439,6 +486,7 @@ def run_scenario(
             None if policy_start is None else y >= policy_start for y in years
         ],
         "baseline_parameter_mismatch": dict(BASELINE_PARAMETER_MISMATCH),
+        "capacity_constrained": [y in capacity for y in years],
         "variables": per_variable,
         "caveats": caveats,
         "sfc_check": checks,
