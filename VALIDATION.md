@@ -128,7 +128,7 @@ pinned run exists (developer machines) and gates the identical numbers.
 `validation/reference_outputs.json` deliberately, with a run-record entry
 below — never editing a test.
 
-## Targets (to fill)
+## Targets
 
 | # | Published output | Scenario | Tolerance | Status |
 |---|------------------|----------|-----------|--------|

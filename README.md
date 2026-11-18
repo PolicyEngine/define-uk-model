@@ -1,38 +1,46 @@
 # define-uk-model
 
-Adapter for **DEFINE-UK**, the ecological stock-flow consistent (E-SFC) model
-of the UK economy by Dafermos, Nikolaidi and co-authors
+Adapter for **DEFINE-UK**, the ecological stock-flow consistent (E-SFC)
+model of the UK economy by Dafermos, Nikolaidi, George and co-authors
 ([define-model.org/define-uk](https://define-model.org/define-uk/)), for the
 [PolicyEngine Macro](https://github.com/PolicyEngine/macro) suite.
 
-> **Status: partially validated** (see `VALIDATION.md`). The baseline
-> macro block reproduces the manual's Table 4 within tolerance (2025 growth
-> −0.30pp against a ±0.31pp tolerance); baseline emissions run below the
-> table, by 23% in 2040, along with the rest of the power and energy block.
-> Every cell of Table 4 and every other claim, with its status and evidence:
-> [VALIDATION.md, "Proof at a glance"](VALIDATION.md#proof-at-a-glance) and
-> [`validation/table4_scorecard.csv`](validation/table4_scorecard.csv). The scenario surface is gated against the pinned
-> oracle run only: no machine-readable published scenario results exist. The scenario
-> surface is **local-only** — it reads a locally cached run of the
-> unlicensed upstream code; nothing is hosted or redistributed — and
-> **deltas-only**: baseline levels are not validated against outturns and
-> must never be presented as forecasts. The defensible outputs are
-> scenario-minus-baseline deltas under the model's demand-led closure,
-> with the caveats every result carries.
+> **Status: partially validated.** Scenario results are
+> **scenario-minus-baseline deltas only**, read from a locally cached run of
+> the unlicensed upstream R model. They are never levels and never forecasts.
+> What each claim rests on:
+> [VALIDATION.md, "Proof at a glance"](VALIDATION.md#proof-at-a-glance).
 
-## Quick start
+## What it is
+
+DEFINE-UK simulates the UK macrofinancial system and its emissions under
+climate policies: fossil-fuel regulation, power-sector subsidies, housing
+regulation and green public investment. It is demand-led and post-Keynesian,
+calibrated to UK national accounts (Model Manual v1.1, April 2026). This
+repository provides:
+
+- `define_uk.scenarios`: the 22 upstream scenarios as annual delta paths,
+  with caveats, provenance and a stock-flow check on every result.
+- `define_uk.validation`: the comparison tables (manual Table 4, external
+  outturns) and the green public investment multiplier.
+- `define_uk.model`: a clean-room Python reimplementation from the manual.
+  It solves, but does not reproduce the upstream yet (see Limits), and
+  nothing served comes from it.
+
+## Install and run
 
 ```bash
 pip install -e .            # Python 3.11+; no Python dependencies
+pytest -q                   # oracle tests skip without the cached run
 ```
 
-The scenario surface reads a locally cached run of the upstream R model.
-Producing that cache needs R 4.0+ and the upstream's R packages, and the
-render takes a long time:
+The scenario surface needs a cached run of the upstream R model. Producing
+it needs R 4.0+ and the upstream's R packages, and the render takes a long
+time:
 
 ```python
 from define_uk import runner
-runner.check_r()   # lists any missing R packages; installing them is your call
+runner.check_r()   # lists missing R packages; installing them is your call
 runner.run()       # fetches the pinned upstream commit and renders it once
 ```
 
@@ -44,7 +52,6 @@ from define_uk import scenarios
 scenarios.list_scenarios()                       # the 22 scenarios
 r = scenarios.run_scenario("green_public_investment")
 r["years"]                  # 2027 ... 2040: from the policy start
-r["policy_active"]          # True for every served year
 r["caveats"]                # read these before quoting any number
 gdp = dict(zip(r["years"], r["variables"]["GDP_R"]["delta_pct"]))
 emis = dict(zip(r["years"], r["variables"]["EMIS"]["delta_level"]))
@@ -52,130 +59,94 @@ gdp[2030]                   # +0.53: real GDP, % of baseline
 4 * emis[2030]              # -49.1: MtCO2e per year (EMIS is quarterly)
 ```
 
-Every result is a **delta against the model's own baseline**, never a
-level or a forecast. What each number rests on: VALIDATION.md,
-[Proof at a glance](VALIDATION.md#proof-at-a-glance).
+Each result carries `policy_active` and `capacity_constrained` flags per
+year, the `baseline_parameter_mismatch` (issue #20), `sfc_check`, provenance
+and units. Years before the policy start (2023–2026) are returned only with
+`include_pre_policy=True`, because they contain no policy. The two
+stock-flow-inconsistent cached solves are refused (`StockFlowInconsistent`).
 
-## What DEFINE-UK is
+## Results
 
-An ecological stock-flow consistent macro model calibrated to UK national
-accounting data, simulating the UK macrofinancial system and its
-environmental impacts under climate-policy scenarios (fossil-fuel
-regulation, power-sector subsidies, housing regulation, green public
-investment). Two published versions exist: 1.0 and 1.1 (April 2026, adds
-regulation policies), documented in the model manuals on the DEFINE site
-and the paper *"Evaluating climate policy mixes in the UK: an E-SFC
-approach"*.
+From the cached run, as deltas against the model's own baseline:
 
-## Licensing and what this repo does NOT contain
+| Scenario | Real GDP, 2030 | Emissions, 2030 |
+|---|---|---|
+| Green public investment | +0.53% | −49.1 MtCO2e/yr (−14%) |
+| Green power subsidy | −0.47% | −40.5 MtCO2e/yr |
+| Housing regulation | −0.21% | −6.7 MtCO2e/yr |
 
-The upstream model code
-([DEFINE-model/DEFINE_UK_1.1](https://github.com/DEFINE-model/DEFINE_UK_1.1))
-is public on GitHub but **carries no license**, so this repository does not
-vendor, copy, or redistribute any of it. Instead, `define_uk.upstream`
-fetches the upstream repository **at a pinned commit** into a local cache at
-run time, and the adapter runs it in place with R. If the DEFINE team
-publishes a license or grants permission, vendoring at a pinned revision
-(the pattern used by
-[us-frb-model](https://github.com/PolicyEngine/us-frb-model)) becomes
-possible; an upstream request is the first item in the roadmap below.
+- Emissions fall relative to baseline in every scenario by 2035.
+- Every scenario with a subsidy lowers cumulative real GDP; the reason is
+  not confirmed (VALIDATION.md, upstream queries).
+- The **green public investment multiplier** is **2.30**: cumulative
+  nominal ΔGDP over cumulative government power-sector spending
+  (ΔSPEND_GVTPS) to 2040, as decided in issue #16. Per pound of total
+  non-wage government spending it is 1.78.
+- The multiplier is back-loaded: counted from the policy start it is 0.47
+  after one year and 2.25 by 2040, so it sits below published short-horizon
+  estimates (OBR about 1.0; IMF WP/21/87 1.1–1.5 for renewables), not above.
+  Its caveats travel with it (`define_uk.validation.gpi_multiplier`).
 
-Code in this repository (the adapter, not the model) is AGPL-3.0, matching
-PolicyEngine convention.
+## Validation
 
-## Architecture
+- **Manual Table 4:** all 15 rows are compared
+  ([`validation/table4_scorecard.csv`](validation/table4_scorecard.csv)).
+  - The inputs, the macro block and corporate finance match.
+  - The power and energy block diverges: emissions are 23% below the table
+    in 2040.
+- **Published scenario results:** none exist for v1.1, so scenario design
+  and two coarse paper anchors are gated instead.
+- **Served deltas:** pinned to the cached run (`validation/reference_outputs.json`).
+- **CI:** CI cannot hold the unlicensed upstream run, so it runs the
+  hermetic half (`.github/workflows/validation-gate.yml`). The full oracle
+  comparison runs wherever the cached run exists.
+
+Details, tolerances and the run record: [VALIDATION.md](VALIDATION.md).
+
+## Limits
+
+- **Deltas only:** baseline levels sit far from outturns (2025 baseline
+  growth is 4.7% against 1.3% outturn), and % deltas are relative to that
+  baseline.
+- **Parameter mismatch (issue #20):** the cached Baseline and policy files
+  use different α_PP values, so every delta also carries that change.
+  Removing it moves the multiplier to about 2.08–2.25.
+- **Capacity years:** years at the electricity capacity ceiling (the
+  fossil-fuel-ban family, 2032–33) are a price-regime switch and are flagged.
+- **Clean-room model:** every printed equation is transcribed and the whole
+  model solves, but baseline GDP is up to 44% below the upstream by 2040
+  (issue #17), and its own multiplier is 1.52. It is a diagnostic only.
+  Protocol: [REIMPLEMENTATION.md](REIMPLEMENTATION.md).
+- **Local only:** nothing is hosted and the upstream is never redistributed
+  ([LICENSE-STATUS.md](LICENSE-STATUS.md)).
+
+## Pins
+
+- **Upstream:** [DEFINE-model/DEFINE_UK_1.1](https://github.com/DEFINE-model/DEFINE_UK_1.1)
+  at `846081a580a6033159d5c421632ad8f0b30d0ded` (fetched 2026-08-01;
+  `define_uk.upstream.UPSTREAM_COMMIT`).
+- **Specification:** DEFINE-UK Model Manual v1.1 (George and Dafermos,
+  April 2026).
+- **Changing the pin** is a reviewed change tied to
+  `validation/reference_outputs.json`.
+
+## Layout
 
 ```
 src/define_uk/
-  upstream.py   # pinned-commit fetch + cache of DEFINE-model/DEFINE_UK_1.1
-  runner.py     # runs the upstream Rmd scenarios via Rscript (subprocess)
-  scenarios.py  # curated scenario surface over the CACHED upstream run
-  validation.py # computed validation tables and the GPI multiplier, with caveats
-  model/        # clean-room reimplementation from the Model Manual v1.1
-    registry.py, solver.py, scenario.py  # equation registry, period solver, path solver
-    accounting.py, calibration.py        # §2.2 matrices, §5 Tables 5-6
-    empirical.py                         # forms the oracle follows where the manual departs
-    sectors/                             # one module per manual §3 section
+  upstream.py    pinned-commit fetch and cache of the upstream repository
+  runner.py      renders the upstream notebook with Rscript
+  scenarios.py   the served scenario surface (deltas, caveats, checks)
+  validation.py  Table 4 scorecard, external comparators, GPI multiplier
+  model/         clean-room reimplementation (registry, solver, sectors/)
+validation/      committed reference artifacts gated by the tests
+tests/           hermetic tests (CI) and cached-run oracle tests
 ```
 
-### Scenario surface (`define_uk.scenarios`)
+## Licence
 
-`list_scenarios()` enumerates the 22 upstream scenarios (four blocks:
-`gvt_investment`, `housing_regulation`, `power_sector_regulation` under
-five expectation regimes, and `mixed`). `run_scenario(name)` returns
-annualised **scenario-minus-baseline delta paths** (level and %) for
-`GDP_R`, `EMIS`, `UPLOT`, `CONS_R` by default, from the year the policy
-starts (2027; `policy_start_year`, read from the cache) to 2040. Earlier
-years carry only the α_PP mismatch (issue #20) and are returned only with
-`include_pre_policy=True`, flagged `policy_active=False`. Years in which
-electricity generation sits at the capacity ceiling are flagged
-`capacity_constrained` (a price-regime switch, not a smooth response).
-`EMIS_ELEC` and `EMIS_NELEC` split the emissions delta. Each result also
-carries calendar years (run anchored 1987Q1–2040Q4), provenance (pinned
-commit, cache path, R run date), `result_type="scenario deltas"`, and
-mandatory caveats.
-It only ever reads the locally cached run produced by
-`define_uk.runner.run()` — it never runs R, and raises with instructions
-when no cache exists. Every result carries `sfc_check`, and two scenarios
-are refused (`StockFlowInconsistent`): the fossil-fuel ban under no forward
-guidance and under unexpected enforcement, where the cached upstream output
-breaks stock-flow consistency (net lending summed across sectors is not
-zero; the break is the power-sector valuation gap in Eq. 74, issue #17). Gated by
-`tests/test_scenarios.py` against the pinned oracle run. VALIDATION.md
-targets 2/3 are closed at the achievable ceiling, not passed: scenario
-design plus two coarse anchors from a conference version of the paper.
-
-- **Pinned upstream revision:** `846081a580a6033159d5c421632ad8f0b30d0ded`
-  (`DEFINE_UK_1.1@main`, fetched 2026-08-01).
-- **R requirement:** R ≥ 4.0 with the packages listed in the upstream
-  README; `runner.py` checks and reports what is missing rather than
-  auto-installing.
-
-## Roadmap
-
-1. **Clean-room Python reimplementation** from the published Model Manual
-   v1.1, under the protocol in
-   [REIMPLEMENTATION.md](REIMPLEMENTATION.md) (`src/define_uk/model/`).
-   The unlicensed upstream code is used only as a numerical oracle; the
-   implementation is AGPL-3.0 and hostable like the suite's other adapted
-   models, credited to the DEFINE authors as an independent implementation
-   of their published design. Every printed equation is now registered
-   and the whole model solves, but **it does not reproduce the oracle**:
-   baseline GDP is up to 44% below the oracle by 2040 (14 equations
-   undiagnosed, mainly the equity revaluations), and its green public
-   investment multiplier is 1.52 against the oracle's 2.30 (1.56 until
-   2026-11-15, when the Taylor rule still read the oracle's inflation,
-   issue #24; INF_A's form is inferred from the cached CSVs, since the
-   manual prints no equation for it, and r_KFF/r_KNFF are still read from
-   the oracle). Milestone 1
-   (accounting matrices) passes; milestone 2 is not passed. Every number
-   this repo serves comes from the cached upstream R run. That run has its
-   own caveat: its Baseline files use a different α_PP (0.2748) from its
-   policy files (0.2762), so every published policy-minus-baseline delta
-   carries part of that change. The served green public investment
-   multiplier is 2.30: cumulative nominal ΔGDP over cumulative
-   ΔSPEND_GVTPS, the government power-sector spending the policy switch
-   sets (issue #16, decided 2026-11-15). Per pound of total non-wage
-   government spending it is 1.78, which was the headline until then.
-   Removing the α_PP change moves them to about 2.08–2.25 and 1.73–1.75
-   (VALIDATION.md, round 5; issue #20).
-2. **Replication gate:** reproduce the paper's headline scenario outputs
-   (S1 baseline and at least two policy scenarios) and record them in
-   `VALIDATION.md` with tolerances, as
-   [boe-var-model](https://github.com/PolicyEngine/boe-var-model) and
-   [us-hank-model](https://github.com/PolicyEngine/us-hank-model) do for
-   their own targets (neither has validated response magnitudes).
-3. **Adapter surface:** a `define_scenario` entry point in
-   `policyengine-macro` (curated levers, model-unit validation, ScoreResult
-   provenance), refusing anything unreplicated.
-4. **Microsimulation connection:** macro→micro incidence of scenario
-   household-income and energy-price paths through the PolicyEngine
-   microsimulation, following the suite's `EconomicAssumptions` overlay
-   pattern; no `score_reform` bridge unless a defensible statute mapping
-   exists.
-
-## PolicyEngine Macro
-
-This model joins the suite behind
-[policyengine-macro.vercel.app](https://policyengine-macro.vercel.app) —
-open models with a common discovery, run, and validation surface.
+The code in this repository (the adapter and the clean-room
+reimplementation) is AGPL-3.0 ([LICENSE](LICENSE)). The upstream model
+carries no licence, so it is fetched and run locally, never vendored. If the
+DEFINE team grants a licence, vendoring at a pinned revision becomes
+possible ([LICENSE-STATUS.md](LICENSE-STATUS.md)).

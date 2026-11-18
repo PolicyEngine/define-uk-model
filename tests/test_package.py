@@ -1,4 +1,4 @@
-"""Scaffold tests: importability and pin integrity — no network, no R."""
+"""Package tests: importability and pin integrity (no network, no R)."""
 
 import re
 
