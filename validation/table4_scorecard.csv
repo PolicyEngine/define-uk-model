@@ -1,0 +1,76 @@
+variable,label,statistic,published,run,gap,status,tolerance_abs,how_read
+real_gdp_growth_pct,Real GDP growth (%),2025,4.96,4.664,-0.296,MATCH,0.31,"y/y growth of the annual mean of GDP_R; the +/-0.31pp band was set at the 2025 miss (0.30pp) in 2026-08, so 2025 is a match only by construction (2030 exact, 2040 0.06pp)"
+real_gdp_growth_pct,Real GDP growth (%),2030,2.35,2.35,-0.0,MATCH,0.31,"y/y growth of the annual mean of GDP_R; the +/-0.31pp band was set at the 2025 miss (0.30pp) in 2026-08, so 2025 is a match only by construction (2030 exact, 2040 0.06pp)"
+real_gdp_growth_pct,Real GDP growth (%),2040,2.01,2.073,0.063,MATCH,0.31,"y/y growth of the annual mean of GDP_R; the +/-0.31pp band was set at the 2025 miss (0.30pp) in 2026-08, so 2025 is a match only by construction (2030 exact, 2040 0.06pp)"
+real_gdp_growth_pct,Real GDP growth (%),mean,2.35,2.398,0.048,MATCH,0.31,"y/y growth of the annual mean of GDP_R; the +/-0.31pp band was set at the 2025 miss (0.30pp) in 2026-08, so 2025 is a match only by construction (2030 exact, 2040 0.06pp)"
+real_gdp_growth_pct,Real GDP growth (%),sd,0.71,0.616,-0.094,MATCH,0.31,"y/y growth of the annual mean of GDP_R; the +/-0.31pp band was set at the 2025 miss (0.30pp) in 2026-08, so 2025 is a match only by construction (2030 exact, 2040 0.06pp)"
+unemployment_pct,Unemployment (%),2025,4.31,4.39,0.08,MATCH,0.2,UPLOT; low-information on the sd: the tolerance exceeds the series sd (0.14)
+unemployment_pct,Unemployment (%),2030,4.73,4.81,0.08,MATCH,0.2,UPLOT; low-information on the sd: the tolerance exceeds the series sd (0.14)
+unemployment_pct,Unemployment (%),2040,4.72,4.53,-0.19,MATCH,0.2,UPLOT; low-information on the sd: the tolerance exceeds the series sd (0.14)
+unemployment_pct,Unemployment (%),mean,4.71,4.721,0.011,MATCH,0.2,UPLOT; low-information on the sd: the tolerance exceeds the series sd (0.14)
+unemployment_pct,Unemployment (%),sd,0.14,0.139,-0.001,MATCH,0.2,UPLOT; low-information on the sd: the tolerance exceeds the series sd (0.14)
+population_16plus_m,Population (millions),2025,55.66,55.655,-0.005,MATCH,0.01,POP
+population_16plus_m,Population (millions),2030,57.74,57.735,-0.005,MATCH,0.01,POP
+population_16plus_m,Population (millions),2040,61.61,61.612,0.002,MATCH,0.01,POP
+population_16plus_m,Population (millions),mean,58.68,58.679,-0.001,MATCH,0.01,POP
+population_16plus_m,Population (millions),sd,1.87,1.873,0.003,MATCH,0.01,POP
+labour_force_m,Labour Force (millions),2025,35.97,35.97,0.0,MATCH,0.01,LF
+labour_force_m,Labour Force (millions),2030,37.12,37.12,0.0,MATCH,0.01,LF
+labour_force_m,Labour Force (millions),2040,39.13,39.125,-0.005,MATCH,0.01,LF
+labour_force_m,Labour Force (millions),mean,37.62,37.618,-0.002,MATCH,0.01,LF
+labour_force_m,Labour Force (millions),sd,1.0,1.003,0.003,MATCH,0.01,LF
+non_fossil_electricity_share_pct,Proportion of non-fossil electricity generation (%),2025,57.93,62.167,4.237,DIVERGENCE,,100 x beta_NFF
+non_fossil_electricity_share_pct,Proportion of non-fossil electricity generation (%),2030,61.77,75.307,13.537,DIVERGENCE,,100 x beta_NFF
+non_fossil_electricity_share_pct,Proportion of non-fossil electricity generation (%),2040,77.14,97.5,20.36,DIVERGENCE,,100 x beta_NFF
+non_fossil_electricity_share_pct,Proportion of non-fossil electricity generation (%),mean,65.92,81.807,15.887,DIVERGENCE,,100 x beta_NFF
+non_fossil_electricity_share_pct,Proportion of non-fossil electricity generation (%),sd,6.35,12.262,5.912,DIVERGENCE,,100 x beta_NFF
+emissions_mtco2e_yr,Total emissions (MtCO2e/year),2025,407.32,393.18,-14.14,DIVERGENCE,,4 x EMIS
+emissions_mtco2e_yr,Total emissions (MtCO2e/year),2030,381.76,342.78,-38.98,DIVERGENCE,,4 x EMIS
+emissions_mtco2e_yr,Total emissions (MtCO2e/year),2040,324.37,248.67,-75.7,DIVERGENCE,,4 x EMIS
+emissions_mtco2e_yr,Total emissions (MtCO2e/year),mean,367.1,318.464,-48.636,DIVERGENCE,,4 x EMIS
+emissions_mtco2e_yr,Total emissions (MtCO2e/year),sd,25.46,45.883,20.423,DIVERGENCE,,4 x EMIS
+emission_price_gbp_t,Emission price (GBP/tCO2e),2025,8.01,8.01,-0.0,MATCH,0.01,1000 x P_ETS
+emission_price_gbp_t,Emission price (GBP/tCO2e),2030,10.58,10.575,-0.005,MATCH,0.01,1000 x P_ETS
+emission_price_gbp_t,Emission price (GBP/tCO2e),2040,15.71,15.707,-0.003,MATCH,0.01,1000 x P_ETS
+emission_price_gbp_t,Emission price (GBP/tCO2e),mean,11.86,11.859,-0.001,MATCH,0.01,1000 x P_ETS
+emission_price_gbp_t,Emission price (GBP/tCO2e),sd,2.44,2.443,0.003,MATCH,0.01,1000 x P_ETS
+green_investment_pct_gdp,Green investment (% of GDP),2025,1.0,,,NOT COMPARABLE,,definition not stated; no combination of the printed green GCF columns reproduces it
+green_investment_pct_gdp,Green investment (% of GDP),2030,1.07,,,NOT COMPARABLE,,definition not stated; no combination of the printed green GCF columns reproduces it
+green_investment_pct_gdp,Green investment (% of GDP),2040,1.3,,,NOT COMPARABLE,,definition not stated; no combination of the printed green GCF columns reproduces it
+green_investment_pct_gdp,Green investment (% of GDP),mean,1.13,,,NOT COMPARABLE,,definition not stated; no combination of the printed green GCF columns reproduces it
+green_investment_pct_gdp,Green investment (% of GDP),sd,0.1,,,NOT COMPARABLE,,definition not stated; no combination of the printed green GCF columns reproduces it
+nfc_default_rate_pct,NFC default rate (%),2025,0.28,0.286,0.006,MATCH,0.02,400 x DEF_NFC (quarterly rate annualised)
+nfc_default_rate_pct,NFC default rate (%),2030,0.33,0.332,0.002,MATCH,0.02,400 x DEF_NFC (quarterly rate annualised)
+nfc_default_rate_pct,NFC default rate (%),2040,0.45,0.439,-0.011,MATCH,0.02,400 x DEF_NFC (quarterly rate annualised)
+nfc_default_rate_pct,NFC default rate (%),mean,0.36,0.361,0.001,MATCH,0.02,400 x DEF_NFC (quarterly rate annualised)
+nfc_default_rate_pct,NFC default rate (%),sd,0.05,0.051,0.001,MATCH,0.02,400 x DEF_NFC (quarterly rate annualised)
+nfc_credit_rationing_pct,NFC credit rationing (%),2025,3.81,3.855,0.045,MATCH,0.25,"100 x CR_NFC; matches to 2030, diverges after (mean and sd carry the 2040 miss)"
+nfc_credit_rationing_pct,NFC credit rationing (%),2030,2.56,2.531,-0.029,MATCH,0.25,"100 x CR_NFC; matches to 2030, diverges after (mean and sd carry the 2040 miss)"
+nfc_credit_rationing_pct,NFC credit rationing (%),2040,4.79,4.144,-0.646,DIVERGENCE,,"100 x CR_NFC; matches to 2030, diverges after (mean and sd carry the 2040 miss)"
+nfc_credit_rationing_pct,NFC credit rationing (%),mean,3.49,3.279,-0.211,DIVERGENCE,,"100 x CR_NFC; matches to 2030, diverges after (mean and sd carry the 2040 miss)"
+nfc_credit_rationing_pct,NFC credit rationing (%),sd,0.74,0.614,-0.126,DIVERGENCE,,"100 x CR_NFC; matches to 2030, diverges after (mean and sd carry the 2040 miss)"
+ps_default_rate_pct,Power sector default rate (%),2025,0.16,0.151,-0.009,DIVERGENCE,,400 x DEF_PS (quarterly rate annualised)
+ps_default_rate_pct,Power sector default rate (%),2030,0.11,0.145,0.035,DIVERGENCE,,400 x DEF_PS (quarterly rate annualised)
+ps_default_rate_pct,Power sector default rate (%),2040,0.13,0.297,0.167,DIVERGENCE,,400 x DEF_PS (quarterly rate annualised)
+ps_default_rate_pct,Power sector default rate (%),mean,0.12,0.209,0.089,DIVERGENCE,,400 x DEF_PS (quarterly rate annualised)
+ps_default_rate_pct,Power sector default rate (%),sd,0.01,0.088,0.078,DIVERGENCE,,400 x DEF_PS (quarterly rate annualised)
+ps_credit_rationing_pct,Power sector credit rationing (%),2025,47.22,31.832,-15.388,DIVERGENCE,,"100 x CR_PS; the means agree (30.15 vs 30.64) but the trends are opposite, so the mean is not read as a match"
+ps_credit_rationing_pct,Power sector credit rationing (%),2030,35.44,26.093,-9.347,DIVERGENCE,,"100 x CR_PS; the means agree (30.15 vs 30.64) but the trends are opposite, so the mean is not read as a match"
+ps_credit_rationing_pct,Power sector credit rationing (%),2040,21.09,37.592,16.502,DIVERGENCE,,"100 x CR_PS; the means agree (30.15 vs 30.64) but the trends are opposite, so the mean is not read as a match"
+ps_credit_rationing_pct,Power sector credit rationing (%),mean,30.64,30.154,-0.486,DIVERGENCE,,"100 x CR_PS; the means agree (30.15 vs 30.64) but the trends are opposite, so the mean is not read as a match"
+ps_credit_rationing_pct,Power sector credit rationing (%),sd,9.04,5.145,-3.895,DIVERGENCE,,"100 x CR_PS; the means agree (30.15 vs 30.64) but the trends are opposite, so the mean is not read as a match"
+imports_pct_gdp,Imports (% of GDP),2025,39.99,42.427,2.437,DIVERGENCE,,100 x IMP / GDP
+imports_pct_gdp,Imports (% of GDP),2030,39.97,42.737,2.767,DIVERGENCE,,100 x IMP / GDP
+imports_pct_gdp,Imports (% of GDP),2040,41.18,45.53,4.35,DIVERGENCE,,100 x IMP / GDP
+imports_pct_gdp,Imports (% of GDP),mean,40.31,43.526,3.216,DIVERGENCE,,100 x IMP / GDP
+imports_pct_gdp,Imports (% of GDP),sd,0.51,1.282,0.772,DIVERGENCE,,100 x IMP / GDP
+exports_pct_gdp,Exports (% of GDP),2025,38.58,39.424,0.844,DIVERGENCE,,100 x EXP / GDP
+exports_pct_gdp,Exports (% of GDP),2030,40.19,41.198,1.008,DIVERGENCE,,100 x EXP / GDP
+exports_pct_gdp,Exports (% of GDP),2040,44.15,45.582,1.432,DIVERGENCE,,100 x EXP / GDP
+exports_pct_gdp,Exports (% of GDP),mean,41.21,42.343,1.133,DIVERGENCE,,100 x EXP / GDP
+exports_pct_gdp,Exports (% of GDP),sd,1.8,2.042,0.242,DIVERGENCE,,100 x EXP / GDP
+reer_index,"Real effective exchange rate (index, 2022 = 1)",2025,1.0,0.999,-0.001,MATCH,0.02,REER; low-information match: the tolerance is twice the series sd
+reer_index,"Real effective exchange rate (index, 2022 = 1)",2030,1.0,0.993,-0.007,MATCH,0.02,REER; low-information match: the tolerance is twice the series sd
+reer_index,"Real effective exchange rate (index, 2022 = 1)",2040,0.98,0.968,-0.012,MATCH,0.02,REER; low-information match: the tolerance is twice the series sd
+reer_index,"Real effective exchange rate (index, 2022 = 1)",mean,0.99,0.986,-0.004,MATCH,0.02,REER; low-information match: the tolerance is twice the series sd
+reer_index,"Real effective exchange rate (index, 2022 = 1)",sd,0.01,0.013,0.003,MATCH,0.02,REER; low-information match: the tolerance is twice the series sd

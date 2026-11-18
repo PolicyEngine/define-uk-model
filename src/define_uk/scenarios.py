@@ -41,9 +41,11 @@ CAVEATS = [
     "never be presented as forecasts.",
     "Demand-led closure: DEFINE-UK is a demand-led ecological SFC model; "
     "multipliers sit above mainstream estimates (VALIDATION.md).",
-    "Emissions vintage divergence: the pinned commit's baseline EMIS path "
-    "runs below the manual's Table 4, widening with horizon "
-    "(VALIDATION.md target 1b); emission deltas share that vintage.",
+    "Emissions divergence: the pinned commit's baseline EMIS path runs "
+    "below the manual's Table 4 (-23% by 2040), along with the rest of the "
+    "power and energy block; consistent with, but not proof of, a different "
+    "model vintage (VALIDATION.md target 1b). Emission deltas come from "
+    "this run, so % deltas are relative to its lower baseline.",
     "Unlicensed upstream: results come from a locally cached run of the "
     "upstream R code at a pinned commit; nothing is redistributed.",
     "Parameter mismatch (issue #20): the cached run's Baseline files use "

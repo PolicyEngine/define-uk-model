@@ -79,8 +79,9 @@ def test_macro_block_replicates_table_4(baseline, year):
     run_growth = 100 * (
         _year_mean(baseline["GDP_R"], t0) / _year_mean(baseline["GDP_R"], t0 - 4) - 1
     )
-    # 0.3pp tolerance: Table 4's annualisation convention is not stated
-    # exactly; 2030/2040 match to 0.06pp, 2025 differs by 0.30pp.
+    # 0.31pp band: 2030 is exact, 2040 is 0.06pp off, 2025 0.30pp. No single
+    # growth convention reproduces all three years, and 2025 sits in the
+    # start-up transient (reference_outputs.json note; VALIDATION.md 1a).
     assert run_growth == pytest.approx(
         growth, abs=_TOL["real_gdp_growth_pct"]["abs"]
     )
