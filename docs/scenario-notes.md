@@ -41,14 +41,19 @@ ban print them (`define_uk.scenarios.EXPECTATION_REGIMES`):
 - **ELEC_BUFFER** is not named in the manual either, and we have not
   identified its effect.
 
-In every regime the ban on fossil *generation* takes effect: the non-fossil
-share of generation reaches 0.975 and stays there in both the mutual-trust
-and the false-confidence run, and fossil generation is the same residual
-(about 2 per quarter from 2032, consistent with the manual's Eqs. (6)–(7),
-where fossil generation is the remainder and the constant σ_ELEC is slightly
-below one). So the regimes differ in what the power sector expects before
-2032 and in whether the fossil *capital stock* is removed in 2032, not in
-how much fossil electricity is generated afterwards.
+In the mutual-trust and false-confidence runs the generation mix is the
+same: the non-fossil share of generation is 0.975 from 2032Q1 in both, and
+fossil generation is the same residual (about 2 per quarter, consistent with
+the manual's Eqs. (6)–(7), where fossil generation is the remainder and the
+constant σ_ELEC is slightly below one). Those two regimes therefore differ
+only in whether the fossil *capital stock* is removed in 2032, not in how
+much fossil electricity is generated. The other three regimes also differ
+before 2032, because less non-fossil capacity is built (non-fossil capital
+at 2031Q4, ban alone: 127.7 under mutual trust and false confidence, 110.9
+poor credibility, 109.5 unexpected enforcement, 100.3 no forward guidance),
+and under poor credibility and unexpected enforcement the non-fossil share
+reaches 0.975 later (0.936 and 0.967 at 2033Q4; 0.975 in every regime by
+2036Q4).
 
 ## Duplicate solves
 
@@ -96,7 +101,7 @@ Cumulative emissions cut by the fossil-fuel ban, 2027–2040, by regime:
 | Mutual trust | −398.5 | −118.7 | −279.8 | −517.7 |
 | False confidence | −417.0 | −118.7 | −298.3 | −517.8 |
 | Poor credibility | −217.9 | −67.8 | −150.1 | −397.9 |
-| No forward guidance (refused: not stock-flow consistent) | −121.3 | −65.5 | −55.6 | −243.7 |
+| No forward guidance (ban alone refused) | −121.3 | −65.5 | −55.6 | −243.7 |
 | Unexpected enforcement (ban alone refused) | −183.5 | −77.8 | −105.7 | −381.6 |
 
 The ban alone cuts 18.5 MtCO2e more under false confidence than under mutual
@@ -130,7 +135,7 @@ The chain in the cached files:
    emission intensity of non-electric energy (Eq. (19)) are logistic
    functions of the lagged ratio of green to conventional production
    capital. In the cached files each of the three is a single function of
-   that ratio across both runs. False confidence relative to mutual trust,
+   that ratio across both runs, to printing precision. False confidence relative to mutual trust,
    annual means:
 
    | Year | Energy intensity | Non-electric share of production energy | Emission intensity, non-electric | Real gross output | Non-electricity emissions | MtCO2e |
@@ -166,10 +171,14 @@ the shortfall and not to expectations.
   whatever the fossil capital stock.
 - The two refused solves (the ban alone under no forward guidance and under
   unexpected enforcement) and the other served runs that reach the ceiling
-  are the same regime switch, longer: with weaker expectations less
-  non-fossil capacity is built before 2032, so the struck-out capital leaves
-  a shortfall of up to 31 quarters. Their cumulative figures above are
-  shown for completeness; the two refused solves are not results.
+  are the same regime switch, longer. With weaker expectations less
+  non-fossil capacity is in place when the fossil capital is struck out:
+  maximum generation at 2032Q1 is 78.1 under mutual trust, 72.0 under
+  unexpected enforcement and 64.1 under no forward guidance, against demand
+  of about 80, and the ceiling binds for 2, 4 and 31 quarters. The
+  cumulative figures above for the ban alone under no forward guidance and
+  under unexpected enforcement come from the two refused solves; they are
+  shown for completeness and are not results.
 - We have not established why fossil generation continues at the same level
   with zero fossil capital beyond what Eqs. (6)–(7) print, and we have not
   identified what ELEC_BUFFER does.
