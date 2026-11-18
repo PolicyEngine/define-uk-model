@@ -310,6 +310,8 @@ def test_gpi_cumulative_multiplier_matches_the_oracle(gpi_cum, base, gpi):
     # clean-room shock is the GPI spending path on the clean-room's own
     # baseline, so it has no delta before 2027 and no alpha_PP change: the
     # policy window is the like-for-like one (the target was the
-    # full-simulation 2.30 until 2026-11-18; 1.52 misses both).
+    # full-simulation 2.30 +/- 10% until 2026-11-18; 1.52 misses both). The
+    # band is 8% so that its lower edge stays at 2.07: the re-pin moves the
+    # target, it does not make the gate easier to pass.
     d_sp = sum(g["SPEND_GVTPS"] - b["SPEND_GVTPS"] for g, b in zip(gpi[144:], base[144:]))
-    assert gpi_cum["empirical", 1.0]["GDP"] / d_sp == pytest.approx(2.25, rel=0.1)
+    assert gpi_cum["empirical", 1.0]["GDP"] / d_sp == pytest.approx(2.25, rel=0.08)
