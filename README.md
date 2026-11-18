@@ -80,7 +80,7 @@ From the cached run, as deltas against the model's own baseline:
 - Every scenario with a subsidy lowers cumulative real GDP; the reason is
   not confirmed (VALIDATION.md, upstream queries).
 - The fossil-fuel ban cuts slightly more under "false confidence" than under
-  "mutual trust" (−417 against −399 MtCO2e over 2027–2040). The gap comes
+  "mutual trust" (−417 against −398 MtCO2e over 2027–2040). The gap comes
   from a two-quarter electricity capacity shortfall in 2032 in the
   mutual-trust run, not from expectations; with the subsidy there is no
   shortfall and no gap ([docs/scenario-notes.md](docs/scenario-notes.md)).
