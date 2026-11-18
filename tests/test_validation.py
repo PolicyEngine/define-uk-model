@@ -85,3 +85,23 @@ def test_gpi_multiplier_pinned():
 def test_upstream_multiplier_table_is_flagged_unusable():
     m = validation.gpi_multiplier()
     assert "identical across all 8 scenarios" in m["upstream_table_unusable"]
+
+
+def test_gpi_multiplier_is_back_loaded_and_pinned():
+    """Fable 5.2 review, 2026-11-17: counted from the policy start the ratio
+    is below 1 for five years and reaches 2.25 by 2040; 2.30 also carries
+    4.8 of pre-policy (alpha_PP) GDP delta."""
+    import json
+
+    ref = json.loads(
+        (ARTIFACT.parent / "reference_outputs.json").read_text()
+    )["gpi_multiplier"]
+    m = validation.gpi_multiplier()
+    by = m["horizon_profile"]["by_year"]
+    for year, value in ref["horizon_profile_checkpoints"].items():
+        assert by[int(year)] == pytest.approx(value, abs=0.01), year
+    assert m["from_policy_start"] == pytest.approx(ref["from_policy_start"], abs=0.01)
+    assert m["pre_policy_cum_delta_gdp"] == pytest.approx(
+        ref["pre_policy_cum_delta_gdp"], abs=0.1)
+    assert all(v < 1 for y, v in by.items() if y <= 2031)
+    assert list(by.values()) == sorted(by.values())  # rises with horizon

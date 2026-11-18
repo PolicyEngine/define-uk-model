@@ -264,8 +264,9 @@ def _cum(path, base, v):
 
 @requires_cached_run
 def test_every_baseline_file_uses_the_lower_alpha_pp():
-    """All 7 Baseline files print alpha_PP = 0.2748 in every simulated
-    quarter; all 23 policy files print Table 5's 0.2762 (Eq. (139))."""
+    """All 8 Baseline files print alpha_PP = 0.2748 in every simulated
+    quarter; all 22 policy files print Table 5's 0.2762 (Eq. (139)).
+    (Said 7/23 until 2026-11-17.)"""
     from define_uk.scenarios import _TABLES, _run_root
     from define_uk.model.scenario import load_reference
     files = sorted((_run_root() / _TABLES).rglob("Variables_*.csv"))
@@ -275,6 +276,8 @@ def test_every_baseline_file_uses_the_lower_alpha_pp():
         seen[f.name == "Variables_Baseline.csv"] = seen.get(
             f.name == "Variables_Baseline.csv", set()) | vals
     assert seen == {True: {0.2748}, False: {0.2762}}
+    assert sum(f.name == "Variables_Baseline.csv" for f in files) == 8
+    assert len(files) == 30
 
 
 @requires_cached_run

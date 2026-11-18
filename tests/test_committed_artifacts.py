@@ -234,3 +234,24 @@ def test_license_status_documents_the_position():
     text = (REPO / "LICENSE-STATUS.md").read_text()
     for needle in ("no license", "pinned", "replication"):
         assert needle in text.lower()
+
+
+def test_multiplier_caveats_state_the_horizon_and_the_reinstated_citation():
+    """The 2.30 is back-loaded and below short-horizon estimates; the IMF
+    green-multiplier citation exists (WP/21/87) and is reinstated."""
+    caveats = " ".join(validation.GPI_MULTIPLIER_CAVEATS)
+    for needle in ("back-loaded", "0.47", "2.25", "WP/21/87", "1.1-1.5",
+                   "BELOW them"):
+        assert needle in caveats, needle
+    assert "no such publication could be located" not in caveats
+
+
+def test_served_caveats_cover_subsidies_and_back_loading():
+    from define_uk import scenarios
+
+    text = " ".join(scenarios.CAVEATS)
+    assert "Subsidies lower real GDP" in text
+    assert "multipliers sit above mainstream estimates" not in text
+    assert "back-loaded" in text
+    for var in ("EMIS_ELEC", "EMIS_NELEC"):
+        assert "x4" in scenarios.VARIABLE_UNITS[var]

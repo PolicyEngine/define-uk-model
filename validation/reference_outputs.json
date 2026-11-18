@@ -48,6 +48,10 @@
     "multiplier_tolerance_abs": 0.01,
     "cum_delta_gdp": 209.9,
     "cum_delta_spend": 91.2,
+    "from_policy_start": 2.25,
+    "pre_policy_cum_delta_gdp": 4.8,
+    "horizon_profile_checkpoints": {"2027": 0.47, "2031": 0.79, "2034": 1.40, "2040": 2.25},
+    "horizon_note": "same ratio counted from the policy start (2027Q1) to the end of each year; recorded 2026-11-17 (Fable 5.2 results review)",
     "secondary": {
       "definition": "cum dGDP / cum dSPEND_GVT (total government spending excluding wages), nominal, full simulation; the headline until 2026-11-15",
       "multiplier": 1.78,
