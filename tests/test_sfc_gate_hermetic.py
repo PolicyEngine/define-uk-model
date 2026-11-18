@@ -100,3 +100,13 @@ def test_inconsistent_solve_is_refused(cache, which):
     r = run_scenario(NAME, allow_inconsistent=True)
     assert not r["sfc_check"][which]["passed"]
     assert r["caveats"][0].startswith("NOT STOCK-FLOW CONSISTENT")
+
+
+def test_unknown_policy_start_is_flagged_not_assumed(cache):
+    """With one policy file cached the policy start cannot be read, so the
+    path is not trimmed and policy_active is None (unknown), never True."""
+    scenarios._policy_start_year.cache_clear()
+    r = run_scenario(NAME)
+    assert r["policy_start_year"] is None
+    assert r["policy_active"] and all(a is None for a in r["policy_active"])
+    assert r["caveats"][0].startswith("Policy start unknown")

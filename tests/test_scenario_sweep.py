@@ -259,7 +259,7 @@ def test_mixed_block_reuses_the_single_policy_solves():
 
 
 def _at(name: str, var: str, year: int) -> float:
-    r = run_scenario(name)
+    r = run_scenario(name, include_pre_policy=True)
     return dict(zip(r["years"], r["variables"][var]["delta_level"]))[year]
 
 

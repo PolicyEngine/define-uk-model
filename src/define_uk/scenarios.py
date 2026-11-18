@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import csv
 import datetime
+import functools
 from pathlib import Path
 
 from .upstream import UPSTREAM_COMMIT, cache_dir
@@ -53,8 +54,23 @@ CAVEATS = [
     "scenario-minus-baseline delta also carries that parameter change. No "
     "policy acts before 2027Q1, so 2023-2026 deltas are that change alone "
     "(real GDP -0.10% to -0.17% of baseline in 2025-26), not policy effects; "
-    "from 2027 the two cannot be separated (VALIDATION.md, round 5).",
+    "from 2027 the two cannot be separated (VALIDATION.md, round 5). "
+    "Served paths therefore start at policy_start_year by default; the "
+    "pre-policy years are returned only with include_pre_policy=True and "
+    "are flagged policy_active=False. policy_active=True means a policy "
+    "switch is on, not that the delta is the policy effect alone "
+    "(baseline_parameter_mismatch).",
 ]
+
+# Machine-readable form of the issue #20 caveat, attached to every result.
+BASELINE_PARAMETER_MISMATCH = {
+    "parameter": "alpha_PPLR",
+    "baseline_files": 0.2748,
+    "policy_files": 0.2762,
+    "issue": "PolicyEngine/define-uk-model#20",
+    "affects": "every served year, including policy_active years; "
+               "inseparable from the policy effect from policy_start_year on",
+}
 
 _TABLES = "output/tables"
 
@@ -122,10 +138,12 @@ def sfc_check(path: Path, tolerance: float = SFC_TOLERANCE) -> dict:
 # values, so flows are per-QUARTER rates: an EMIS delta of -10 is -40
 # MtCO2e/yr (define_uk.validation multiplies EMIS by 4 for the same reason).
 VARIABLE_UNITS = {
-    "GDP_R": "real GDP, model currency units per quarter (annual mean of the "
-             "quarterly flow); delta_pct is % of baseline",
-    "CONS_R": "real household consumption, model currency units per quarter "
-              "(annual mean of the quarterly flow); delta_pct is % of baseline",
+    "GDP_R": "real GDP, GBP billion at 2022 prices per quarter (manual "
+             "Table 6; annual mean of the quarterly flow, multiply by 4 for "
+             "a yearly total); delta_pct is % of baseline",
+    "CONS_R": "real household consumption, GBP billion at 2022 prices per "
+              "quarter (manual Table 6; annual mean of the quarterly flow); "
+              "delta_pct is % of baseline",
     "EMIS": "MtCO2e per QUARTER (annual mean of the quarterly flow); multiply "
             "delta_level by 4 for MtCO2e per year",
     "UPLOT": "unemployment rate in %, so delta_level is in percentage points; "
@@ -261,18 +279,58 @@ def _annual_means(quarterly: list[float | None]) -> dict[int, float | None]:
     return out
 
 
+@functools.lru_cache(maxsize=4)
+def _policy_start_year(root: str) -> int | None:
+    """First calendar year in which any policy acts, read from the cache.
+
+    Every policy file of the pinned run shares one pre-policy path (they are
+    identical, every column, until a switch acts; see
+    tests/test_alpha_pp_confound.py). The first quarter in which they stop
+    being identical is the policy start: 2027Q1 in the pinned run, where all
+    14 distinct policy families depart at once. Read from the cached files,
+    not hard-coded; None if fewer than two policy files are cached (then the
+    caller falls back to the first departure from baseline). Returns the
+    year of that quarter; the quarter is the first of its year in the
+    pinned run, so no served year mixes pre-policy and policy quarters.
+    """
+    paths = []
+    for _, _, folder, label, _ in _REGISTRY:
+        path = Path(root) / _TABLES / folder / f"Variables_{label}.csv"
+        if path.exists() and path not in paths:
+            paths.append(path)
+    if len(paths) < 2:
+        return None
+    rows = []
+    for path in paths:
+        with path.open(newline="") as fh:
+            rows.append(list(csv.reader(fh))[1:])
+    for t in range(min(len(r) for r in rows)):
+        if len({tuple(r[t]) for r in rows}) > 1:
+            return START_YEAR + t // 4
+    return None
+
+
 def run_scenario(
     name: str,
     variables: tuple[str, ...] = DEFAULT_VARIABLES,
     horizon_years: int = 15,
     allow_inconsistent: bool = False,
+    include_pre_policy: bool = False,
 ) -> dict:
     """Annualised scenario-minus-baseline delta paths from the cached run.
 
     Returns, per variable, level deltas and % deltas (relative to the same
     folder's baseline annual mean; for rates such as UPLOT the level delta
-    is already in the rate's own units). The horizon starts at the first
-    calendar year in which any requested variable departs from baseline.
+    is already in the rate's own units).
+
+    The horizon starts at ``policy_start_year``, the first year any policy
+    acts (2027 in the pinned run). Every cached scenario departs from its
+    baseline earlier, in 2023, but only because of the Baseline/policy
+    alpha_PP mismatch (issue #20): those pre-policy years carry no policy.
+    ``include_pre_policy=True`` starts at the first departure instead (2023)
+    and the result's per-year ``policy_active`` flags mark which years have
+    a policy on. ``baseline_parameter_mismatch`` says that the mismatch
+    persists in every year.
 
     Raises ``StockFlowInconsistent`` if the scenario or its baseline breaks
     the redundant equation (see ``sfc_check``). ``allow_inconsistent=True``
@@ -325,6 +383,9 @@ def run_scenario(
             f"scenario {name!r} shows no departure from baseline in "
             f"{variables}; check the cached run"
         )
+    policy_start = _policy_start_year(str(root))
+    if policy_start is not None and not include_pre_policy:
+        start_year = max(start_year, policy_start)
     years = [
         y
         for y in range(start_year, start_year + horizon_years)
@@ -350,6 +411,13 @@ def run_scenario(
         }
 
     caveats = list(CAVEATS)
+    if policy_start is None:
+        caveats.insert(0, (
+            "Policy start unknown: fewer than two policy files are cached, so "
+            "the pre-policy years (2023-2026 in the pinned run, the alpha_PP "
+            "mismatch alone) cannot be told apart and are included; "
+            "policy_active is None for every year."
+        ))
     if failed:
         caveats.insert(0, (
             "NOT STOCK-FLOW CONSISTENT: sectoral net lending does not sum to "
@@ -364,6 +432,13 @@ def run_scenario(
         "description": description,
         "delta_convention": "scenario minus baseline (same block folder)",
         "years": years,
+        "policy_start_year": policy_start,
+        # None per year when the policy start cannot be read from the cache
+        # (fewer than two policy files cached): unknown, not "active".
+        "policy_active": [
+            None if policy_start is None else y >= policy_start for y in years
+        ],
+        "baseline_parameter_mismatch": dict(BASELINE_PARAMETER_MISMATCH),
         "variables": per_variable,
         "caveats": caveats,
         "sfc_check": checks,
