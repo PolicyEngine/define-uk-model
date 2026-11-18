@@ -68,6 +68,28 @@ def test_gpi_multiplier_pinned():
     # Issue #16 (decided 2026-11-15): the headline divides by the policy
     # instrument SPEND_GVTPS; total non-wage spending is the secondary ratio.
     assert m["denominator"] == "SPEND_GVTPS"
+    # Window (2026-11-18): the headline is measured from the policy start;
+    # the full-simulation ratio (the headline until then) is kept, at its
+    # earlier pinned values, as full_simulation.
+    assert m["window"].startswith(ref["window"])
+    full, ref_full = m["full_simulation"], ref["full_simulation"]
+    assert full["window"].startswith(ref_full["window"])
+    assert full["multiplier"] == pytest.approx(
+        ref_full["multiplier"], abs=ref["multiplier_tolerance_abs"]
+    )
+    for key in ("cum_delta_gdp", "cum_delta_spend", "cum_delta_gdp_real"):
+        assert full[key] == pytest.approx(ref_full[key], abs=tol), key
+    assert m["secondary"]["full_simulation"]["multiplier"] == pytest.approx(
+        ref_full["secondary"]["multiplier"], abs=ref["multiplier_tolerance_abs"]
+    )
+    assert m["secondary"]["full_simulation"]["cum_delta_spend"] == pytest.approx(
+        ref_full["secondary"]["cum_delta_spend"], abs=tol
+    )
+    # The two windows differ by exactly the pre-policy years.
+    assert full["cum_delta_gdp"] - m["cum_delta_gdp"] == pytest.approx(
+        m["pre_policy_cum_delta_gdp"], abs=0.11
+    )
+    assert full["multiplier"] > m["multiplier"]
     sec = ref["secondary"]
     assert m["secondary"]["multiplier"] == pytest.approx(
         sec["multiplier"], abs=ref["multiplier_tolerance_abs"]
@@ -89,8 +111,9 @@ def test_upstream_multiplier_table_is_flagged_unusable():
 
 def test_gpi_multiplier_is_back_loaded_and_pinned():
     """Fable 5.2 review, 2026-11-17: counted from the policy start the ratio
-    is below 1 for five years and reaches 2.25 by 2040; 2.30 also carries
-    4.8 of pre-policy (alpha_PP) GDP delta."""
+    is below 1 for five years and reaches 2.25 by 2040 (the headline since
+    2026-11-18); the full-simulation 2.30 also carries 4.8 of pre-policy
+    (alpha_PP) GDP delta."""
     import json
 
     ref = json.loads(
@@ -101,6 +124,8 @@ def test_gpi_multiplier_is_back_loaded_and_pinned():
     for year, value in ref["horizon_profile_checkpoints"].items():
         assert by[int(year)] == pytest.approx(value, abs=0.01), year
     assert m["from_policy_start"] == pytest.approx(ref["from_policy_start"], abs=0.01)
+    # The headline IS the end of the profile: one window, one number.
+    assert m["multiplier"] == m["from_policy_start"] == by[max(by)]
     assert m["pre_policy_cum_delta_gdp"] == pytest.approx(
         ref["pre_policy_cum_delta_gdp"], abs=0.1)
     assert all(v < 1 for y, v in by.items() if y <= 2031)

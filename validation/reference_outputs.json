@@ -42,22 +42,36 @@
     ]
   },
   "gpi_multiplier": {
-    "source": "define_uk.validation.gpi_multiplier() on the cached pinned run; recorded 2026-08-05 (VALIDATION.md); headline definition changed 2026-11-15 (issue #16, decided: option B); replaces the unusable upstream Multiplier_Summary.csv",
-    "definition": "cum dGDP / cum dSPEND_GVTPS (government power-sector spending, the policy instrument), nominal, full simulation, GPI + Green Bonds vs baseline",
-    "multiplier": 2.30,
+    "source": "define_uk.validation.gpi_multiplier() on the cached pinned run; recorded 2026-08-05 (VALIDATION.md); headline definition changed 2026-11-15 (issue #16, decided: option B); headline window changed 2026-11-18 from the full simulation to the policy window (the full-simulation figures are kept under full_simulation, unchanged); replaces the unusable upstream Multiplier_Summary.csv",
+    "definition": "cum dGDP / cum dSPEND_GVTPS (government power-sector spending, the policy instrument), nominal, from the policy start (2027Q1) to 2040Q4, GPI + Green Bonds vs baseline",
+    "window": "2027Q1-2040Q4",
+    "multiplier": 2.25,
     "multiplier_tolerance_abs": 0.01,
-    "cum_delta_gdp": 209.9,
+    "cum_delta_gdp": 205.1,
     "cum_delta_spend": 91.2,
+    "cum_delta_gdp_real": 252.2,
     "from_policy_start": 2.25,
     "pre_policy_cum_delta_gdp": 4.8,
     "horizon_profile_checkpoints": {"2027": 0.47, "2031": 0.79, "2034": 1.40, "2040": 2.25},
     "horizon_note": "same ratio counted from the policy start (2027Q1) to the end of each year; recorded 2026-11-17 (Fable 5.2 results review)",
     "secondary": {
-      "definition": "cum dGDP / cum dSPEND_GVT (total government spending excluding wages), nominal, full simulation; the headline until 2026-11-15",
-      "multiplier": 1.78,
-      "cum_delta_spend": 118.2
+      "definition": "cum dGDP / cum dSPEND_GVT (total government spending excluding wages), nominal, from the policy start (2027Q1) to 2040Q4",
+      "multiplier": 1.75,
+      "cum_delta_spend": 117.0
     },
-    "cum_delta_gdp_real": 250.6,
+    "full_simulation": {
+      "note": "the headline window until 2026-11-18: 2023Q1-2040Q4, which includes four years with no policy (their 4.8 of GDP delta is the alpha_PP mismatch, issue #20); values unchanged from the earlier record",
+      "window": "2023Q1-2040Q4",
+      "multiplier": 2.30,
+      "cum_delta_gdp": 209.9,
+      "cum_delta_spend": 91.2,
+      "cum_delta_gdp_real": 250.6,
+      "secondary": {
+        "definition": "cum dGDP / cum dSPEND_GVT, nominal, full simulation; the headline until 2026-11-15",
+        "multiplier": 1.78,
+        "cum_delta_spend": 118.2
+      }
+    },
     "cum_tolerance_abs": 0.5
   },
   "stock_flow_consistency": {

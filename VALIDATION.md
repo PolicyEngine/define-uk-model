@@ -48,7 +48,7 @@ the cached run; useful, but not a comparison with anything published).
 | Every served scenario is stock-flow consistent | 28 of 30 cached solves pass; the 2 that fail are refused | `define_uk.scenarios.sfc_check`, `tests/test_scenarios.py` |
 | 22 registered scenario names are 16 distinct solves | INTERNAL CHECK: six names are byte-identical to another and carry `identical_to`; the subsidy-only scenario is one parameter set under five regime labels ([docs/scenario-notes.md](docs/scenario-notes.md)) | `tests/test_scenario_sweep.py::test_identical_to_matches_the_cached_files_exactly` |
 | The ban cuts 18.5 MtCO2e more under false confidence than under mutual trust | EXPLAINED from the cached files and manual Eqs. (5), (16), (18), (19), (168): a two-quarter capacity shortfall in 2032 under mutual trust; the ban + subsidy pair, with no shortfall, shows no gap. What GVT_CRED and ELEC_BUFFER are is not published; GVT_CRED's effect is read from the outputs | `tests/test_scenario_sweep.py::test_false_confidence_gap_is_the_2032_capacity_shortfall` |
-| GPI multiplier 2.30 (headline), 1.78 (secondary) | Own computation, pinned ±0.01; back-loaded (0.47 after one year from the policy start, 2.25 by 2040), so below published short-horizon estimates; caveats travel with it | `define_uk.validation.gpi_multiplier`, `tests/test_validation.py` |
+| GPI multiplier 2.25 (headline), 1.75 (secondary), from the policy start (2027Q1) to 2040; 2.30 and 1.78 over the full simulation from 2023 | Own computation, pinned ±0.01; back-loaded (0.47 after one year, below 1 through 2032), so below published short-horizon estimates; 2.25 is the top of the 2.08–2.25 range once the α_PP mismatch is allowed for; caveats travel with it | `define_uk.validation.gpi_multiplier`, `tests/test_validation.py` |
 | Baseline levels vs ONS/DESNZ/OBR outturns | DIVERGENCE by design: why the adapter serves deltas only | [`validation/baseline_vs_external.csv`](validation/baseline_vs_external.csv) |
 | Clean-room model, milestone 1 (accounting matrices) | INTERNAL CHECK: every identity holds on the manual's own Table 6 values to printed precision | `tests/test_accounting.py` |
 | Clean-room model, milestone 2 (baseline GDP path) | Not passed: up to 44% below the oracle (issue #17) | `tests/test_full_model.py` (strict xfail) |
@@ -110,7 +110,7 @@ tolerance or reference can drift silently in test code.
 | 11 pinned scenario-minus-baseline delta points (GDP_R, EMIS, UPLOT across GPI, housing regulation, fossil-fuel ban, mixed) | cached pinned run | rel 1e-6 | `test_scenarios.py::test_pinned_delta_points` |
 | Scenario sign structure and cross-scenario ordering (deltas finite, baselines identical across blocks, EMIS falls everywhere by 2035, mixed dominates) | cached pinned run | exact sign / ordering | `test_scenarios.py` |
 | Scenario design: exact policy-switch set per scenario; FMM 2023 anchors (GPI GDP peak +0.92% vs "≈+1%"; 2030 baseline emissions 342.8 vs "just under 350") | manual Table 5 / FMM 2023 | exact flags; wide anchors | `test_scenario_design.py` |
-| GPI cumulative multiplier 2.30 (cum ΔGDP 209.9 / cum ΔSPEND_GVTPS 91.2; headline since 2026-11-15, issue #16), secondary 1.78 (/ cum ΔSPEND_GVT 118.2); real cum 250.6 | own computation on cached run | abs ±0.01 (multiplier), ±0.5 (cumulants) | `test_validation.py` |
+| GPI cumulative multiplier 2.25 from the policy start, 2027Q1–2040Q4 (cum ΔGDP 205.1 / cum ΔSPEND_GVTPS 91.2; denominator per issue #16, window since 2026-11-18), secondary 1.75 (/ cum ΔSPEND_GVT 117.0); real cum 252.2. Full simulation, 2023Q1–2040Q4: 2.30 (209.9 / 91.2), secondary 1.78 (/ 118.2); real cum 250.6 | own computation on cached run | abs ±0.01 (multiplier), ±0.5 (cumulants) | `test_validation.py` |
 | Manual Table 4, all 15 rows × 2025/2030/2040/mean/sd (75 cells): MATCH / DIVERGENCE / NOT COMPARABLE per cell | Manual v1.1 Table 4 | per cell, in the CSV | `test_table4_scorecard.py` (hermetic + stale-check) |
 | Calibration comparator table (baseline vs ONS/DESNZ/OBR) | committed `validation/baseline_vs_external.csv` | exact match vs recomputation | `test_validation.py` |
 
@@ -167,6 +167,7 @@ below — never editing a test.
 | 2026-11-16 (scenarios) | `846081a` | cached run (CSV reads only) | **Served paths start at the policy start.** Every cached scenario departs from its baseline in 2023, but only because of the α_PP mismatch (#20); no policy acts before 2027Q1. `run_scenario` now starts at `policy_start_year` (the first quarter the cached policy files stop being identical, 2027Q1, read from the cache, not hard-coded) and returns 2027–2040 by default. `include_pre_policy=True` restores 2023–2026, flagged `policy_active=False`. Every result carries `baseline_parameter_mismatch`, because the mismatch persists after 2027. Units for GDP_R/CONS_R now read £ billion at 2022 prices (manual Table 6). The GPI "early-year GDP dip" is no longer a sign-sanity claim: it is the mismatch. No served value changed for any year ≥ 2027. |
 | 2026-11-17 (results review) | `846081a` | cached run (CSV reads only) | **Fable 5.2 results-validity review at main: valid with caveats** (every served number faithful to the cached run; labelling and window issues). Fixed here: (1) the GPI multiplier is back-loaded — new `horizon_profile` (0.47 after one year from 2027Q1, 0.79 to 2031, 1.40 to 2034, 2.25 to 2040) and `from_policy_start` 2.25; the caveat that it sits above published estimates is reversed (it is below them at their horizons); the 2.30 headline (Vahid's decision, #16) is unchanged. (2) Batini et al. (2021), IMF WP/21/87, renewable 1.1–1.5, reinstated: the 2026-08-13 withdrawal as unlocatable was wrong. (3) New served caveat: every subsidy scenario lowers cumulative real GDP (green power subsidy −47 vs GPI +252); query to the authors drafted, not filed. (4) Capacity-constrained years flagged per result (`capacity_constrained`, E_ELEC ≥ 0.999·E_ELECMAX): `fossil_fuel_ban_subsidy__no_forward_guidance` 2032 (GDP −5.7%) is served and was hidden by 2030/2035 snapshots. (5) EMIS_ELEC/EMIS_NELEC units added so the GPI emissions split can be served: 2030 −49.1 Mt/yr = −25.8 electricity, −23.3 non-electricity. (6) File counts corrected (8 Baseline / 22 policy, not 7/23). No served value changed. |
 | 2026-11-18 (scenario notes) | `846081a` | cached run (CSV reads only) | **Duplicate solves and the false-confidence ordering explained.** (1) Six of the 22 registered names are byte-identical to another name with equal parameter rows (16 distinct solves): Power Sector Subsidy is one parameter set under all five regime folders (CRED, GVT_CRED and ELEC_BUFFER keep the Baseline's values; the regime switches are set only in the ban scenarios), and the mixed block re-uses two single-policy solves. `list_scenarios()` / `run_scenario()` now carry `identical_to` and a leading caveat; no served value changed. (2) The regimes are parameter sets (`EXPECTATION_REGIMES`): fossil generation capital K_PSFFR is exactly zero from 2032Q1 in the six ban files with GVT_CRED = 1 and positive in the four with GVT_CRED = 0. (3) Fossil Fuel Ban, false confidence against mutual trust (they differ only in GVT_CRED and are identical through 2031Q4): cumulative EMIS 2027–2040 −416.95 against −398.47, a gap of −18.48, of which EMIS_NELEC −18.51 and EMIS_ELEC +0.02. Under mutual trust E_ELECMAX falls 130.6 → 78.1 in 2032Q1 (demand 79.5), generation is at the ceiling in 2032Q1–Q2, P_ELEC is 1.39× and 2.00× the false-confidence price in 2032Q2–Q3, beta_nfc dips to 0.075 / 0.062 (0.086), K_PGR is 4.0 lower at 2032Q4 and 1.5 lower at 2040Q4, and epsilon, theta_P and omega_NELEC (manual Eqs. (16), (18), (19)) stay on the less-green side. Control: Fossil Fuel Ban + Subsidy has no shortfall in either regime and a gap of 0.04. Not established: what ELEC_BUFFER does; the authors' definitions of the regimes (the manual does not name GVT_CRED). Detail: [docs/scenario-notes.md](docs/scenario-notes.md). Gated by `tests/test_scenario_sweep.py` (6 new cached tests) and `tests/test_scenarios.py::test_identical_scenarios_are_declared` (hermetic). |
+| 2026-11-18 (multiplier window) | `846081a` | cached run (CSV reads only) | **Headline multiplier measured from the policy start: 2.25 (was 2.30).** Recomputed from `gvt_investment/Variables_{Baseline,GPI + Green Bonds}.csv`: full simulation 2023Q1–2040Q4 cum ΔGDP 209.9 / cum ΔSPEND_GVTPS 91.227 = 2.3009; policy window 2027Q1–2040Q4 205.1 / 91.227 = 2.2482. The difference is the four pre-policy years: ΔGDP 4.8, ΔSPEND_GVTPS exactly 0 (first non-zero delta 2027Q1). `gpi_multiplier()` now returns the policy-window ratio as `multiplier` (2.25; `cum_delta_gdp` 205.1, `cum_delta_gdp_real` 252.2) and the full-simulation ratio, at its earlier values, as `full_simulation` (2.30; 209.9; 250.6). The secondary moves with the window: 1.75 (205.1 / 117.0), with 1.78 (209.9 / 118.2) under `full_simulation`. The issue #16 denominator is unchanged. `validation/reference_outputs.json` is re-pinned accordingly (the earlier values are kept under `full_simulation`); no tolerance changed. The α_PP range is unchanged (2.08–2.25, 1.73–1.75); the new headline is its top. The clean-room comparison is now 1.52 against 2.25 (its shock has no pre-2027 delta); still not passed. |
 
 ## External comparators (recorded 2026-08-04)
 
@@ -185,7 +186,7 @@ publishes baseline values, which already diverge from officials in places:
 | Labour force, 2025 | 35.97m | ONS ≈ 34–35m | Slightly high. |
 | Total emissions, 2025 | 407 MtCO2e/yr | UK territorial GHG: 384 (2023), ≈ 371 provisional (2024), DESNZ | Above the actuals it should start from. |
 | Emissions, 2030 | 382 MtCO2e/yr | NDC path (68% below 1990 ≈ 260); NESO current-policy | Manual itself notes it "falls significantly short" of the NDC — by design (current-policies baseline). |
-| Green public investment cumulative multiplier | **2.30** by our own computation (cum ΔGDP 209.9 / cum ΔSPEND_GVTPS 91.2, the policy instrument; issue #16, decided 2026-11-15), and 1.78 per pound of total non-wage spending (/ cum ΔSPEND_GVT 118.2); nominal, full simulation; `define_uk.validation.gpi_multiplier`, pinned in `tests/test_validation.py`) | OBR capital-spending impact multiplier ≈ 1.0; Batini, di Serio, Fragetta and Melina (2021), IMF WP/21/87, renewable-energy investment 1.1–1.5 over a few years (withdrawn on 2026-08-13 as unlocatable, which was wrong; reinstated 2026-11-17) | **Below** both at their horizons (0.47 after one year from the policy start, 0.79 to 2031) and above them only cumulated to 2040 (2.25 from the policy start, 2.30 including pre-policy years); **not like-for-like** — see the four caveats below. Defensible as what this closure implies; not defensible as a direct comparison. The previously quoted ≈2.4 is the upstream table's real/real ratio (TotalDeltaGDP 250.76 / TotalDeltaG 104.22). It is not quoted here: its row label is shifted by one, and it uses a different impulse and real rather than nominal values (issue #16, where the impulse definition was decided on 2026-11-15). |
+| Green public investment cumulative multiplier | **2.25** by our own computation (cum ΔGDP 205.1 / cum ΔSPEND_GVTPS 91.2, the policy instrument; issue #16, decided 2026-11-15), and 1.75 per pound of total non-wage spending (/ cum ΔSPEND_GVT 117.0); nominal, from the policy start (2027Q1) to 2040Q4 (window since 2026-11-18; 2.30 and 1.78 over the full simulation from 2023); `define_uk.validation.gpi_multiplier`, pinned in `tests/test_validation.py`) | OBR capital-spending impact multiplier ≈ 1.0; Batini, di Serio, Fragetta and Melina (2021), IMF WP/21/87, renewable-energy investment 1.1–1.5 over a few years (withdrawn on 2026-08-13 as unlocatable, which was wrong; reinstated 2026-11-17) | **Below** both at their horizons (0.47 after one year from the policy start, 0.79 to 2031) and above them only cumulated to 2040 (2.25; 2.30 if the four pre-policy years are included); **not like-for-like** — see the four caveats below. Defensible as what this closure implies; not defensible as a direct comparison. The previously quoted ≈2.4 is the upstream table's real/real ratio (TotalDeltaGDP 250.76 / TotalDeltaG 104.22). It is not quoted here: its row label is shifted by one, and it uses a different impulse and real rather than nominal values (issue #16, where the impulse definition was decided on 2026-11-15). |
 | `Multiplier_Summary.csv` M_Impact / M_4Q / M_8Q | −32.22 / −0.88 / 2.6 **identical across all 8 scenarios** | — | **Upstream artifact confirmed unusable** (2026-08-05): scenario-invariant multiplier columns (every policy scenario sets the common `GVT_ENERGY = 1` switch, so M_Impact measures that switch, not the policy). **Corrected 2026-11-06 (issue #16):** the totals do reconcile, once the labels are read correctly. The upstream multiplier chunk labels its rows one scenario off, so the row "Green Public Investment" is `Variables_GPI + Green Bonds.csv`: TotalDeltaG 104.22 is the cumulative delta of upstream's real G, (CONS_GVT + GCF_GVT + SPEND_GVTPS) at baseline prices (104.1 by our sum), and TotalDeltaGDP 250.76 its real-GDP delta (250.6). The earlier "unreproducible" reading was wrong. Superseded by `define_uk.validation.gpi_multiplier`. |
 
 Since 2026-08-05 this table is COMPUTED, not prose: `define_uk.validation.
@@ -197,20 +198,42 @@ there use the annual-mean convention, e.g. 2025 growth 4.66% vs Table 4's
 4.96% — the same −0.30pp anchoring gap recorded under target 1a; emissions
 are annualised from the quarterly EMIS flow, 401.5 in 2024.)
 
-### The 2.30 and 1.78 multipliers, qualified (2026-08-12; headline changed 2026-11-15)
+### The multipliers, qualified (2026-08-12; headline changed 2026-11-15; window changed 2026-11-18)
 
-Both numbers are reproducible and the arithmetic checks (209.9 / 91.2 =
-2.3009 headline; 209.9 / 118.2 = 1.7758 secondary). The headline was 1.78
-until issue #16 was decided on 2026-11-15 (option B: divide by the policy
-instrument). What does *not* hold is reading it straight against published
+The headline is **2.25** and the secondary **1.75**, both measured from the
+policy start (2027Q1) to 2040Q4: 205.1 / 91.227 = 2.2482 and 205.1 / 117.0 =
+1.7530. Over the full simulation (2023Q1–2040Q4) the same ratios are 2.30 and
+1.78 (209.9 / 91.227 = 2.3009; 209.9 / 118.2 = 1.7758). All four are
+reproducible from the cached run and pinned.
+
+History of the headline: 1.78 until issue #16 was decided on 2026-11-15
+(option B: divide by the policy instrument), then 2.30, then 2.25 from
+2026-11-18. The last change is to the window only; the #16 denominator is
+kept. The reasons for the window:
+
+- The two windows differ by the four pre-policy years 2023–26. In them
+  ΔSPEND_GVTPS is exactly zero and ΔGDP sums to 4.8 (annual sums −2.0, +3.3,
+  +2.5, +1.0), which is the α_PP mismatch (issue #20), not the policy. The
+  full-simulation ratio therefore adds 4.8 to the numerator and nothing to
+  the denominator.
+- Served scenario paths have started at the policy start since #31, and the
+  multiplier's own horizon profile is counted from it. One window for the
+  paths, the profile and the headline.
+- The discussion on issue #16 already said the chosen ratio "should be
+  computed on 2027Q1 onwards or against a matched baseline".
+
+2.25 is not a policy-only figure: it is the top of the 2.08–2.25 range in
+point 4 below.
+
+What does *not* hold is reading it straight against published
 short-horizon figures. Four properties are carried as
 `define_uk.validation.GPI_MULTIPLIER_CAVEATS` and gated hermetically by
 `tests/test_committed_artifacts.py::test_the_multiplier_caveats_travel_with_the_number`:
 
-1. **Horizon** (rewritten 2026-11-17). Ours is cumulative over the whole
-   simulation to 2040, and back-loaded: counted from the policy start
-   (2027Q1) it is 0.47 after one year, 0.79 to 2031, 1.40 to 2034 and 2.25
-   to 2040 (`gpi_multiplier()["horizon_profile"]`); the headline 2.30 also
+1. **Horizon** (rewritten 2026-11-17; window 2026-11-18). Ours is
+   cumulative from the policy start (2027Q1) to 2040, and back-loaded: 0.47
+   after one year, 0.79 to 2031, 1.40 to 2034 and 2.25 to 2040
+   (`gpi_multiplier()["horizon_profile"]`); the full-simulation 2.30 also
    includes 4.8 of pre-policy (α_PP) GDP delta. At the horizons of the
    published comparators — the OBR's ≈1.0 impact multiplier and Batini et
    al. (2021, IMF WP/21/87), 1.1–1.5 for renewable investment over a few
@@ -221,11 +244,13 @@ short-horizon figures. Four properties are carried as
    (the identity holds in the cached run to CSV rounding, ≤0.13, over
    2027–2040). Table 6's components (58.03 + 82.8 + 20.76 = 161.59 vs a
    tabulated 161.6) omit `SPEND_GVTPS` only because it is zero at the start.
-   In the GPI + Green Bonds run the cumulative ΔSPEND_GVT of 118.2 is
-   **ΔSPEND_GVTPS +91.2** (government power-sector spending, most of the
-   impulse), ΔOCONS_GVT +21.1, ΔSOCB_GVT **+8.0** and ΔGCF_GVT −2.3 (green
-   ΔGCF_GVTG +17.0 offset by conventional ΔGCF_GVTC −19.3: the scenario
-   substitutes green for conventional public investment). The earlier text
+   In the GPI + Green Bonds run the cumulative ΔSPEND_GVT of 118.2 (full
+   simulation) is **ΔSPEND_GVTPS +91.2** (government power-sector spending,
+   most of the impulse), ΔOCONS_GVT +21.1, ΔSOCB_GVT **+8.0** and ΔGCF_GVT
+   −2.3 (green ΔGCF_GVTG +17.0 offset by conventional ΔGCF_GVTC −19.3: the
+   scenario substitutes green for conventional public investment). From the
+   policy start the same items are 117.0 = +91.2, +20.7, +7.3 and −2.5
+   (+17.0 offset by −19.4). The earlier text
    said social benefits *fall*, biasing 1.78 *up*; the cached run shows
    they rise, so that claim and "upper-leaning" are withdrawn. The direction
    of the denominator bias against an impulse-based multiplier is not
@@ -233,24 +258,28 @@ short-horizon figures. Four properties are carried as
    ΔGCF_GVTG) is also withdrawn: green GCF is a small, offset share of the
    impulse. The impulse definition (e.g. ΔSPEND_GVTPS alone, or ΔSPEND_GVTPS +
    ΔGCF_GVTG) was decided on 2026-11-15 (issue #16, option B). The headline
-   2.30 divides by ΔSPEND_GVTPS alone: it is the variable the policy switch
-   sets, and it leaves out the induced spending responses above. 1.78 is
-   kept as a secondary ratio per pound of total non-wage spending, not as
-   an impulse multiplier. The rejected options were ΔSPEND_GVTPS + ΔGCF_GVTG
-   (1.94; partly endogenous, ignores the conventional offset) and upstream's
-   real/real 2.41 (not comparable with nominal ratios).
+   divides by ΔSPEND_GVTPS alone: it is the variable the policy switch
+   sets, and it leaves out the induced spending responses above. The ratio
+   to ΔSPEND_GVT is kept as a secondary ratio per pound of total non-wage
+   spending, not as an impulse multiplier. The rejected options were
+   ΔSPEND_GVTPS + ΔGCF_GVTG (1.94 over the full simulation; partly
+   endogenous, ignores the conventional offset) and upstream's real/real
+   2.41 (not comparable with nominal ratios).
 3. **Closure.** Demand-led, with a Kaldor–Verdoorn productivity equation
    (Eq. (31)) that makes a demand impulse raise productivity growth
    permanently, and real GDP not held to the supply ceiling (Eq. (38)). A
-   multiplier above 1 over fifteen years is what this closure *implies*.
+   multiplier above 1 over fourteen years is what this closure *implies*.
 4. **Parameter mismatch** (added 2026-11-13, issue #20). The cached Baseline
    uses α_PPLR = 0.2748 and the GPI + Green Bonds run 0.2762, so both
    multipliers also carry that parameter change. The policy effect alone is
    not observed after 2026; extrapolating the α_PP effect as zero, its 2026Q4
    level or its 2026Q4 share of baseline gives 2.08–2.25 for the headline and
-   1.73–1.75 for the secondary (round 5). The headline's range is wider
-   because ΔSPEND_GVTPS has no pre-2027 delta to offset the change in the
-   numerator (`tests/test_alpha_pp_confound.py`).
+   1.73–1.75 for the secondary (round 5). Measuring from the policy start is
+   the "zero" case, so the published 2.25 and 1.75 are the tops of those
+   ranges: the window removes the pre-policy part of the mismatch, not its
+   effect after 2026. The headline's range is wider because the mismatch
+   moves ΔSPEND_GVT as well as ΔGDP but leaves ΔSPEND_GVTPS unchanged
+   (`tests/test_alpha_pp_confound.py`).
    The same caveat now travels with every served scenario result
    (`define_uk.scenarios.CAVEATS`), gated by
    `tests/test_committed_artifacts.py::test_the_alpha_pp_mismatch_travels_with_every_served_number`.

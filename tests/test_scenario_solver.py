@@ -373,7 +373,7 @@ def test_gpi_shock_sign_and_unit_nominal_multiplier(gpi_shocks, baseline_ref, gp
     91.23bn): cum nominal GDP rises by exactly the spending (multiplier
     1.00) because nothing that would multiply it (households, NFC
     investment, imports) is solved yet. The oracle's own cum ΔGDP is 209.9
-    (2.30). Real GDP rises less (69.7bn) because prices rise."""
+    (2.30, both over the full simulation 2023Q1-2040Q4). Real GDP rises less (69.7bn) because prices rise."""
     d_sp = sum(g["SPEND_GVTPS"] - b["SPEND_GVTPS"] for g, b in
                zip(gpi_ref[144:], baseline_ref[144:]))
     s = gpi_shocks["empirical", 1.0]

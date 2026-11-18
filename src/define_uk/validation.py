@@ -19,9 +19,12 @@ Two kinds of quantity live here:
   real G for GPI + Green Bonds, a different impulse from ours (issue #16).
   So we recompute from the delta paths with an explicit, reproducible
   definition. Since 2026-11-15 (issue #16, decided) the headline divides by
-  the policy instrument, government power-sector spending SPEND_GVTPS
-  (2.30); total non-wage government spending SPEND_GVT (1.78) is kept as a
-  secondary ratio.
+  the policy instrument, government power-sector spending SPEND_GVTPS;
+  total non-wage government spending SPEND_GVT is kept as a secondary
+  ratio. Since 2026-11-18 both are measured from the policy start (2027Q1)
+  to 2040Q4: 2.25 and 1.75. The same ratios over the full simulation
+  (2023Q1-2040Q4, the headline window until then) are 2.30 and 1.78; they
+  include four pre-policy years and are kept as ``full_simulation``.
 
 External values are pinned with source and date; update them only with a
 newer official release, never to make a comparison look better.
@@ -75,60 +78,67 @@ EXTERNAL = {
 
 # What the multiplier is and is not. Kept as a module constant so the
 # hermetic gate can assert it still travels with the number, and so nothing
-# quotes 2.30 (or the secondary 1.78) against published multipliers
-# without them.
+# quotes 2.25 (or the secondary 1.75, or their full-simulation forms 2.30
+# and 1.78) against published multipliers without them.
 GPI_MULTIPLIER_CAVEATS = (
-    "Horizon: this is a CUMULATIVE ratio over the whole simulation to 2040, "
-    "not an impact or 1-year multiplier, and it is back-loaded. Counted from "
-    "the policy start (2027Q1) the same ratio is 0.47 after one year, 0.79 "
-    "to 2031, 1.40 to 2034 and 2.25 to 2040 (horizon_profile); 2.30 also "
-    "includes 4.8 of pre-policy GDP delta (2023-26), which is the alpha_PP "
-    "mismatch, not the policy. At the short horizons of published estimates "
-    "it is therefore BELOW them, not above: the OBR capital-spending impact "
-    "multiplier is ~1.0, and Batini, di Serio, Fragetta and Melina (2021), "
-    "'Building Back Better: How Big Are Green Spending Multipliers?', IMF "
-    "WP/21/87, estimate 1.1-1.5 for renewable-energy investment over "
-    "horizons of a few years. (An earlier note here withdrew that citation "
-    "as unlocatable; it was wrong, and the citation is reinstated "
-    "2026-11-17.) The comparisons are not like-for-like.",
-    "Denominator (issue #16, decided 2026-11-15): the headline 2.30 divides "
+    "Horizon and window: this is a CUMULATIVE ratio from the policy start "
+    "(2027Q1) to 2040, not an impact or 1-year multiplier, and it is "
+    "back-loaded: 0.47 after one year, 0.79 to 2031, 1.40 to 2034 and 2.25 "
+    "to 2040 (horizon_profile). Over the full simulation (2023Q1-2040Q4) "
+    "the same ratio is 2.30, the headline until 2026-11-18 "
+    "(full_simulation): it adds four years in which no policy acts, whose "
+    "4.8 of GDP delta is the alpha_PP mismatch, to the numerator, and "
+    "nothing to the denominator. At the short horizons of published "
+    "estimates the ratio is BELOW them, not above: the OBR capital-spending "
+    "impact multiplier is ~1.0, and Batini, di Serio, Fragetta and Melina "
+    "(2021), 'Building Back Better: How Big Are Green Spending "
+    "Multipliers?', IMF WP/21/87, estimate 1.1-1.5 for renewable-energy "
+    "investment over horizons of a few years. (An earlier note here "
+    "withdrew that citation as unlocatable; it was wrong, and the citation "
+    "is reinstated 2026-11-17.) The comparisons are not like-for-like.",
+    "Denominator (issue #16, decided 2026-11-15): the headline 2.25 divides "
     "by SPEND_GVTPS, government power-sector spending, which is the variable "
     "the GPI policy switch sets; its cumulative delta is 91.2, net: it peaks "
     "at 98.1 and falls because GPI also replaces the Baseline's own "
     "power-sector subsidy. It leaves out "
     "the induced responses of other spending, including green public GCF "
-    "(GCF_GVTG +17.0, offset by conventional GCF_GVTC -19.3). The secondary "
-    "1.78 divides by SPEND_GVT, "
+    "(GCF_GVTG +17.0, offset by conventional GCF_GVTC -19.4). The secondary "
+    "1.75 divides by SPEND_GVT, "
     "total government spending excluding wages, "
     "OCONS_GVT + SOCB_GVT + GCF_GVT + SPEND_GVTPS (Table 6's components "
     "omit SPEND_GVTPS, which is zero at the start: 58.03 + 82.8 + 20.76 = "
     "161.59 against a tabulated 161.6). In the cached GPI + Green Bonds run "
-    "its cumulative delta of 118.2 is SPEND_GVTPS +91.2 (government "
-    "power-sector spending, most of the policy impulse), OCONS_GVT +21.1, "
-    "SOCB_GVT +8.0 and GCF_GVT -2.3 (green GCF_GVTG +17.0 offset by "
-    "conventional GCF_GVTC -19.3: the scenario substitutes green for "
-    "conventional public investment). The denominator therefore mixes the "
+    "its cumulative delta from the policy start, 117.0, is SPEND_GVTPS "
+    "+91.2 (government power-sector spending, most of the policy impulse), "
+    "OCONS_GVT +20.7, SOCB_GVT +7.3 and GCF_GVT -2.5 (green GCF_GVTG +17.0 "
+    "offset by conventional GCF_GVTC -19.4: the scenario substitutes green "
+    "for conventional public investment). Over the full simulation it is "
+    "118.2 and the ratio 1.78, the figure published before 2026-11-18. The "
+    "denominator therefore mixes the "
     "impulse with ENDOGENOUS items that RISE in this scenario, so the "
     "direction of its bias against an impulse-based multiplier is not "
     "established. An earlier version of this caveat said social benefits "
-    "fall and that 1.78 is upper-leaning; the cached run contradicts both, "
-    "and both are withdrawn. cum dGDP / cum dGCF_GVTG is not a usable "
+    "fall and that the ratio is upper-leaning; the cached run contradicts "
+    "both, and both are withdrawn. cum dGDP / cum dGCF_GVTG is not a usable "
     "impulse ratio either: green GCF is a small, offset share of the "
-    "impulse. 1.78 is therefore a ratio per pound of total non-wage "
-    "spending, not an impulse multiplier.",
+    "impulse. The secondary is therefore a ratio per pound of total "
+    "non-wage spending, not an impulse multiplier.",
     "Closure: the model is demand-led with a Kaldor-Verdoorn productivity "
     "equation (Eq. (31)), so a demand impulse raises productivity growth "
     "permanently and real GDP is not held to the supply ceiling (Eq. (38)). "
-    "A multiplier above 1 over 15 years is what this closure implies rather "
+    "A multiplier above 1 over 14 years is what this closure implies rather "
     "than a symptom of an error, which is why the number is labelled and not "
     "corrected.",
     "Parameter mismatch (issue #20): the cached Baseline uses alpha_PPLR = "
-    "0.2748 and the GPI + Green Bonds run 0.2762, so the cumulative delta "
-    "also carries that parameter change. Treating its effect after 2026 as "
-    "zero, as its 2026Q4 level, or as its 2026Q4 share of baseline gives "
-    "1.73-1.75 for the policy alone (VALIDATION.md, round 5), and 2.08-2.25 "
-    "for the headline 2.30: the SPEND_GVTPS denominator has no pre-2027 "
-    "delta to offset the parameter change in the numerator.",
+    "0.2748 and the GPI + Green Bonds run 0.2762, so the delta carries that "
+    "parameter change as well as the policy. Starting at the policy start "
+    "removes its pre-policy part (2023-26) but not its effect after 2026, "
+    "which cannot be observed separately. The headline 2.25 is the case "
+    "where that later effect is zero; treating it as its 2026Q4 level or as "
+    "its 2026Q4 share of baseline lowers the headline to as little as 2.08 "
+    "(range 2.08-2.25) and the secondary 1.75 to 1.73 (range 1.73-1.75; "
+    "VALIDATION.md, round 5). 2.25 is therefore the top of the range for "
+    "the policy alone, not a policy-only estimate.",
 )
 
 
@@ -194,15 +204,23 @@ MULTIPLIER_DEFINITIONS = {
     "impulse": (
         "SPEND_GVTPS",
         "cum dGDP / cum dSPEND_GVTPS (government power-sector spending, the "
-        "policy instrument), nominal, full simulation",
+        "policy instrument), nominal",
     ),
     "total_spending": (
         "SPEND_GVT",
         "cum dGDP / cum dSPEND_GVT (total government spending excluding "
-        "wages), nominal, full simulation",
+        "wages), nominal",
     ),
 }
 HEADLINE_DEFINITION = "impulse"
+
+# Window (decided 2026-11-18): the multiplier is measured over the quarters
+# in which the policy is in force, 2027Q1-2040Q4, the window the served
+# scenario paths use. The full simulation window, 2023Q1-2040Q4, was the
+# headline window before; it adds four years with no policy (their GDP delta
+# is the alpha_PP mismatch, issue #20) and is reported as full_simulation.
+HEADLINE_WINDOW = "2027Q1-2040Q4 (policy start to end of simulation)"
+FULL_SIMULATION_WINDOW = "2023Q1-2040Q4 (includes four pre-policy years)"
 
 
 _START_YEAR = 1987       # run anchored 1987Q1-2040Q4
@@ -214,19 +232,22 @@ def gpi_multiplier(definition: str = HEADLINE_DEFINITION) -> dict:
     """Cumulative green-public-investment multiplier, computed by us.
 
     Cumulative nominal GDP delta over a cumulative nominal spending delta,
-    GPI + Green Bonds scenario vs baseline, summed over the full
-    simulation. ``definition`` picks the denominator
-    (``MULTIPLIER_DEFINITIONS``): "impulse" (the headline since issue #16,
-    SPEND_GVTPS, 2.30) or "total_spending" (SPEND_GVT, 1.78). The headline
-    result carries the other as ``secondary``. Reported alongside the
-    real-GDP cumulative delta so the number is reproducible from the
-    scenario file alone.
+    GPI + Green Bonds scenario vs baseline, summed from the policy start
+    (2027Q1) to 2040Q4 (``HEADLINE_WINDOW``). ``definition`` picks the
+    denominator (``MULTIPLIER_DEFINITIONS``): "impulse" (the headline since
+    issue #16, SPEND_GVTPS, 2.25) or "total_spending" (SPEND_GVT, 1.75). The
+    headline result carries the other as ``secondary``.
+
+    ``full_simulation`` holds the same ratio over 2023Q1-2040Q4 (2.30 and
+    1.78), the window published before 2026-11-18. It includes four years
+    in which no policy acts. ``from_policy_start`` is kept as an alias of
+    ``multiplier`` for callers written against the earlier layout.
 
     Read ``GPI_MULTIPLIER_CAVEATS`` before quoting the number against any
-    published figure: this is a full-horizon cumulative ratio (which pushes
-    it above a short-horizon multiplier) under a demand-led closure, and
-    the cached run's Baseline/policy alpha_PP mismatch (issue #20) sits in
-    the numerator.
+    published figure: this is a cumulative ratio to 2040 (which pushes it
+    above a short-horizon multiplier) under a demand-led closure, and the
+    cached run's Baseline/policy alpha_PP mismatch (issue #20) is still in
+    the numerator after 2026.
     """
     if definition not in MULTIPLIER_DEFINITIONS:
         raise ValueError(f"definition must be one of {sorted(MULTIPLIER_DEFINITIONS)}, "
@@ -235,22 +256,34 @@ def gpi_multiplier(definition: str = HEADLINE_DEFINITION) -> dict:
     scen = root / "Variables_GPI + Green Bonds.csv"
     base = root / "Variables_Baseline.csv"
 
-    def cum_delta(var: str) -> float:
+    def delta(var: str) -> list[float]:
         b = _read_column(base, var)
         s = _read_column(scen, var)
-        return sum(sv - bv for sv, bv in zip(s, b)
-                   if sv is not None and bv is not None)
+        return [sv - bv if sv is not None and bv is not None else 0.0
+                for sv, bv in zip(s, b)]
 
-    d_gdp = cum_delta("GDP")
     var, text = MULTIPLIER_DEFINITIONS[definition]
-    d_spend = cum_delta(var)
+    d_gdp, d_spend, d_real = delta("GDP"), delta(var), delta("GDP_R")
+    policy = slice(_POLICY_START_ROW, None)
+    gdp, spend = sum(d_gdp[policy]), sum(d_spend[policy])
+    gdp_full, spend_full = sum(d_gdp), sum(d_spend)
     out = {
-        "definition": text,
+        "definition": f"{text}, from the policy start (2027Q1) to 2040Q4",
         "denominator": var,
-        "cum_delta_gdp": round(d_gdp, 1),
-        "cum_delta_spend": round(d_spend, 1),
-        "multiplier": round(d_gdp / d_spend, 2),
-        "cum_delta_gdp_real": round(cum_delta("GDP_R"), 1),
+        "window": HEADLINE_WINDOW,
+        "cum_delta_gdp": round(gdp, 1),
+        "cum_delta_spend": round(spend, 1),
+        "multiplier": round(gdp / spend, 2),
+        "cum_delta_gdp_real": round(sum(d_real[policy]), 1),
+        "full_simulation": {
+            "window": FULL_SIMULATION_WINDOW,
+            "definition": f"{text}, full simulation; the headline window "
+                          "until 2026-11-18",
+            "cum_delta_gdp": round(gdp_full, 1),
+            "cum_delta_spend": round(spend_full, 1),
+            "multiplier": round(gdp_full / spend_full, 2),
+            "cum_delta_gdp_real": round(sum(d_real), 1),
+        },
         "comparators": {
             # The IMF comparator (Batini et al. 2021, WP/21/87, 1.1-1.5) is
             # cited in GPI_MULTIPLIER_CAVEATS, with its horizon, not here.
@@ -267,14 +300,12 @@ def gpi_multiplier(definition: str = HEADLINE_DEFINITION) -> dict:
             "with this nominal ratio"
         ),
     }
-    # Back-loading (Fable 5.2 review, 2026-11-17): the same ratio counted
-    # from the policy start, cumulated to the end of each year.
-    gdp_b, gdp_s = _read_column(base, "GDP"), _read_column(scen, "GDP")
-    sp_b, sp_s = _read_column(base, var), _read_column(scen, var)
+    # Back-loading (Fable 5.2 review, 2026-11-17): the same ratio cumulated
+    # from the policy start to the end of each year.
     profile, num, den = {}, 0.0, 0.0
-    for t in range(_POLICY_START_ROW, len(gdp_b)):
-        num += gdp_s[t] - gdp_b[t]
-        den += sp_s[t] - sp_b[t]
+    for t in range(_POLICY_START_ROW, len(d_gdp)):
+        num += d_gdp[t]
+        den += d_spend[t]
         if t % 4 == 3 and den:
             profile[_START_YEAR + t // 4] = round(num / den, 2)
     out["horizon_profile"] = {
@@ -282,17 +313,22 @@ def gpi_multiplier(definition: str = HEADLINE_DEFINITION) -> dict:
                       "to the end of each year",
         "by_year": profile,
     }
-    out["from_policy_start"] = profile[max(profile)]
+    out["from_policy_start"] = out["multiplier"]
     out["pre_policy_cum_delta_gdp"] = round(
-        sum(gdp_s[t] - gdp_b[t] for t in range(_SIM_START_ROW, _POLICY_START_ROW)), 1)
+        sum(d_gdp[_SIM_START_ROW:_POLICY_START_ROW]), 1)
     if definition == HEADLINE_DEFINITION:
         sec_var, sec_text = MULTIPLIER_DEFINITIONS["total_spending"]
-        d_sec = cum_delta(sec_var)
+        d_sec = delta(sec_var)
         out["secondary"] = {
-            "definition": sec_text,
+            "definition": f"{sec_text}, from the policy start (2027Q1) to "
+                          "2040Q4",
             "denominator": sec_var,
-            "cum_delta_spend": round(d_sec, 1),
-            "multiplier": round(d_gdp / d_sec, 2),
+            "cum_delta_spend": round(sum(d_sec[policy]), 1),
+            "multiplier": round(gdp / sum(d_sec[policy]), 2),
+            "full_simulation": {
+                "cum_delta_spend": round(sum(d_sec), 1),
+                "multiplier": round(gdp_full / sum(d_sec), 2),
+            },
         }
     return out
 

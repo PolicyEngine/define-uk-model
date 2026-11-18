@@ -84,14 +84,18 @@ From the cached run, as deltas against the model's own baseline:
   from a two-quarter electricity capacity shortfall in 2032 in the
   mutual-trust run, not from expectations; with the subsidy there is no
   shortfall and no gap ([docs/scenario-notes.md](docs/scenario-notes.md)).
-- The **green public investment multiplier** is **2.30**: cumulative
+- The **green public investment multiplier** is **2.25**: cumulative
   nominal ΔGDP over cumulative government power-sector spending
-  (ΔSPEND_GVTPS) to 2040, as decided in issue #16. Per pound of total
-  non-wage government spending it is 1.78.
-- The multiplier is back-loaded: counted from the policy start it is 0.47
-  after one year and 2.25 by 2040, so it sits below published short-horizon
-  estimates (OBR about 1.0; IMF WP/21/87 1.1–1.5 for renewables), not above.
-  Its caveats travel with it (`define_uk.validation.gpi_multiplier`).
+  (ΔSPEND_GVTPS, the denominator decided in issue #16), from the policy
+  start in 2027 to 2040. Per pound of total non-wage government spending
+  it is 1.75.
+- Over the full simulation from 2023 the same ratios are 2.30 and 1.78 (the
+  figures quoted before 18 Nov 2026). That window adds four years in which
+  no policy acts.
+- The multiplier is back-loaded: 0.47 after one year and below 1 through
+  2032, so it sits below published short-horizon estimates (OBR about 1.0;
+  IMF WP/21/87 1.1–1.5 for renewables), not above. Its caveats travel with
+  it (`define_uk.validation.gpi_multiplier`).
 
 ## Validation
 
@@ -116,7 +120,8 @@ Details, tolerances and the run record: [VALIDATION.md](VALIDATION.md).
   baseline.
 - **Parameter mismatch (issue #20):** the cached Baseline and policy files
   use different α_PP values, so every delta also carries that change.
-  Removing it moves the multiplier to about 2.08–2.25.
+  The multiplier's 2.25 assumes the change has no effect after 2026;
+  otherwise it is as low as 2.08.
 - **Capacity years:** years at the electricity capacity ceiling (three
   served fossil-fuel-ban scenarios, all in 2032) are a price-regime switch
   and are flagged.
@@ -125,7 +130,8 @@ Details, tolerances and the run record: [VALIDATION.md](VALIDATION.md).
   with itself ([docs/scenario-notes.md](docs/scenario-notes.md)).
 - **Clean-room model:** every printed equation is transcribed and the whole
   model solves, but baseline GDP is up to 44% below the upstream by 2040
-  (issue #17), and its own multiplier is 1.52. It is a diagnostic only.
+  (issue #17), and its own multiplier is 1.52 against 2.25. It is a
+  diagnostic only.
   Protocol: [REIMPLEMENTATION.md](REIMPLEMENTATION.md).
 - **Local only:** nothing is hosted and the upstream is never redistributed
   ([LICENSE-STATUS.md](LICENSE-STATUS.md)).
