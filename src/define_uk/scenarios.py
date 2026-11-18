@@ -9,6 +9,13 @@ confidence, no forward guidance, unexpected enforcement), of which "mutual
 trust" is treated as the canonical variant and the others carry an explicit
 ``__<variant>`` suffix.
 
+The regimes are parameter sets, read from the cached
+``Parameters-sorted_*.csv`` files (``EXPECTATION_REGIMES``), and they are set
+only in the scenarios that contain the fossil-fuel ban. Six of the 22
+registered names therefore have no path of their own: they are the same
+cached solve as another name (``IDENTICAL_TO``; 16 distinct solves). See
+docs/scenario-notes.md.
+
 Framing is mandatory: every result carries ``result_type="scenario deltas"``
 and the caveats recorded in VALIDATION.md. Baseline LEVELS are not validated
 against outturns (2025 GDP growth in the baseline is ~5% vs ~1% outturn);
@@ -253,11 +260,69 @@ for _variant, _vdesc in _PSR_VARIANTS:
 
 _BY_NAME = {entry[0]: entry for entry in _REGISTRY}
 
+# What each expectation regime is, as the cached Parameters-sorted_*.csv
+# files of the two fossil-fuel-ban scenarios print it. CRED is the manual's
+# perceived-credibility weight in Eq. (89). GVT_CRED and ELEC_BUFFER are not
+# named in the manual; what GVT_CRED does is read from the cached outputs:
+# fossil generation capital K_PSFFR is zero from 2032Q1 (the FF_CAP_BAN
+# quarter) in every ban file with GVT_CRED = 1 and in none with GVT_CRED = 0
+# (tests/test_scenario_sweep.py). Mutual trust is the Baseline's own values.
+EXPECTATION_REGIMES = {
+    "mutual_trust": {"CRED": 0.9, "GVT_CRED": 1, "ELEC_BUFFER": 0},
+    "poor_credibility": {"CRED": 0.3, "GVT_CRED": 0, "ELEC_BUFFER": 0},
+    "false_confidence": {"CRED": 0.9, "GVT_CRED": 0, "ELEC_BUFFER": 0},
+    "no_forward_guidance": {"CRED": 0.0, "GVT_CRED": 1, "ELEC_BUFFER": 0},
+    "unexpected_enforcement": {"CRED": 0.3, "GVT_CRED": 1, "ELEC_BUFFER": 0.05},
+}
+
+# Registered names that are the same cached solve as another name: the two
+# Variables_*.csv files are byte-identical and so are their parameter rows
+# (tests/test_scenario_sweep.py checks both against the cache).
+#  - Power Sector Subsidy: the regime switches above are set only in the
+#    scenarios that contain the ban, so the subsidy-only row is one parameter
+#    set, and one solve, under five folder labels.
+#  - The mixed block re-uses the single-policy solves for its two
+#    single-policy members.
+IDENTICAL_TO = {
+    **{
+        f"power_sector_subsidy__{variant}": "power_sector_subsidy"
+        for variant, _ in _PSR_VARIANTS[1:]
+    },
+    "mixed_fossil_fuel_ban_subsidy": "fossil_fuel_ban_subsidy",
+    "mixed_housing_regulation_subsidy": "housing_regulation_subsidy",
+}
+_IDENTICAL_NOTE = (
+    "Same cached solve as {other!r}: the two output files are byte-identical "
+    "and their parameter rows are the same, so this name adds no result "
+    "(docs/scenario-notes.md)."
+)
+
+
+def _description(name: str, desc: str) -> str:
+    other = IDENTICAL_TO.get(name)
+    if other is None:
+        return desc
+    if name.startswith("power_sector_subsidy__"):
+        return (
+            f"{desc} The expectation regime is not applied to this scenario "
+            f"in the cached run: it is the same solve as {other!r}."
+        )
+    return f"{desc} The same solve as {other!r}."
+
 
 def list_scenarios() -> list[dict]:
-    """Curated registry: [{name, block, description}, ...]."""
+    """Curated registry: [{name, block, description, identical_to}, ...].
+
+    ``identical_to`` is None, or the name of the scenario whose cached solve
+    this one duplicates (``IDENTICAL_TO``).
+    """
     return [
-        {"name": name, "block": block, "description": desc}
+        {
+            "name": name,
+            "block": block,
+            "description": _description(name, desc),
+            "identical_to": IDENTICAL_TO.get(name),
+        }
         for name, block, _folder, _label, desc in _REGISTRY
     ]
 
@@ -458,6 +523,8 @@ def run_scenario(
             "consistency in the two refused solves), not a smooth policy "
             "response."
         ))
+    if name in IDENTICAL_TO:
+        caveats.insert(0, _IDENTICAL_NOTE.format(other=IDENTICAL_TO[name]))
     if policy_start is None:
         caveats.insert(0, (
             "Policy start unknown: fewer than two policy files are cached, so "
@@ -476,7 +543,8 @@ def run_scenario(
         "result_type": "scenario deltas",
         "scenario": name,
         "block": block,
-        "description": description,
+        "description": _description(name, description),
+        "identical_to": IDENTICAL_TO.get(name),
         "delta_convention": "scenario minus baseline (same block folder)",
         "years": years,
         "policy_start_year": policy_start,

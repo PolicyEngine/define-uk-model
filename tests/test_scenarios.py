@@ -61,6 +61,30 @@ def test_registry_shape():
         assert s["description"]
 
 
+def test_identical_scenarios_are_declared():
+    """Six registered names are the same cached solve as another name
+    (docs/scenario-notes.md). Hermetic: the mapping is well-formed and the
+    descriptions say so; tests/test_scenario_sweep.py checks it against the
+    cached files."""
+    from define_uk.scenarios import EXPECTATION_REGIMES, IDENTICAL_TO
+
+    listed = {s["name"]: s for s in list_scenarios()}
+    assert len(IDENTICAL_TO) == 6
+    for name, other in IDENTICAL_TO.items():
+        assert name in listed and other in listed
+        assert other not in IDENTICAL_TO  # points at a solve of its own
+        assert listed[name]["identical_to"] == other
+        assert other in listed[name]["description"]
+    assert sum(s["identical_to"] is None for s in listed.values()) == 16
+    # The subsidy-only scenario has no regime of its own in the cached run.
+    subsidy = [n for n in IDENTICAL_TO if n.startswith("power_sector_subsidy__")]
+    assert len(subsidy) == 4
+    assert set(EXPECTATION_REGIMES) == {
+        "mutual_trust", "poor_credibility", "false_confidence",
+        "no_forward_guidance", "unexpected_enforcement",
+    }
+
+
 def test_unknown_scenario_raises():
     with pytest.raises(KeyError):
         run_scenario("not_a_scenario")

@@ -19,8 +19,9 @@ regulation and green public investment. It is demand-led and post-Keynesian,
 calibrated to UK national accounts (Model Manual v1.1, April 2026). This
 repository provides:
 
-- `define_uk.scenarios`: the 22 upstream scenarios as annual delta paths,
-  with caveats, provenance and a stock-flow check on every result.
+- `define_uk.scenarios`: the 22 upstream scenarios (16 distinct solves; six
+  names repeat another, flagged `identical_to`) as annual delta paths, with
+  caveats, provenance and a stock-flow check on every result.
 - `define_uk.validation`: the comparison tables (manual Table 4, external
   outturns) and the green public investment multiplier.
 - `define_uk.model`: a clean-room Python reimplementation from the manual.
@@ -78,6 +79,11 @@ From the cached run, as deltas against the model's own baseline:
 - Emissions fall relative to baseline in every scenario by 2035.
 - Every scenario with a subsidy lowers cumulative real GDP; the reason is
   not confirmed (VALIDATION.md, upstream queries).
+- The fossil-fuel ban cuts slightly more under "false confidence" than under
+  "mutual trust" (−417 against −399 MtCO2e over 2027–2040). The gap comes
+  from a two-quarter electricity capacity shortfall in 2032 in the
+  mutual-trust run, not from expectations; with the subsidy there is no
+  shortfall and no gap ([docs/scenario-notes.md](docs/scenario-notes.md)).
 - The **green public investment multiplier** is **2.30**: cumulative
   nominal ΔGDP over cumulative government power-sector spending
   (ΔSPEND_GVTPS) to 2040, as decided in issue #16. Per pound of total
@@ -111,8 +117,12 @@ Details, tolerances and the run record: [VALIDATION.md](VALIDATION.md).
 - **Parameter mismatch (issue #20):** the cached Baseline and policy files
   use different α_PP values, so every delta also carries that change.
   Removing it moves the multiplier to about 2.08–2.25.
-- **Capacity years:** years at the electricity capacity ceiling (the
-  fossil-fuel-ban family, 2032–33) are a price-regime switch and are flagged.
+- **Capacity years:** years at the electricity capacity ceiling (three
+  served fossil-fuel-ban scenarios, all in 2032) are a price-regime switch
+  and are flagged.
+- **Duplicates:** the subsidy-only scenario is one solve under five
+  expectation-regime labels, so comparing its variants compares a solve
+  with itself ([docs/scenario-notes.md](docs/scenario-notes.md)).
 - **Clean-room model:** every printed equation is transcribed and the whole
   model solves, but baseline GDP is up to 44% below the upstream by 2040
   (issue #17), and its own multiplier is 1.52. It is a diagnostic only.
@@ -140,6 +150,7 @@ src/define_uk/
   validation.py  Table 4 scorecard, external comparators, GPI multiplier
   model/         clean-room reimplementation (registry, solver, sectors/)
 validation/      committed reference artifacts gated by the tests
+docs/            scenario notes (duplicate solves, expectation regimes)
 tests/           hermetic tests (CI) and cached-run oracle tests
 ```
 
