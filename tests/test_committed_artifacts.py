@@ -112,14 +112,31 @@ def test_reference_gpi_multiplier_is_consistent(ref):
     )
     assert 0 < g["multiplier_tolerance_abs"] <= 0.05
     assert 0 < g["cum_tolerance_abs"] <= 1.0
+    # Headline window (2026-11-18): from the policy start. The headline and
+    # the end of the horizon profile are the same number, and the
+    # full-simulation record (the headline until then) reproduces too.
+    assert g["window"] == "2027Q1-2040Q4"
+    assert g["multiplier"] == g["from_policy_start"] == 2.25
+    assert g["multiplier"] == g["horizon_profile_checkpoints"]["2040"]
+    full = g["full_simulation"]
+    assert full["window"] == "2023Q1-2040Q4" and full["multiplier"] == 2.30
+    assert full["cum_delta_gdp"] / full["cum_delta_spend"] == pytest.approx(
+        full["multiplier"], abs=g["multiplier_tolerance_abs"]
+    )
+    assert full["cum_delta_gdp"] / full["secondary"]["cum_delta_spend"] == pytest.approx(
+        full["secondary"]["multiplier"], abs=g["multiplier_tolerance_abs"]
+    )
+    assert full["cum_delta_gdp"] - g["cum_delta_gdp"] == pytest.approx(
+        g["pre_policy_cum_delta_gdp"], abs=0.11
+    )
 
 
 def test_the_multiplier_caveats_travel_with_the_number():
-    """2.30 (and the secondary 1.78) must never be served as like-for-like
-    against IMF/OBR figures.
+    """2.25 (and the secondary 1.75, and their full-simulation forms 2.30
+    and 1.78) must never be served as like-for-like against IMF/OBR figures.
 
     Two properties of our definition separate it from the published
-    comparators: a full-simulation cumulative horizon against their
+    comparators: a cumulative horizon to 2040 against their
     short-horizon multipliers (pushes it up), and a denominator that mixes
     the policy impulse (mostly SPEND_GVTPS) with endogenous spending that
     rises in the scenario (direction not established). Hermetic, because the
@@ -133,9 +150,12 @@ def test_the_multiplier_caveats_travel_with_the_number():
     # The withdrawn claims must not come back.
     assert "upper-leaning estimate" not in caveats
     assert "biases the ratio up" not in caveats
-    # Issue #16 is decided; the caveat names the headline and the secondary.
+    # Issue #16 is decided; the caveat names the headline and the secondary,
+    # on the policy window (2.25, 1.75) and over the full simulation (2.30,
+    # 1.78, the figures published before 2026-11-18).
     assert "has not been decided" not in caveats
-    for needle in ("#16", "2.30", "1.78"):
+    for needle in ("#16", "2.25", "1.75", "2.30", "1.78", "2027q1",
+                   "full simulation"):
         assert needle in caveats, needle
     assert "imf_green_spending_multiplier" not in str(validation.gpi_multiplier.__code__.co_consts)
 
@@ -152,7 +172,7 @@ def test_the_multiplier_caveats_travel_with_the_number():
 
 def test_the_alpha_pp_mismatch_travels_with_every_served_number():
     """Issue #20: the cached Baseline files use alpha_PPLR = 0.2748 and every
-    policy file 0.2762, so every served delta and the 1.78 multiplier carry
+    policy file 0.2762, so every served delta and both multipliers carry
     a parameter change as well as the policy. README and VALIDATION.md said
     so; the caveat lists that travel with the numbers did not (r9, 13 Nov
     2026). Hermetic, like the multiplier caveats above."""
@@ -162,7 +182,8 @@ def test_the_alpha_pp_mismatch_travels_with_every_served_number():
     for needle in ("#20", "0.2748", "0.2762", "2027q1", "not policy effects"):
         assert needle in served, needle
     multiplier = " ".join(validation.GPI_MULTIPLIER_CAVEATS).lower()
-    for needle in ("#20", "0.2748", "0.2762", "1.73-1.75", "2.08-2.25"):
+    for needle in ("#20", "0.2748", "0.2762", "1.73-1.75", "2.08-2.25",
+                   "top of the range", "not a policy-only estimate"):
         assert needle in multiplier, needle
 
 
@@ -237,8 +258,8 @@ def test_license_status_documents_the_position():
 
 
 def test_multiplier_caveats_state_the_horizon_and_the_reinstated_citation():
-    """The 2.30 is back-loaded and below short-horizon estimates; the IMF
-    green-multiplier citation exists (WP/21/87) and is reinstated."""
+    """The multiplier is back-loaded and below short-horizon estimates; the
+    IMF green-multiplier citation exists (WP/21/87) and is reinstated."""
     caveats = " ".join(validation.GPI_MULTIPLIER_CAVEATS)
     for needle in ("back-loaded", "0.47", "2.25", "WP/21/87", "1.1-1.5",
                    "BELOW them"):
