@@ -387,6 +387,53 @@ def test_false_confidence_gap_is_the_2032_capacity_shortfall():
 
 
 @needs_cache
+def test_cross_regime_figures_in_the_notes():
+    """The by-regime figures in docs/scenario-notes.md that the false-
+    confidence test above does not cover (review of 2026-11-18): cumulative
+    emissions cuts 2027-2040 by regime, non-fossil capital at 2031Q4,
+    maximum generation at 2032Q1, quarters at the capacity ceiling, and the
+    non-fossil generation share in 2033Q4 and 2036Q4. The two ban-alone
+    solves under no forward guidance and unexpected enforcement are refused
+    by run_scenario; their figures are read from the files directly."""
+    t0, t_ban = 160, 180  # 2027Q1, 2032Q1
+    want = {
+        # case: (ban cum EMIS, EMIS_ELEC, EMIS_NELEC, ban + subsidy cum EMIS,
+        #        K_PSNFFR 2031Q4, E_ELECMAX 2032Q1, quarters at the ceiling,
+        #        beta_NFF 2033Q4)
+        "mutual_trust": (-398.5, -118.7, -279.8, -517.7, 127.7, 78.1, 2, 0.975),
+        "false_confidence": (-417.0, -118.7, -298.3, -517.8, 127.7, 128.3, 0, 0.975),
+        "poor_credibility": (-217.9, -67.8, -150.1, -397.9, 110.9, 129.1, 0, 0.936),
+        "no_forward_guidance": (-121.3, -65.5, -55.6, -243.7, 100.3, 64.1, 31, 0.975),
+        "unexpected_enforcement": (-183.5, -77.8, -105.7, -381.6, 109.5, 72.0, 4, 0.967),
+    }
+    base = _load("power_sector_regulation/mutual_trust/Variables_Baseline.csv")
+    for case, (emis, elec, nelec, emis_sub, knff, emax, n_ceil, share) in want.items():
+        ban = _load(f"power_sector_regulation/{case}/Variables_Fossil Fuel Ban.csv")
+        sub = _load(f"power_sector_regulation/{case}/"
+                    "Variables_Fossil Fuel Ban + Subsidy.csv")
+
+        def cum(d, var):
+            return sum(d[var][t] - base[var][t] for t in range(t0, len(base[var])))
+
+        assert cum(ban, "EMIS") == pytest.approx(emis, abs=0.06), case
+        assert cum(ban, "EMIS_ELEC") == pytest.approx(elec, abs=0.06), case
+        assert cum(ban, "EMIS_NELEC") == pytest.approx(nelec, abs=0.06), case
+        assert cum(sub, "EMIS") == pytest.approx(emis_sub, abs=0.06), case
+        assert ban["K_PSNFFR"][t_ban - 1] == pytest.approx(knff, abs=0.06), case
+        assert ban["E_ELECMAX"][t_ban] == pytest.approx(emax, abs=0.06), case
+        ceil = [t for t in range(t0, len(ban["E_ELEC"]))
+                if ban["E_ELEC"][t] >= 0.999 * ban["E_ELECMAX"][t]]
+        assert len(ceil) == n_ceil, case
+        assert ban["beta_NFF"][187] == pytest.approx(share, abs=6e-4), case
+        assert ban["beta_NFF"][199] == pytest.approx(0.975, abs=6e-4), case
+    # Unexpected enforcement's nonzero ELEC_BUFFER is the only regime
+    # parameter the notes do not explain; it is the only one not zero.
+    from define_uk.scenarios import EXPECTATION_REGIMES
+    assert [c for c, r in EXPECTATION_REGIMES.items() if r["ELEC_BUFFER"]] == [
+        "unexpected_enforcement"]
+
+
+@needs_cache
 def test_capacity_ceiling_years_by_scenario():
     """Which registered scenarios reach the capacity ceiling, and when: three
     served ones, all in 2032, and the two refused solves (one to 2039)."""
