@@ -111,7 +111,7 @@ def test_upstream_multiplier_table_is_flagged_unusable():
 
 def test_gpi_multiplier_is_back_loaded_and_pinned():
     """Fable 5.2 review, 2026-11-17: counted from the policy start the ratio
-    is below 1 for five years and reaches 2.25 by 2040 (the headline since
+    is below 1 for six years (to 2032) and reaches 2.25 by 2040 (the headline since
     2026-11-18); the full-simulation 2.30 also carries 4.8 of pre-policy
     (alpha_PP) GDP delta."""
     import json
@@ -128,5 +128,6 @@ def test_gpi_multiplier_is_back_loaded_and_pinned():
     assert m["multiplier"] == m["from_policy_start"] == by[max(by)]
     assert m["pre_policy_cum_delta_gdp"] == pytest.approx(
         ref["pre_policy_cum_delta_gdp"], abs=0.1)
-    assert all(v < 1 for y, v in by.items() if y <= 2031)
+    # Below 1 through 2032 (0.994 unrounded), as README and VALIDATION.md say.
+    assert all(v < 1 for y, v in by.items() if y <= 2032)
     assert list(by.values()) == sorted(by.values())  # rises with horizon
