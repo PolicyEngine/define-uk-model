@@ -3,9 +3,11 @@
 Two questions about the 22 cached scenarios, answered from the cached run's
 own output files (`output/tables/**/Variables_*.csv` and
 `Parameters-sorted_*.csv`) and the Model Manual v1.1. Nothing here comes from
-the upstream source code, and nothing was re-run. Every figure is gated in
-`tests/test_scenario_sweep.py` (those tests need the cached run, so they skip
-in CI).
+the upstream source code, and nothing was re-run. The headline figures and
+the by-regime tables are gated in `tests/test_scenario_sweep.py`; the
+year-by-year intensity table and the price, inflation and investment levels
+quoted in the chain below are read from the same files but not gated. Those
+tests need the cached run, so they skip in CI.
 
 Units: emissions are MtCO2e, quarterly flows summed over 2027Q1–2040Q4 unless
 a year is named. All figures are scenario minus baseline and carry the
@@ -186,7 +188,7 @@ the shortfall and not to expectations.
 ## Reproducing the figures
 
 ```bash
-pytest tests/test_scenario_sweep.py -k "identical or regimes or struck or false_confidence"
+pytest tests/test_scenario_sweep.py -k "identical or regimes or struck or false_confidence or cross_regime"
 ```
 
 needs the cached run (`define_uk.runner.run()`; see the README).
