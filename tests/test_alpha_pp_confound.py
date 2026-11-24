@@ -100,8 +100,11 @@ def test_alpha_pp_range_for_both_multiplier_definitions():
     """The policy-only range each GPI multiplier carries in its caveat.
     After 2026 the alpha_PP effect is unobserved; extrapolate it as zero,
     as its 2026Q4 level, or as its 2026Q4 share of baseline, in numerator
-    and denominator alike. Headline (SPEND_GVTPS, issue #16): 2.30 ->
-    2.08-2.25. Secondary (SPEND_GVT): 1.78 -> 1.73-1.75 (round 5)."""
+    and denominator alike. Headline (SPEND_GVTPS, issue #16): 2.08-2.25,
+    where 2.25, the "zero" case, is the headline itself since 2026-11-18
+    (measured from the policy start; 2.30 over the full simulation).
+    Secondary (SPEND_GVT): 1.73-1.75, top = the secondary 1.75 (1.78 over
+    the full simulation) (round 5)."""
     gv = _tables() / "gvt_investment"
     b = _rows(gv / "Variables_Baseline.csv")
     s = _rows(gv / "Variables_GPI + Green Bonds.csv")
@@ -130,3 +133,11 @@ def test_alpha_pp_range_for_both_multiplier_definitions():
     head, sec = adjusted("SPEND_GVTPS"), adjusted("SPEND_GVT")
     assert (round(min(head), 2), round(max(head), 2)) == (2.08, 2.25)
     assert (round(min(sec), 2), round(max(sec), 2)) == (1.73, 1.75)
+    # The top of each range is the "zero after 2026" case, which is what
+    # measuring from the policy start computes: the published headline and
+    # secondary.
+    from define_uk import validation
+
+    m = validation.gpi_multiplier()
+    assert round(head[0], 2) == m["multiplier"] == 2.25
+    assert round(sec[0], 2) == m["secondary"]["multiplier"] == 1.75
