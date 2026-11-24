@@ -252,8 +252,8 @@ def gpi_multiplier(definition: str = HEADLINE_DEFINITION) -> dict:
         "multiplier": round(d_gdp / d_spend, 2),
         "cum_delta_gdp_real": round(cum_delta("GDP_R"), 1),
         "comparators": {
-            # The IMF "1.1-1.5 (Batini et al. 2021)" entry was withdrawn with
-            # the caveat text (no such publication could be located).
+            # The IMF comparator (Batini et al. 2021, WP/21/87, 1.1-1.5) is
+            # cited in GPI_MULTIPLIER_CAVEATS, with its horizon, not here.
             "obr_capital_spending_impact_multiplier": "~1.0",
         },
         "caveats": GPI_MULTIPLIER_CAVEATS,
