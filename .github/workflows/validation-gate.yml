@@ -29,7 +29,7 @@ jobs:
           python-version: "3.12"
       - run: pip install -e . pytest
       - name: Hermetic artifact gate
-        run: pytest tests/test_committed_artifacts.py tests/test_sfc_gate_hermetic.py -v
+        run: pytest tests/test_committed_artifacts.py tests/test_sfc_gate_hermetic.py tests/test_parameter_gate_hermetic.py -v
       - name: Oracle tests must SKIP here, never silently pass
         # The cache-gated oracle tests cannot run in CI (unlicensed
         # upstream, no cache). If they ever report "passed" in CI,
