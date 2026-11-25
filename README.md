@@ -61,10 +61,18 @@ gdp[2030]                   # +0.53: real GDP, % of baseline
 ```
 
 Each result carries `policy_active` and `capacity_constrained` flags per
-year, the `baseline_parameter_mismatch` (issue #20), `sfc_check`, provenance
-and units. Years before the policy start (2023–2026) are returned only with
-`include_pre_policy=True`, because they contain no policy. The two
-stock-flow-inconsistent cached solves are refused (`StockFlowInconsistent`).
+year, the `baseline_parameter_mismatch` (issue #20), `parameter_check`,
+`sfc_check`, provenance and units. Years before the policy start
+(2023–2026) are returned only with `include_pre_policy=True`, because they
+contain no policy. Two gates refuse a cached solve:
+
+- **Stock-flow consistency** (`StockFlowInconsistent`): sectoral net lending
+  and sectoral financial net worth must each sum to zero in every quarter.
+  Two cached solves fail both and are refused.
+- **Shared parameters** (`BaselineParameterMismatch`): a scenario may differ
+  from its Baseline only in the policy levers (`POLICY_LEVERS`). The one
+  documented exception is `alpha_PPLR` (issue #20), served with its caveat;
+  any other difference is refused.
 
 ## Results
 
@@ -121,7 +129,11 @@ Details, tolerances and the run record: [VALIDATION.md](VALIDATION.md).
 - **Parameter mismatch (issue #20):** the cached Baseline and policy files
   use different α_PP values, so every delta also carries that change.
   The multiplier's 2.25 assumes the change has no effect after 2026;
-  otherwise it is as low as 2.08.
+  otherwise it is as low as 2.08 by three extrapolations of the 2023–26
+  effect. The mismatch is in the upstream run's own parameter files, so
+  only an upstream re-run with a matched Baseline removes it. A clean-room
+  counterfactual finds the real-GDP effect does not fade after 2026, and
+  does not support 2.08 as a floor (VALIDATION.md, 2026-11-24).
 - **Capacity years:** years at the electricity capacity ceiling (three
   served fossil-fuel-ban scenarios, all in 2032) are a price-regime switch
   and are flagged.

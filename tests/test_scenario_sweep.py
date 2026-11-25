@@ -104,6 +104,51 @@ def test_redundant_equation_holds_except_the_pinned_solves():
 
 
 @needs_cache
+def test_stock_side_holds_except_the_pinned_solves():
+    """Σ sectoral financial net worth (FNW, manual Table 2's bottom row) is
+    zero to 4e-8 in every simulated quarter of 28 files. The two solves the
+    flow side refuses also break it, from their first flow break to the end
+    of the run: a net-lending gap, once made, stays in the stocks. Measured
+    2026-11-24."""
+    broken = {}
+    for rel in FILES:
+        c = sfc_check(ROOT / rel, REFERENCE["tolerance_abs"])
+        assert c["stock"]["available"], rel
+        assert c["stock"]["passed"] == c["flow_passed"], rel
+        if c["stock"]["passed"]:
+            assert c["stock"]["max_abs"] < 1e-7, rel
+        else:
+            broken[_key(rel)] = (c["stock"]["failing_from"],
+                                 c["stock"]["n_failing_quarters"],
+                                 round(c["stock"]["max_abs"], 1))
+    assert set(broken) == set(REFERENCE["known_failures"])
+    for key, (first, n, _) in broken.items():
+        assert first == REFERENCE["known_failures"][key][0]
+        year, q = int(first[:4]), int(first[5])
+        assert n == (2040 - year) * 4 + (4 - q) + 1  # every quarter after
+    assert {k: v[2] for k, v in broken.items()} == {
+        "power_sector_regulation/no_forward_guidance/Fossil Fuel Ban": 509.3,
+        "power_sector_regulation/unexpected_enforcement/Fossil Fuel Ban": 182.4,
+    }
+
+
+@needs_cache
+@pytest.mark.parametrize("rel", FILES)
+def test_sectoral_net_worth_sums_to_the_stock_total(rel):
+    """FNW is the sum of the seven sectors' FNW, within printing error."""
+    d = _load(rel)
+
+    def half_ulp(x: float) -> float:
+        return 0.0 if x == 0 else 0.5 * 10 ** (math.floor(math.log10(abs(x))) - 3)
+
+    for t in range(SIM_START, len(d["FNW"])):
+        terms = [d[f"FNW_{s}"][t] for s in
+                 ("PS", "NFC", "MFI", "NMFI", "GVT", "HH", "RoW")]
+        gap = abs(sum(terms) - d["FNW"][t])
+        assert gap <= sum(half_ulp(x) for x in terms + [d["FNW"][t]]), (rel, t)
+
+
+@needs_cache
 @pytest.mark.parametrize("rel", FILES)
 def test_sectoral_balances_sum_to_the_redundant_equation(rel):
     """Each column is printed to 4 significant figures, so the allowed gap

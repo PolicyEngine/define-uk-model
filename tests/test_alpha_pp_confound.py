@@ -141,3 +141,137 @@ def test_alpha_pp_range_for_both_multiplier_definitions():
     m = validation.gpi_multiplier()
     assert round(head[0], 2) == m["multiplier"] == 2.25
     assert round(sec[0], 2) == m["secondary"]["multiplier"] == 1.75
+
+
+# --- The gate run_scenario applies (issue #20) -------------------------------
+# The mismatch is in the upstream run's own parameter files, so nothing here
+# can remove it; these tests pin what the package does about it.
+
+@requires_cached_run
+def test_policy_levers_are_exactly_the_other_parameters_that_vary():
+    """POLICY_LEVERS is not a permissive list: it is every parameter that
+    varies across the 30 cached parameter files, less alpha_PPLR."""
+    from define_uk.scenarios import KNOWN_PARAMETER_MISMATCHES, POLICY_LEVERS
+
+    params = [_params(f) for f in sorted(_tables().rglob("Parameters-sorted_*.csv"))]
+    varying = {k for k in params[0] if len({p[k] for p in params}) > 1}
+    assert varying - set(KNOWN_PARAMETER_MISMATCHES) == POLICY_LEVERS
+    assert all(set(p) == set(params[0]) for p in params)
+
+
+@requires_cached_run
+def test_every_registered_scenario_differs_from_its_baseline_only_in_levers_and_alpha_pplr():
+    from define_uk import scenarios as sc
+
+    for name, _, folder, label, _ in sc._REGISTRY:
+        d = _tables() / folder
+        c = sc.parameter_check(d / f"Parameters-sorted_{label}.csv",
+                               d / "Parameters-sorted_Baseline.csv")
+        assert c["checked"] and c["passed"] and c["undocumented"] == [], name
+        assert c["non_lever"] == {
+            "alpha_PPLR": {"baseline": "0.2748", "scenario": "0.2762"}}, name
+        assert set(c["levers"]) <= sc.POLICY_LEVERS, name
+
+
+@requires_cached_run
+def test_served_results_carry_the_computed_check():
+    from define_uk import scenarios as sc
+
+    r = sc.run_scenario("green_public_investment")
+    assert r["parameter_check"]["shared_except_levers"] is False
+    assert set(r["parameter_check"]["levers"]) == {
+        "CO_NFF", "CRED", "GREEN_BONDS", "GREEN_POWER", "GVT_CRED",
+        "GVT_INVEST", "sh_rGVTNMFIG"}
+    m = r["baseline_parameter_mismatch"]
+    assert (m["baseline_files"], m["policy_files"]) == (0.2748, 0.2762)
+
+
+@requires_cached_run
+@pytest.mark.xfail(strict=True, reason="issue #20: the pinned upstream run's "
+                   "Baseline files use alpha_PPLR = 0.2748, its policy files "
+                   "0.2762. Passes only against a matched Baseline, which "
+                   "needs an upstream re-run")
+def test_baseline_and_policy_share_every_parameter_except_the_levers():
+    """The property a scenario-minus-baseline delta needs to be a policy
+    effect. Strict xfail: when a cache with a matched Baseline is pinned this
+    passes, the xfail turns red, and the issue #20 caveats and ranges must
+    be withdrawn in the same change."""
+    from define_uk import scenarios as sc
+
+    for name, _, folder, label, _ in sc._REGISTRY:
+        d = _tables() / folder
+        c = sc.parameter_check(d / f"Parameters-sorted_{label}.csv",
+                               d / "Parameters-sorted_Baseline.csv")
+        assert c["shared_except_levers"], (name, c["non_lever"])
+
+
+# --- What happens to the alpha_PP effect after 2026? -------------------------
+
+@requires_cached_run
+def test_clean_room_alpha_pp_counterfactual_persists_after_2026():
+    """The cached run cannot show the alpha_PP effect after 2026Q4 (it is
+    mixed with the policies). The clean-room model can be solved twice on
+    the Baseline's inputs, with alpha_PP = 0.2748 and 0.2762 and nothing
+    else changed. Diagnostic only: its baseline misses the oracle (issue
+    #17), so both closures are run: every equation solved, and the 14
+    undiagnosed ones held at the oracle (GDP then within 2.2%).
+
+    Real GDP: in 2026 the clean-room effect is -0.81 / -1.01 a quarter
+    against the cached run's -1.125, and it does not decay: -0.80 / -2.06 in
+    2040Q4. So "the effect stops in 2027", the assumption behind the top of
+    every published range (2.25 for the multiplier), is the one case this
+    evidence does not support.
+
+    Nominal GDP: the clean-room effect in 2026 is 3.4 times the cached
+    run's (+0.84 against +0.25) and rises where the cached run's falls
+    (+0.8 to +0.2 over 2025-26), so the clean-room says nothing reliable
+    about the multiplier's numerator. Taken at face value it would put the
+    policy-only multiplier at 1.07-1.21, and at 1.90-1.94 scaled to the
+    observed 2026 effect: both below the published 2.08-2.25 range, whose
+    lower edge is therefore not a bound. Measured 2026-11-24.
+    """
+    from define_uk.model.scenario import load_reference, scenario_inputs, solve_path
+    from define_uk.model.sectors import build_registry
+    from test_full_model import UNDIAGNOSED
+
+    gv = _tables() / "gvt_investment"
+    base = scenario_inputs(load_reference(gv / "Variables_Baseline.csv"))
+    gpi = scenario_inputs(load_reference(gv / "Variables_GPI + Green Bonds.csv"))
+    y2026 = range(POLICY_START - 4, POLICY_START)
+    policy = range(POLICY_START, len(base))
+    d_gdp = sum(gpi[t]["GDP"] - base[t]["GDP"] for t in policy)
+    d_spend = sum(gpi[t]["SPEND_GVTPS"] - base[t]["SPEND_GVTPS"] for t in policy)
+    assert d_gdp / d_spend == pytest.approx(2.248, abs=1e-3)
+
+    def oracle(v):
+        return sum(gpi[t][v] - base[t][v] for t in y2026) / 4
+
+    assert oracle("GDP_R") == pytest.approx(-1.125) and oracle("GDP") == pytest.approx(0.25)
+
+    want = {  # hold: (real 2026, real 2040Q4, nominal 2026, raw, scaled)
+        (): (-0.811, -0.799, 0.845, 1.21, 1.94),
+        UNDIAGNOSED: (-1.012, -2.061, 0.833, 1.07, 1.90),
+    }
+    for hold, (r26, r40, n26, raw, scaled) in want.items():
+        def solve(alpha):
+            over = {"alpha_PP": alpha, **{n: [r[n] for r in base] for n in hold}}
+            return solve_path(build_registry("empirical"), base, overrides=over,
+                              max_iter=5000)
+
+        lo, hi = solve(0.2748), solve(0.2762)
+
+        def effect(v, t):
+            return hi[t][v] - lo[t][v]
+
+        real26 = sum(effect("GDP_R", t) for t in y2026) / 4
+        nom26 = sum(effect("GDP", t) for t in y2026) / 4
+        assert real26 == pytest.approx(r26, abs=2e-3)
+        assert 0.7 < real26 / oracle("GDP_R") < 0.95   # the observed effect
+        assert all(effect("GDP_R", t) < -0.75 for t in policy)  # no decay
+        assert effect("GDP_R", len(base) - 1) == pytest.approx(r40, abs=2e-3)
+        assert nom26 == pytest.approx(n26, abs=2e-3)
+        assert nom26 / oracle("GDP") > 3.3             # not the observed one
+        cum = sum(effect("GDP", t) for t in policy)
+        assert (d_gdp - cum) / d_spend == pytest.approx(raw, abs=0.01)
+        assert (d_gdp - cum * oracle("GDP") / nom26) / d_spend == pytest.approx(
+            scaled, abs=0.01)

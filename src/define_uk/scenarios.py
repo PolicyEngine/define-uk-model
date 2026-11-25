@@ -92,6 +92,101 @@ BASELINE_PARAMETER_MISMATCH = {
 
 _TABLES = "output/tables"
 
+# Parameters a scenario may set away from its Baseline: the policy switches
+# of the manual's scenario descriptions and the expectation-regime switches
+# (EXPECTATION_REGIMES). The exact set each scenario toggles is gated in
+# tests/test_scenario_design.py; this is their union. A delta is a policy
+# effect only if nothing outside this set differs between the scenario's
+# parameter row and its Baseline's.
+POLICY_LEVERS = frozenset({
+    # green public investment and its financing
+    "GVT_INVEST", "GREEN_BONDS", "GREEN_POWER", "CO_NFF", "sh_rGVTNMFIG",
+    # power-sector regulation and subsidy
+    "FF_BAN", "FF_CAP_BAN", "FF_INV_BAN", "TRANS_PASS", "TTRANS", "POWER_SUB",
+    # housing regulation and subsidy
+    "HENBAN", "HIBAN", "HSELL", "THENBAN", "THIBAN", "TTRANSH",
+    "HOUSING_SUB", "HOUSING_SUB_RATE",
+    # expectation regimes
+    "CRED", "GVT_CRED", "ELEC_BUFFER",
+})
+
+# Non-lever parameters known to differ between the pinned run's Baseline and
+# policy files, each with the issue that sizes it. A scenario whose only
+# non-lever differences are listed here is served with the caveat; any other
+# non-lever difference is refused (BaselineParameterMismatch), because an
+# unsized parameter change inside a delta is not a policy result.
+KNOWN_PARAMETER_MISMATCHES = {"alpha_PPLR": "PolicyEngine/define-uk-model#20"}
+
+
+class BaselineParameterMismatch(ValueError):
+    """A scenario and its Baseline differ in a parameter that is neither a
+    policy lever nor a documented mismatch, so the scenario-minus-baseline
+    delta is not the effect of the policy."""
+
+    def __init__(self, message: str, *, scenario: str, parameter_check: dict):
+        super().__init__(message)
+        self.scenario = scenario
+        self.parameter_check = parameter_check
+
+
+def _parameter_row(path: Path) -> dict[str, str]:
+    """One cached ``Parameters-sorted_*.csv``: {parameter: printed value}."""
+    with path.open(newline="") as fh:
+        rows = list(csv.reader(fh))
+    if len(rows) < 2:
+        raise ValueError(f"{path}: expected a header and one parameter row")
+    return {h.strip(): v.strip() for h, v in zip(rows[0][1:], rows[1][1:])}
+
+
+def _same_value(a: str, b: str) -> bool:
+    if a == b:
+        return True
+    try:
+        return float(a) == float(b)
+    except ValueError:
+        return False
+
+
+def parameter_check(scenario_params: Path, baseline_params: Path) -> dict:
+    """Compare a scenario's parameter row with its Baseline's.
+
+    Returns {checked, levers, non_lever, undocumented, shared_except_levers,
+    passed}. ``levers`` and ``non_lever`` map each differing parameter to
+    {"baseline", "scenario"} (printed values; None where a file does not
+    print the parameter). ``shared_except_levers`` is the property a delta
+    needs to be a policy effect: nothing outside ``POLICY_LEVERS`` differs.
+    ``undocumented`` lists the non-lever differences that are not in
+    ``KNOWN_PARAMETER_MISMATCHES``; ``passed`` is False if there are any.
+
+    If either file is missing the comparison cannot be made: ``checked`` is
+    False and ``shared_except_levers`` and ``passed`` are None (unknown),
+    never True.
+    """
+    if not (scenario_params.exists() and baseline_params.exists()):
+        return {
+            "checked": False, "levers": {}, "non_lever": {},
+            "undocumented": [], "shared_except_levers": None, "passed": None,
+        }
+    scen, base = _parameter_row(scenario_params), _parameter_row(baseline_params)
+    levers: dict[str, dict] = {}
+    non_lever: dict[str, dict] = {}
+    for name in sorted(set(scen) | set(base)):
+        b, s = base.get(name), scen.get(name)
+        if b is not None and s is not None and _same_value(b, s):
+            continue
+        (levers if name in POLICY_LEVERS else non_lever)[name] = {
+            "baseline": b, "scenario": s,
+        }
+    undocumented = [k for k in non_lever if k not in KNOWN_PARAMETER_MISMATCHES]
+    return {
+        "checked": True,
+        "levers": levers,
+        "non_lever": non_lever,
+        "undocumented": undocumented,
+        "shared_except_levers": not non_lever,
+        "passed": not undocumented,
+    }
+
 # Stock-flow consistency gate. LEND is the sum of the sectors' net lending
 # (households, NFC, MFI, NMFI, government, RoW, power sector), the model's
 # redundant equation: in a consistent solve it is zero to rounding (|LEND| <
@@ -117,22 +212,92 @@ SFC_TOLERANCE = 0.01  # GBP bn per quarter, far above CSV rounding of a zero
 
 class StockFlowInconsistent(ValueError):
     """A cached solve violates the redundant equation (sectoral net lending
-    does not sum to zero), so its deltas cannot be served as results."""
+    does not sum to zero) or its stock counterpart (sectoral financial net
+    worth does not sum to zero), so its deltas cannot be served as results.
+    ``scenario`` and ``sfc_check`` carry the name and both files' checks."""
+
+    def __init__(self, message: str, *, scenario: str | None = None,
+                 sfc_check: dict | None = None):
+        super().__init__(message)
+        self.scenario = scenario
+        self.sfc_check = sfc_check
+
+
+def _sfc_detail(failed: dict) -> str:
+    parts = []
+    for k, c in failed.items():
+        if c["failing_quarters"]:
+            parts.append(
+                f"{k}: |LEND| up to {c['max_abs']:.2f} in "
+                + ", ".join(c["failing_quarters"]))
+        if c["stock"]["passed"] is False:
+            parts.append(
+                f"{k}: |FNW| up to {c['stock']['max_abs']:.2f} from "
+                f"{c['stock']['failing_from']} "
+                f"({c['stock']['n_failing_quarters']} quarters)")
+    return "; ".join(parts)
+
+
+SIM_START_ROW = 144  # 2023Q1, the first simulated quarter (row 0 = 1987Q1)
+
+
+def _quarter(i: int) -> str:
+    return f"{START_YEAR + i // 4}Q{i % 4 + 1}"
 
 
 def sfc_check(path: Path, tolerance: float = SFC_TOLERANCE) -> dict:
-    """Redundant-equation check on one cached Variables CSV.
+    """Stock-flow consistency check on one cached Variables CSV.
+
+    Flow side, the redundant equation: |LEND| (the sum of sectoral net
+    lending) within the tolerance in every quarter. Stock side: |FNW| (the
+    sum of sectoral financial net worth) within the same tolerance in every
+    quarter. A simulated quarter that prints neither value fails.
 
     Returns {variable, tolerance, max_abs, failing_quarters,
-    electricity_valuation_gap, passed}, where failing_quarters are 'YYYYQn'
-    labels with |LEND| above the tolerance and electricity_valuation_gap maps
-    each of them to GO_PSR*P_ELEC - GO_PS (see the note on SFC_TOLERANCE).
+    electricity_valuation_gap, stock, flow_passed, passed}.
+    failing_quarters are the 'YYYYQn' labels where the flow side fails and
+    electricity_valuation_gap maps each of them to GO_PSR*P_ELEC - GO_PS (see
+    the note on SFC_TOLERANCE). ``stock`` is {variable, available, max_abs,
+    failing_from, n_failing_quarters, passed}: a flow break is carried in
+    the stocks of every later quarter, so the stock side reports the first
+    failing quarter and how many fail. ``passed`` needs both sides; a file
+    with no FNW column passes on the flow side alone (``stock["available"]``
+    False).
     """
     lend = _read_column(path, "LEND")
+    # A simulated quarter that prints no LEND cannot be shown consistent, so
+    # it fails (the data years, where the upstream prints none, are not
+    # checked).
     failing_idx = [
-        i for i, v in enumerate(lend) if v is not None and abs(v) > tolerance
+        i for i, v in enumerate(lend)
+        if (v is None and i >= SIM_START_ROW)
+        or (v is not None and abs(v) > tolerance)
     ]
-    failing = [f"{START_YEAR + i // 4}Q{i % 4 + 1}" for i in failing_idx]
+    failing = [_quarter(i) for i in failing_idx]
+    # Stock side: the sectors' financial net worth sums to zero (FNW, the
+    # balance-sheet matrix's bottom row, manual Table 2), since every
+    # financial asset is another sector's liability.
+    try:
+        fnw = _read_column(path, "FNW")
+    except KeyError:
+        stock = {"variable": "FNW (sum of sectoral financial net worth)",
+                 "available": False, "max_abs": None,
+                 "failing_from": None, "n_failing_quarters": None,
+                 "passed": None}
+    else:
+        bad = [
+            i for i, v in enumerate(fnw)
+            if (v is None and i >= SIM_START_ROW)
+            or (v is not None and abs(v) > tolerance)
+        ]
+        stock = {
+            "variable": "FNW (sum of sectoral financial net worth)",
+            "available": True,
+            "max_abs": max((abs(v) for v in fnw if v is not None), default=None),
+            "failing_from": _quarter(bad[0]) if bad else None,
+            "n_failing_quarters": len(bad),
+            "passed": not bad,
+        }
     gap: dict[str, float] = {}
     if failing_idx:
         go, go_r, p = (_read_column(path, v) for v in ("GO_PS", "GO_PSR", "P_ELEC"))
@@ -144,12 +309,16 @@ def sfc_check(path: Path, tolerance: float = SFC_TOLERANCE) -> dict:
     return {
         "variable": "LEND (sum of sectoral net lending)",
         "tolerance": tolerance,
-        "max_abs": max(abs(v) for v in lend if v is not None),
+        "max_abs": max((abs(v) for v in lend if v is not None), default=None),
         "failing_quarters": failing,
         # GO_PSR*P_ELEC - GO_PS (manual Eq. (74)) in each failing quarter:
         # the diagnosed source of every break in the pinned run.
         "electricity_valuation_gap": gap,
-        "passed": not failing,
+        # The stock side of the same check (None per field if the file
+        # prints no FNW column).
+        "stock": stock,
+        "flow_passed": not failing,
+        "passed": not failing and stock["passed"] is not False,
     }
 
 # Units of ``delta_level``. Every series is the annual MEAN of the quarterly
@@ -417,6 +586,7 @@ def run_scenario(
     horizon_years: int = 15,
     allow_inconsistent: bool = False,
     include_pre_policy: bool = False,
+    allow_parameter_mismatch: bool = False,
 ) -> dict:
     """Annualised scenario-minus-baseline delta paths from the cached run.
 
@@ -432,6 +602,14 @@ def run_scenario(
     and the result's per-year ``policy_active`` flags mark which years have
     a policy on. ``baseline_parameter_mismatch`` says that the mismatch
     persists in every year.
+
+    Raises ``BaselineParameterMismatch`` if the scenario's cached parameter
+    row differs from its Baseline's in a parameter that is neither a policy
+    lever (``POLICY_LEVERS``) nor a documented mismatch
+    (``KNOWN_PARAMETER_MISMATCHES``, today alpha_PPLR alone); see
+    ``parameter_check``, returned under ``parameter_check``.
+    ``allow_parameter_mismatch=True`` returns the deltas anyway, for
+    diagnosis only, with a leading caveat.
 
     Raises ``StockFlowInconsistent`` if the scenario or its baseline breaks
     the redundant equation (see ``sfc_check``). ``allow_inconsistent=True``
@@ -450,16 +628,30 @@ def run_scenario(
             raise FileNotFoundError(
                 f"cached run is missing {p}; re-run define_uk.runner.run()"
             )
+    params = parameter_check(
+        scen_path.with_name(f"Parameters-sorted_{label}.csv"),
+        base_path.with_name("Parameters-sorted_Baseline.csv"),
+    )
+    if params["undocumented"] and not allow_parameter_mismatch:
+        detail = ", ".join(
+            f"{k} (baseline {v['baseline']}, scenario {v['scenario']})"
+            for k, v in params["non_lever"].items()
+            if k in params["undocumented"]
+        )
+        raise BaselineParameterMismatch(
+            f"scenario {name!r}: its cached parameters differ from the "
+            f"Baseline's outside the policy levers: {detail}. The delta "
+            "would carry that change as well as the policy, so it is not "
+            "served",
+            scenario=name, parameter_check=params,
+        )
     checks = {"scenario": sfc_check(scen_path), "baseline": sfc_check(base_path)}
     failed = {k: c for k, c in checks.items() if not c["passed"]}
     if failed and not allow_inconsistent:
-        detail = "; ".join(
-            f"{k}: |LEND| up to {c['max_abs']:.2f} in {', '.join(c['failing_quarters'])}"
-            for k, c in failed.items()
-        )
         raise StockFlowInconsistent(
             f"scenario {name!r}: the cached solve is not stock-flow "
-            f"consistent ({detail}); its deltas are not served"
+            f"consistent ({_sfc_detail(failed)}); its deltas are not served",
+            scenario=name, sfc_check=checks,
         )
 
     annual: dict[str, dict] = {}
@@ -512,7 +704,26 @@ def run_scenario(
         }
 
     capacity = _capacity_years(scen_path)
-    caveats = list(CAVEATS)
+    # The issue #20 caveat and record are dropped only when the cached
+    # parameter rows were compared and alpha_PPLR is the same in both (a
+    # matched Baseline); an unchecked run keeps them.
+    alpha_matched = params["checked"] and "alpha_PPLR" not in params["non_lever"]
+    caveats = [
+        c for c in CAVEATS
+        if not (alpha_matched and c.startswith("Parameter mismatch (issue #20)"))
+    ]
+    mismatch = None if alpha_matched else dict(BASELINE_PARAMETER_MISMATCH)
+    if mismatch and params["checked"]:  # the values this scenario's files print
+        printed = params["non_lever"]["alpha_PPLR"]
+        mismatch["baseline_files"] = float(printed["baseline"])
+        mismatch["policy_files"] = float(printed["scenario"])
+    if not params["checked"]:
+        caveats.insert(0, (
+            "Parameters not compared: the cached run has no "
+            "Parameters-sorted file for this scenario or its Baseline, so "
+            "whether the two share every parameter except the policy levers "
+            "is unknown (parameter_check)."
+        ))
     if capacity & set(years):
         caveats.insert(0, (
             "Capacity-constrained years: electricity generation sits at the "
@@ -532,12 +743,23 @@ def run_scenario(
             "mismatch alone) cannot be told apart and are included; "
             "policy_active is None for every year."
         ))
+    if any(c["stock"]["available"] is False for c in checks.values()):
+        caveats.insert(0, (
+            "Stock side not checked: the cached file prints no FNW column, "
+            "so only the flow side of stock-flow consistency (LEND) was "
+            "checked (sfc_check, stock)."
+        ))
+    if params["undocumented"]:
+        caveats.insert(0, (
+            "BASELINE AND SCENARIO PARAMETERS DIFFER outside the policy "
+            "levers (" + ", ".join(params["undocumented"]) + "); diagnostic "
+            "output only, not a policy result."
+        ))
     if failed:
         caveats.insert(0, (
-            "NOT STOCK-FLOW CONSISTENT: sectoral net lending does not sum to "
-            "zero in " + ", ".join(
-                q for c in failed.values() for q in c["failing_quarters"])
-            + "; diagnostic output only, not a result."
+            "NOT STOCK-FLOW CONSISTENT: sectoral net lending or financial "
+            "net worth does not sum to zero (" + _sfc_detail(failed)
+            + "); diagnostic output only, not a result."
         ))
     return {
         "result_type": "scenario deltas",
@@ -553,7 +775,10 @@ def run_scenario(
         "policy_active": [
             None if policy_start is None else y >= policy_start for y in years
         ],
-        "baseline_parameter_mismatch": dict(BASELINE_PARAMETER_MISMATCH),
+        # None when the cached parameter rows were compared and alpha_PPLR
+        # is the same in both.
+        "baseline_parameter_mismatch": mismatch,
+        "parameter_check": params,
         "capacity_constrained": [y in capacity for y in years],
         "variables": per_variable,
         "caveats": caveats,
