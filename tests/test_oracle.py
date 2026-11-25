@@ -291,6 +291,59 @@ ORACLE_FORMS = {
         lambda s, l, t, f: power._BETA_DPS * s["EQA_PS"]
         / (s["EQL_NMFI"] - s["EQN_RoW"]) * s["DIVP_NMFI"],
     ),
+    # Household consumption and the equity revaluations (2026-11-24): see
+    # empirical.py. Until then these were DIVERGENT ("form not known") or,
+    # for the two power-sector ones, listed as not evaluable although the
+    # CSVs print them (OT_EQAPS, OT_EQLPS).
+    "CONS_HHP": (
+        ALL_FILES,
+        "Eq. (318): the oracle is ln C = alpha0 + alpha1 ln C(-1) + alpha2 "
+        "ln YD(-1) + alpha3 ln FA(-1) with Table 5's four alpha_CHHP. An "
+        "unrestricted regression of the printed consumption growth on the "
+        "three lags returns them (-0.0058, 1 - 0.1868, 0.1096, 0.0543 "
+        "against -0.006027, 0.8136, 0.1092, 0.05427).",
+        lambda s, l, t, f: math.exp(PARAMETERS["alpha0_CHHP"])
+        * l["CONS_HHP"] ** PARAMETERS["alpha1_CHHP"]
+        * l["YD_HH"] ** PARAMETERS["alpha2_CHHP"]
+        * l["FA_HH"] ** PARAMETERS["alpha3_CHHP"],
+    ),
+    "OTEQL_NFC": (
+        ALL_FILES,
+        "Eq. (184) prints DIVP_NFC / (r_IBL_GVT + beta_EQLNFC); the oracle "
+        "discounts at r_IBL_GVT - beta_EQLNFC.",
+        lambda s, l, t, f: s["DIVP_NFC"]
+        / (s["r_IBL_GVT"] - PARAMETERS["beta_EQLNFC"]) - l["EQL_NFC"],
+    ),
+    "OTEQL_PS": (
+        ALL_FILES,
+        "Eq. (114): the oracle discounts at r_IBL_GVT - beta_EQLPS, as in "
+        "Eq. (184).",
+        lambda s, l, t, f: s["DIVP_PS"]
+        / (s["r_IBL_GVT"] - PARAMETERS["beta_EQLPS"]) - l["EQL_PS"],
+    ),
+    "OTEQL_NMFI": (
+        ALL_FILES,
+        "Eq. (240): the oracle floors the revaluation at zero (it prints 0 "
+        "wherever the printed form is negative).",
+        lambda s, l, t, f: max(0.0, s["DIVP_NMFI"]
+                               / (s["r_IBL_GVT"] + PARAMETERS["beta_EQLNMFI"])
+                               - l["EQL_NMFI"]),
+    ),
+    "OTEQA_HH": (
+        ALL_FILES,
+        "Eq. (344) prints delta_EQAHH EQA_HH(-1); the oracle gives "
+        "households the share beta_dhh EQA_HH(-1) / (EQL_NMFI(-1) - "
+        "EQN_RoW(-1)) of OTEQL_NMFI.",
+        lambda s, l, t, f: PARAMETERS["beta_dhh"] * l["EQA_HH"]
+        / (l["EQL_NMFI"] - l["EQN_ROW"]) * s["OTEQL_NMFI"],
+    ),
+    "OTEQA_PS": (
+        ALL_FILES,
+        "Eq. (113) divides by EQL_NMFI(-1); the oracle by EQL_NMFI(-1) - "
+        "EQN_RoW(-1).",
+        lambda s, l, t, f: power._BETA_DPS * l["EQA_PS"]
+        / (l["EQL_NMFI"] - l["EQN_ROW"]) * s["OTEQL_NMFI"],
+    ),
 }
 
 # Not a form but a coefficient: Eq. (139) sets alpha_PP to Table 5's
@@ -324,7 +377,7 @@ DIVERGENT = {
 NOT_EVALUABLE = {
     "lam", "EMP", "GDP_RFE", "LF", "P_P", "mu", "WS", "WR", "Eu_PS", "Fu_PS",
     "COST_PSNFF", "COST_PSFF", "INTR_PS", "INTP_PS", "GCF_PSD", "OTIBA_PS",
-    "OTEQA_PS", "OTEQL_PS", "OTIBL_PS", "OTRES_PS", "delta_KPS", "IBA_PS",
+    "OTIBL_PS", "OTRES_PS", "delta_KPS", "IBA_PS",
     "IBL_PS", "EQA_PS", "EQL_PS", "FNWM_PS", "RES_PS", "FNW_PS", "K_PSFFR",
     "K_PSNFFR", "ILLIQ_PS", "DSR_PS",
 }
@@ -345,20 +398,11 @@ DIVERGENT.update({
               "while the oracle floors at 0.6; median miss 12%.",
     "GCF_NFCD": "Eq. (166): 3% at 2023Q1, 0.4% median.",
     "beta_nfc": "Eq. (168): within 0.5%, 2x the printing bound.",
-    "OTEQL_NFC": "Eq. (184): as printed DIVP_NFC/(r_IBL_GVT + beta_EQLNFC) - "
-                 "EQL_NFC_{t-1} is -1460 against +5; the equity-valuation "
-                 "form differs (cf. power-sector Eq. (113)).",
     "DEF_NFC": "Eq. (186): within 1.5% (exponential of a printed lag).",
     "INTR_NMFI": _GPI, "IBLTR_NMFI": _GPI, "FA_NMFI": _GPI,
     "INTP_GVT": _GPI, "IBLTR_GVT": _GPI, "FL_GVT": _GPI,
-    "OTEQL_NMFI": "Eq. (240): same equity-valuation form gap as Eq. (184); "
-                  "the oracle prints 0 in some quarters.",
     "SOCB_GVT": "Eq. (269): 3.3% low in every quarter (constant level gap).",
-    "CONS_HHP": "Eq. (318): 2% median, 4% max one-step miss. epsilon_CHHP is "
-                "not tabulated (households.MANUAL_GAPS, alpha3_CHHP read).",
     "GCF_HHNB": "Eq. (324): 1% at 2023Q1, 0.3% median.",
-    "OTEQA_HH": "Eq. (344): the oracle prints OT_EQAHH = 0 in some quarters "
-                "where delta_EQAHH EQA_HH is not 0.",
     "GCF_HH": _HOUSING, "GCF_HHHIR": _HOUSING, "GCF_HHHIER": _HOUSING,
     "GCF_HHHIENR": _HOUSING, "LENDM_HH": _HOUSING, "CHI_ENR": _HOUSING,
     "CHI_EER": _HOUSING,

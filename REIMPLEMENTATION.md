@@ -52,15 +52,36 @@ sheets sum) are asserted each period, not assumed.
 | # | Slice (manual §) | Gate | Status |
 |---|------------------|------|--------|
 | 1 | Accounting core: transactions + balance-sheet matrices (§2.2), residual instruments | matrices identically satisfied on initial values (§5) | **PASS** (2026-08-04) — `model/accounting.py` + `model/calibration.py` (§5 Tables 5–6 fully transcribed); all Table 1/2 row and column identities hold on the §5 initial values within the manual's own 4-significant-figure printing precision (`tests/test_accounting.py`). One documented manual inconsistency (Table 6 LENDM_ROW omits the DIVN_ROW term of Eq. (383); overall LENDM tabulated as 5.44 where "should equal 0"): the MFI/RoW transaction columns miss LEND by ∓DIVN_ROW, pinned exactly in the tests. |
-| 2 | High-level macro + production (§3.2–3.3) | baseline GDP path vs oracle | **not passed** (status 2026-11-17) — every equation is transcribed and the gate is a real solve (`tests/test_oracle.py::test_baseline_gdp_path_matches_oracle`, strict xfail). With §3.1/§3.4 held at the oracle, solved GDP is within 0.41% (empirical forms) / 0.43% (manual) of it every quarter, outside the 2e-3 printing tolerance. Solved as a whole model (milestones 3–4 landed), baseline GDP falls up to 44% below the oracle by 2040 (issue #17). See "Scenario solver" and "Whole model" below. |
-| 3 | Sectoral equations (§3.4.1–3.4.7) | full S1 baseline vs oracle within tolerance | **transcribed, not passed** (2026-11-06) — every equation registered and solving; the whole-model baseline misses the oracle (up to 44% on GDP by 2040), mainly through 14 undiagnosed equity-revaluation forms (`tests/test_full_model.py`). |
-| 4 | Ecosystem block (§3.1) | emissions/energy paths vs oracle | **transcribed, not passed** (2026-11-06) — registered and solving inside the whole model; no separate emissions-path gate yet. |
-| 5 | Policy scenarios (regulation, green public investment, 1.1 extensions) | scenario deltas vs published figures per `VALIDATION.md` | **not possible as specified**: no v1.1 scenario results are published (VALIDATION.md targets 2–3). The clean-room GPI multiplier is 1.52 against the oracle's 2.25 from the policy start (2.30 over the full simulation from 2023; the clean-room shock has no delta before 2027, so the policy window is the like-for-like one). Diagnostic only; nothing served comes from the clean-room model. |
+| 2 | High-level macro + production (§3.2–3.3) | baseline GDP path vs oracle | **not passed** (status 2026-11-17) — every equation is transcribed and the gate is a real solve (`tests/test_oracle.py::test_baseline_gdp_path_matches_oracle`, strict xfail). With §3.1/§3.4 held at the oracle, solved GDP is within 0.41% (empirical forms) / 0.43% (manual) of it every quarter, outside the 2e-3 printing tolerance. Solved as a whole model (milestones 3–4 landed) with the 25 oracle-derived forms, baseline GDP is within 3.7% of the oracle in every quarter (2026-11-24; 44% low before the consumption and equity forms), against a 1% gate (issue #17). See "Scenario solver" and "Whole model" below. |
+| 3 | Sectoral equations (§3.4.1–3.4.7) | full S1 baseline vs oracle within tolerance | **transcribed, not passed** (2026-11-06) — every equation registered and solving. Status 2026-11-24: with the consumption form of Eq. (318) and five equity-revaluation forms found from the cached outputs, the whole-model baseline is within 3.7% of the oracle on GDP and 4.9% on household consumption; nine equations remain undiagnosed, and holding them at the oracle does not close the gap (`tests/test_full_model.py`). |
+| 4 | Ecosystem block (§3.1) | emissions/energy paths vs oracle | **transcribed, not passed** (2026-11-06) — registered and solving inside the whole model. Emissions end 85% above the oracle in 2040 (pinned in `tests/test_full_model.py`); the power-sector parameter gaps (prop_NFF, CR_PS, GCF_PSD, CF_NFF) are the open cause. |
+| 5 | Policy scenarios (regulation, green public investment, 1.1 extensions) | scenario deltas vs published figures per `VALIDATION.md` | **not possible as specified**: no v1.1 scenario results are published (VALIDATION.md targets 2–3). The clean-room GPI multiplier is 1.84 (1.52 before 2026-11-24) against the oracle's 2.25 from the policy start (2.30 over the full simulation from 2023; the clean-room shock has no delta before 2027, so the policy window is the like-for-like one). Diagnostic only; nothing served comes from the clean-room model. |
 
 Tolerances are set per-milestone when the first comparison runs, and recorded
 in `VALIDATION.md` alongside the replication-gate entries — the oracle
 comparison and the published-figure replication are the same standard applied
 to two references.
+
+### Consumption and equity forms (2026-11-24)
+
+Six equations joined `model/empirical.py` (25 forms in all), each found
+from the cached CSVs alone and pinned in `tests/test_oracle.py::ORACLE_FORMS`:
+
+| Eq. | Manual as printed | Cached run |
+|---|---|---|
+| (318) CONS_HHP | error correction with a speed ε_CHHP that Table 5 does not give | ln C = α0 + α1 ln C(−1) + α2 ln YD(−1) + α3 ln FA(−1), Table 5's four α_CHHP |
+| (184) OTEQL_NFC | DIVP_NFC / (r_IBL_GVT + β_EQLNFC) − EQL_NFC(−1) | discount rate r_IBL_GVT − β_EQLNFC |
+| (114) OTEQL_PS | DIVP_PS / (r_IBL_GVT + β_EQLPS) − EQL_PS(−1) | discount rate r_IBL_GVT − β_EQLPS |
+| (240) OTEQL_NMFI | DIVP_NMFI / (r_IBL_GVT + β_EQLNMFI) − EQL_NMFI(−1) | the same, floored at zero |
+| (344) OTEQA_HH | δ_EQAHH · EQA_HH(−1) | β_dhh · EQA_HH(−1) / (EQL_NMFI(−1) − EQN_RoW(−1)) · OTEQL_NMFI |
+| (113) OTEQA_PS | β_dps · EQA_PS(−1) / EQL_NMFI(−1) · OTEQL_NMFI | denominator EQL_NMFI(−1) − EQN_RoW(−1) |
+
+The earlier reading of Eq. (318), α3 as the missing ε_CHHP
+(`households.MANUAL_GAPS`), stays in the manual registry because the manual
+gives nothing else, but it is not what the cached run does. With these
+forms the whole-model baseline is within 3.7% of the oracle on GDP (44%
+before). Still undiagnosed: GCF_NFCD, SOCB_GVT, CF_NFF, r_IBA_PSLR,
+r_IBL_NMFILR, r_IBL_GVTLR, prop_NFF, CR_PS, GCF_PSD.
 
 ### Whole model (2026-11-06, round 4)
 

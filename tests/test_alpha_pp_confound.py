@@ -212,23 +212,36 @@ def test_clean_room_alpha_pp_counterfactual_persists_after_2026():
     """The cached run cannot show the alpha_PP effect after 2026Q4 (it is
     mixed with the policies). The clean-room model can be solved twice on
     the Baseline's inputs, with alpha_PP = 0.2748 and 0.2762 and nothing
-    else changed. Diagnostic only: its baseline misses the oracle (issue
-    #17), so both closures are run: every equation solved, and the 14
-    undiagnosed ones held at the oracle (GDP then within 2.2%).
+    else changed. Diagnostic only: its baseline is within 3.7% of the
+    oracle on GDP, not 1% (issue #17), so two closures are run: every
+    equation solved, and the nine undiagnosed ones held at the oracle.
 
-    Real GDP: in 2026 the clean-room effect is -0.81 / -1.01 a quarter
-    against the cached run's -1.125, and it does not decay: -0.80 / -2.06 in
-    2040Q4. So "the effect stops in 2027", the assumption behind the top of
-    every published range (2.25 for the multiplier), is the one case this
-    evidence does not support.
+    Real GDP: in 2026 the clean-room effect is -1.16 / -0.91 a quarter
+    against the cached run's -1.125, and it does not fade: -1.30 / -1.21 in
+    2040Q4. Summed over 2027-2040 it is -77 / -58, the size of the
+    "constant share of baseline" extrapolation (-74). So "the effect stops
+    in 2027", the assumption behind the top of every published range (2.25
+    for the multiplier, +252 for cumulative real GDP), is the case this
+    evidence does not support; the policy-only cumulative real GDP effect
+    of green public investment is nearer +310 to +330 than +252.
 
-    Nominal GDP: the clean-room effect in 2026 is 3.4 times the cached
-    run's (+0.84 against +0.25) and rises where the cached run's falls
-    (+0.8 to +0.2 over 2025-26), so the clean-room says nothing reliable
-    about the multiplier's numerator. Taken at face value it would put the
-    policy-only multiplier at 1.07-1.21, and at 1.90-1.94 scaled to the
-    observed 2026 effect: both below the published 2.08-2.25 range, whose
-    lower edge is therefore not a bound. Measured 2026-11-24.
+    What it does not reproduce is the transition. The cached run opens
+    with real GDP +3.1 and the price level -0.7% in 2023Q1 (its mark-up on
+    the last data quarter differs too, 0.176 against 0.1704) and reaches
+    the negative level only in 2024Q4; the clean-room starts at zero and
+    builds. By 2025-26 the two agree on real GDP, the price level (+0.2%)
+    and the unemployment rate (+0.04pp). The support is for the level the
+    effect settles at, not for its path.
+
+    Nominal GDP: the clean-room effect in 2026 is 2 to 4 times the cached
+    run's (+0.52 / +1.03 against +0.25) and rises where the cached run's
+    falls (+0.8 to +0.2 over 2025-26), and the two closures disagree by
+    60% on its 2027-2040 sum. It is not validated, so it does not size the
+    multiplier, a ratio of nominal sums. It does show that the published
+    2.08-2.25 range is not a bound: that range holds the nominal effect at
+    its small 2026 level or share, and a price effect that builds, as here,
+    would put the policy-only multiplier well below 2.08. Measured
+    2026-11-24.
     """
     from define_uk.model.scenario import load_reference, scenario_inputs, solve_path
     from define_uk.model.sectors import build_registry
@@ -242,17 +255,19 @@ def test_clean_room_alpha_pp_counterfactual_persists_after_2026():
     d_gdp = sum(gpi[t]["GDP"] - base[t]["GDP"] for t in policy)
     d_spend = sum(gpi[t]["SPEND_GVTPS"] - base[t]["SPEND_GVTPS"] for t in policy)
     assert d_gdp / d_spend == pytest.approx(2.248, abs=1e-3)
+    assert sum(gpi[t]["GDP_R"] - base[t]["GDP_R"] for t in policy) == pytest.approx(252.2)
 
     def oracle(v):
         return sum(gpi[t][v] - base[t][v] for t in y2026) / 4
 
     assert oracle("GDP_R") == pytest.approx(-1.125) and oracle("GDP") == pytest.approx(0.25)
 
-    want = {  # hold: (real 2026, real 2040Q4, nominal 2026, raw, scaled)
-        (): (-0.811, -0.799, 0.845, 1.21, 1.94),
-        UNDIAGNOSED: (-1.012, -2.061, 0.833, 1.07, 1.90),
+    want = {  # hold: (real 2026, real 2040Q4, real 2027-40 sum, nominal 2026)
+        (): (-1.16, -1.30, -76.7, 0.52),
+        UNDIAGNOSED: (-0.91, -1.21, -58.0, 1.03),
     }
-    for hold, (r26, r40, n26, raw, scaled) in want.items():
+    nominal_sums = []
+    for hold, (r26, r40, rsum, n26) in want.items():
         def solve(alpha):
             over = {"alpha_PP": alpha, **{n: [r[n] for r in base] for n in hold}}
             return solve_path(build_registry("empirical"), base, overrides=over,
@@ -265,13 +280,22 @@ def test_clean_room_alpha_pp_counterfactual_persists_after_2026():
 
         real26 = sum(effect("GDP_R", t) for t in y2026) / 4
         nom26 = sum(effect("GDP", t) for t in y2026) / 4
-        assert real26 == pytest.approx(r26, abs=2e-3)
-        assert 0.7 < real26 / oracle("GDP_R") < 0.95   # the observed effect
-        assert all(effect("GDP_R", t) < -0.75 for t in policy)  # no decay
-        assert effect("GDP_R", len(base) - 1) == pytest.approx(r40, abs=2e-3)
-        assert nom26 == pytest.approx(n26, abs=2e-3)
-        assert nom26 / oracle("GDP") > 3.3             # not the observed one
-        cum = sum(effect("GDP", t) for t in policy)
-        assert (d_gdp - cum) / d_spend == pytest.approx(raw, abs=0.01)
-        assert (d_gdp - cum * oracle("GDP") / nom26) / d_spend == pytest.approx(
-            scaled, abs=0.01)
+        assert real26 == pytest.approx(r26, abs=0.01)
+        assert 0.8 < real26 / oracle("GDP_R") < 1.05   # the observed effect
+        assert all(effect("GDP_R", t) < -0.85 for t in policy)  # no fading
+        assert effect("GDP_R", len(base) - 1) == pytest.approx(r40, abs=0.01)
+        assert sum(effect("GDP_R", t) for t in policy) == pytest.approx(rsum, abs=0.5)
+        # The transition is not reproduced: +3.1 in the cached run's first
+        # quarter, about zero here.
+        assert gpi[SIM_START]["GDP_R"] - base[SIM_START]["GDP_R"] == pytest.approx(3.1)
+        assert abs(effect("GDP_R", SIM_START)) < 0.01
+        # ... but the settled unemployment-rate effect is (+0.0004).
+        assert effect("ru", POLICY_START - 1) == pytest.approx(
+            gpi[POLICY_START - 1]["ru"] - base[POLICY_START - 1]["ru"], abs=1.5e-4)
+        assert nom26 == pytest.approx(n26, abs=0.01)
+        assert nom26 / oracle("GDP") > 2.0             # not the observed one
+        nominal_sums.append(sum(effect("GDP", t) for t in policy))
+        # A building price effect: far more than the 20.5 the published
+        # range allows for in the multiplier's numerator.
+        assert nominal_sums[-1] > 100
+    assert max(nominal_sums) / min(nominal_sums) > 1.6  # closures disagree

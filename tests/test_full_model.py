@@ -100,9 +100,8 @@ _SIM = range(144, 216)
 # Equations whose oracle form is not known (test_oracle.DIVERGENT, plus the
 # §3.3.2 parameter gaps). Holding them at the oracle is a diagnostic of how
 # much of the baseline gap they carry, not a model mode.
-UNDIAGNOSED = ("GCF_NFCD", "OTEQL_NFC", "OTEQL_NMFI", "SOCB_GVT",
-               "CONS_HHP", "OTEQA_HH", "CF_NFF", "r_IBA_PSLR", "r_IBL_NMFILR",
-               "r_IBL_GVTLR", "prop_NFF", "CR_PS", "GCF_PSD", "OTEQL_PS")
+UNDIAGNOSED = ("GCF_NFCD", "SOCB_GVT", "CF_NFF", "r_IBA_PSLR", "r_IBL_NMFILR",
+               "r_IBL_GVTLR", "prop_NFF", "CR_PS", "GCF_PSD")
 
 
 def _ref(rel):
@@ -200,22 +199,62 @@ def test_manual_as_printed_leaks_through_the_dividend_row(solved):
 
 
 @requires_cached_run
-@pytest.mark.xfail(strict=True, reason="undiagnosed §3.4 forms (UNDIAGNOSED; "
-                   "chiefly the equity revaluations Eqs. (184), (240), (113)) "
-                   "send the whole-model baseline 44% below the oracle's GDP")
+@pytest.mark.xfail(strict=True, reason="whole-model baseline GDP is within "
+                   "3.7% of the oracle (worst in 2025; 1.2% low in 2040), "
+                   "not 1%. It was 44% before the consumption and equity "
+                   "forms of 2026-11-24. Nine equations stay undiagnosed "
+                   "(UNDIAGNOSED)")
 def test_whole_model_baseline_gdp_within_1_percent(solved, base):
     p = solved["empirical"]
     assert max(abs(p[t]["GDP"] / base[t]["GDP"] - 1) for t in _SIM) < 0.01
 
 
+def _gap(path, base, v):
+    return max(abs(path[t][v] / base[t][v] - 1) for t in _SIM)
+
+
 @requires_cached_run
-def test_undiagnosed_equations_carry_the_baseline_gap(base):
-    """Holding the 14 undiagnosed equations at the oracle (diagnostic only):
-    GDP within 2.2% of the oracle every quarter, household consumption
-    within 0.1%, and Σ LEND still 0 (measured 2026-11-06)."""
+def test_whole_model_baseline_is_within_4_percent_on_gdp(solved, base):
+    """The whole registry, nothing held at the oracle (measured 2026-11-24).
+
+    Empirical forms: nominal GDP within 3.7% of the oracle in every quarter
+    (1.2% low in 2040Q4), real GDP 1.7%, household consumption 4.9%, the
+    price level 2.1%, investment 4.1%. Before the six forms of 2026-11-24
+    (Eq. (318) consumption; Eqs. (113), (114), (184), (240), (344) equity
+    revaluations) GDP ended 44% low and consumption 59% low. Eq. (318)
+    carried most of it: with that form alone GDP ends 20% low.
+
+    Not reproduced: emissions end 85% above the oracle (the power-sector
+    parameter gaps prop_NFF, CR_PS, GCF_PSD and the CF_NFF floor), so the
+    clean-room model says nothing about emissions yet. The manual as
+    printed still ends 48% low on GDP.
+    """
+    p = solved["empirical"]
+    assert _gap(p, base, "GDP") == pytest.approx(0.037, abs=0.002)
+    assert p[-1]["GDP"] / base[-1]["GDP"] - 1 == pytest.approx(-0.012, abs=0.002)
+    assert _gap(p, base, "GDP_R") < 0.02
+    assert _gap(p, base, "CONS_HH") < 0.05
+    assert _gap(p, base, "P") < 0.025
+    assert _gap(p, base, "GCF") < 0.045
+    assert p[-1]["EMIS"] / base[-1]["EMIS"] - 1 == pytest.approx(0.85, abs=0.02)
+    assert _gap(solved["manual"], base, "GDP") == pytest.approx(0.48, abs=0.01)
+
+
+@requires_cached_run
+def test_holding_the_undiagnosed_equations_does_not_close_the_gap(base):
+    """Holding the nine undiagnosed equations at the oracle (diagnostic
+    only) does not improve on the free solve: GDP ends 5.1% low and
+    household consumption 3.6% low, against 3.7% and 4.9% at worst with
+    nothing held. So the remaining miss is not only in those nine: with
+    them at the oracle, household disposable income still ends 4.6% low,
+    and the free solve's closer GDP path rests partly on offsetting errors.
+    Σ LEND stays 0. (Before 2026-11-24 this diagnostic held 14 equations,
+    consumption among them, and gave 2.2%: consumption was at the oracle by
+    construction.) Measured 2026-11-24."""
     p = _solve(base, "empirical", hold=UNDIAGNOSED)
-    assert max(abs(p[t]["GDP"] / base[t]["GDP"] - 1) for t in _SIM) < 0.025
-    assert max(abs(p[t]["CONS_HH"] / base[t]["CONS_HH"] - 1) for t in _SIM) < 1e-3
+    assert _gap(p, base, "GDP") == pytest.approx(0.051, abs=0.003)
+    assert _gap(p, base, "CONS_HH") == pytest.approx(0.036, abs=0.003)
+    assert p[-1]["YD_HH"] / base[-1]["YD_HH"] - 1 == pytest.approx(-0.046, abs=0.004)
     assert max(abs(_sum_lend(p, t)) for t in _SIM) < 1e-8
 
 
@@ -249,19 +288,21 @@ def test_gpi_never_reaches_the_economy_under_the_manual_as_printed(gpi_cum):
 
 @requires_cached_run
 def test_gpi_whole_model_sign_linearity_symmetry_and_sfc(gpi_cum):
-    """+100% of the GPI path (cum 91.23bn): cum nominal GDP +139.1 (1.52 per
-    pound), household consumption +65.1, real GDP +26.3, government net
-    lending -126.2; linear within 1% for nominal GDP (measured 2026-11-15,
-    with the Eq. (179) equity form (#23) and INF_A endogenous (#24);
-    143.0 / 1.57 before both, 142.7 / 1.56 with #23 alone)."""
+    """+100% of the GPI path (cum 91.23bn): cum nominal GDP +168.1 (1.84 per
+    pound), household consumption +77.7, real GDP +28.2, government net
+    lending -154.6; linear within 1% for nominal GDP and consumption
+    (measured 2026-11-24 with the consumption and equity forms; 139.1 /
+    1.52 before them)."""
     s = {k: gpi_cum["empirical", k] for k in (-1.0, -0.5, 0.5, 1.0)}
     for v in ("GDP", "CONS_HH"):
         assert s[1.0][v] > 0
         assert s[1.0][v] / (2 * s[0.5][v]) == pytest.approx(1.0, abs=0.01)
-        # Not symmetric to 10%: -1x/+1x is 1.11 (GDP) and 1.10 (CONS_HH),
-        # 1.99 for real GDP, because the response sits on a baseline that
-        # drifts 44% off the oracle (measured 2026-11-15).
-        assert -s[-1.0][v] / s[1.0][v] == pytest.approx(1.0, abs=0.12)
+    assert s[1.0]["GDP"] == pytest.approx(168.1, abs=0.5)
+    assert s[1.0]["CONS_HH"] == pytest.approx(77.7, abs=0.5)
+    # Not symmetric: -1x/+1x is 1.12 (GDP) and 1.15 (CONS_HH), and 1.72 for
+    # real GDP (measured 2026-11-24).
+    assert -s[-1.0]["GDP"] / s[1.0]["GDP"] == pytest.approx(1.12, abs=0.02)
+    assert -s[-1.0]["CONS_HH"] / s[1.0]["CONS_HH"] == pytest.approx(1.15, abs=0.02)
     assert s[1.0]["LEND_GVT"] < 0  # the government borrows for it
     assert all(c["sfc"] < 1e-8 for c in s.values())
     assert all(c["fnw"] < 1e-6 for c in s.values())
@@ -272,8 +313,9 @@ def test_gpi_moves_the_policy_rate_through_endogenous_inflation(base, gpi, solve
     """Issue #24: INF_A, the Taylor rule's input (Eq. (397)), was read from
     the oracle's baseline, so r_BOE moved by exactly 0 under GPI. With
     INF_A = (P_P / P_P(-1))^4 - 1 (returns.MANUAL_GAPS) it follows the
-    solved price level, and r_BOE responds: +0.044pp / -0.066pp at the
-    extremes against the oracle's +0.076pp / -0.194pp (2026-11-15)."""
+    solved price level, and r_BOE responds: +0.080pp / -0.014pp at the
+    extremes against the oracle's +0.076pp / -0.194pp (2026-11-24; +0.044
+    / -0.066 before the consumption and equity forms)."""
     b = solved["empirical"]
     p = _solve(base, "empirical", gpi=gpi, k=1.0)
     for t in _SIM:
@@ -281,8 +323,8 @@ def test_gpi_moves_the_policy_rate_through_endogenous_inflation(base, gpi, solve
     dr = [p[t]["r_BOE"] - b[t]["r_BOE"] for t in _SIM]
     oracle = [g["r_BOE"] - r["r_BOE"] for g, r in zip(gpi[144:], base[144:])]
     assert max(map(abs, dr)) > 1e-4  # 0.0 exactly before the fix
-    assert max(dr) == pytest.approx(0.00044, abs=2e-5)
-    assert min(dr) == pytest.approx(-0.00066, abs=2e-5)
+    assert max(dr) == pytest.approx(0.00080, abs=2e-5)
+    assert min(dr) == pytest.approx(-0.00014, abs=2e-5)
     # The oracle's delta also carries the alpha_PP mismatch (#20) and the
     # rest of the GPI + Green Bonds policy, so only its size bounds ours.
     assert max(map(abs, dr)) <= max(map(abs, oracle))
@@ -291,26 +333,29 @@ def test_gpi_moves_the_policy_rate_through_endogenous_inflation(base, gpi, solve
 @requires_cached_run
 def test_solved_state_carries_its_own_closures(solved, base):
     """Issue #24: GOS_P and the ITAX_PS split are model values in a solved
-    state, not the reference's (GOS_P was the oracle's 417.1 against 245.6
-    = GO_P - COST_P in 2040Q4)."""
+    state, not the reference's (GOS_P was the oracle's 417.1 in 2040Q4
+    whatever the solve gave: 230.7 = GO_P - COST_P under the manual as
+    printed, 409.5 with the empirical forms)."""
     for forms in ("manual", "empirical"):
         path = solved[forms]
         for t in _SIM:
             s = path[t]
             assert s["GOS_P"] == pytest.approx(s["GO_P"] - s["COST_P"], rel=1e-12)
             assert s["ITAX_PSFF"] + s["ITAX_PSNFF"] == pytest.approx(s["ITAX_PS"], rel=1e-9)
-    assert abs(solved["empirical"][-1]["GOS_P"] - base[-1]["GOS_P"]) > 100
+    assert abs(solved["manual"][-1]["GOS_P"] - base[-1]["GOS_P"]) > 100
+    assert solved["empirical"][-1]["GOS_P"] != base[-1]["GOS_P"]
 
 
 @requires_cached_run
-@pytest.mark.xfail(strict=True, reason="multiplier on a baseline 44% off the "
-                   "oracle (test_whole_model_baseline_gdp_within_1_percent)")
+@pytest.mark.xfail(strict=True, reason="clean-room GPI multiplier is 1.84 "
+                   "against the oracle's 2.25 (1.52 before the forms of "
+                   "2026-11-24): 18% low, outside the 8% band")
 def test_gpi_cumulative_multiplier_matches_the_oracle(gpi_cum, base, gpi):
     # The oracle's 2.25 is the policy-window headline (2027Q1-2040Q4). The
     # clean-room shock is the GPI spending path on the clean-room's own
     # baseline, so it has no delta before 2027 and no alpha_PP change: the
     # policy window is the like-for-like one (the target was the
-    # full-simulation 2.30 +/- 10% until 2026-11-18; 1.52 misses both). The
+    # full-simulation 2.30 +/- 10% until 2026-11-18; 1.84 misses both). The
     # band is 8% so that its lower edge stays at 2.07: the re-pin moves the
     # target, it does not make the gate easier to pass.
     d_sp = sum(g["SPEND_GVTPS"] - b["SPEND_GVTPS"] for g, b in zip(gpi[144:], base[144:]))
