@@ -225,6 +225,14 @@ def test_clean_room_alpha_pp_counterfactual_persists_after_2026():
     evidence does not support; the policy-only cumulative real GDP effect
     of green public investment is nearer +310 to +330 than +252.
 
+    What it does not reproduce is the transition. The cached run opens
+    with real GDP +3.1 and the price level -0.7% in 2023Q1 (its mark-up on
+    the last data quarter differs too, 0.176 against 0.1704) and reaches
+    the negative level only in 2024Q4; the clean-room starts at zero and
+    builds. By 2025-26 the two agree on real GDP, the price level (+0.2%)
+    and the unemployment rate (+0.04pp). The support is for the level the
+    effect settles at, not for its path.
+
     Nominal GDP: the clean-room effect in 2026 is 2 to 4 times the cached
     run's (+0.52 / +1.03 against +0.25) and rises where the cached run's
     falls (+0.8 to +0.2 over 2025-26), and the two closures disagree by
@@ -277,6 +285,13 @@ def test_clean_room_alpha_pp_counterfactual_persists_after_2026():
         assert all(effect("GDP_R", t) < -0.85 for t in policy)  # no fading
         assert effect("GDP_R", len(base) - 1) == pytest.approx(r40, abs=0.01)
         assert sum(effect("GDP_R", t) for t in policy) == pytest.approx(rsum, abs=0.5)
+        # The transition is not reproduced: +3.1 in the cached run's first
+        # quarter, about zero here.
+        assert gpi[SIM_START]["GDP_R"] - base[SIM_START]["GDP_R"] == pytest.approx(3.1)
+        assert abs(effect("GDP_R", SIM_START)) < 0.01
+        # ... but the settled unemployment-rate effect is (+0.0004).
+        assert effect("ru", POLICY_START - 1) == pytest.approx(
+            gpi[POLICY_START - 1]["ru"] - base[POLICY_START - 1]["ru"], abs=1.5e-4)
         assert nom26 == pytest.approx(n26, abs=0.01)
         assert nom26 / oracle("GDP") > 2.0             # not the observed one
         nominal_sums.append(sum(effect("GDP", t) for t in policy))
