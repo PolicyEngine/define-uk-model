@@ -132,8 +132,9 @@ Details, tolerances and the run record: [VALIDATION.md](VALIDATION.md).
   otherwise it is as low as 2.08 by three extrapolations of the 2023–26
   effect. The mismatch is in the upstream run's own parameter files, so
   only an upstream re-run with a matched Baseline removes it. A clean-room
-  counterfactual finds the real-GDP effect does not fade after 2026, and
-  does not support 2.08 as a floor (VALIDATION.md, 2026-11-24).
+  counterfactual reproduces the 2026 real-GDP effect (−1.16 a quarter
+  against −1.125) and finds it does not fade, and it does not support 2.08
+  as a floor (VALIDATION.md, 2026-11-24).
 - **Capacity years:** years at the electricity capacity ceiling (three
   served fossil-fuel-ban scenarios, all in 2032) are a price-regime switch
   and are flagged.
@@ -141,9 +142,11 @@ Details, tolerances and the run record: [VALIDATION.md](VALIDATION.md).
   expectation-regime labels, so comparing its variants compares a solve
   with itself ([docs/scenario-notes.md](docs/scenario-notes.md)).
 - **Clean-room model:** every printed equation is transcribed and the whole
-  model solves, but baseline GDP is up to 44% below the upstream by 2040
-  (issue #17), and its own multiplier is 1.52 against 2.25. It is a
-  diagnostic only.
+  model solves. With 25 forms found from the cached outputs, baseline GDP
+  is within 3.7% of the upstream in every quarter (44% low before the
+  consumption and equity forms of 24 Nov 2026; issue #17), but emissions
+  end 85% above it, and its own multiplier is 1.84 against 2.25. With the
+  manual as printed GDP ends 48% low. It is a diagnostic only.
   Protocol: [REIMPLEMENTATION.md](REIMPLEMENTATION.md).
 - **Local only:** nothing is hosted and the upstream is never redistributed
   ([LICENSE-STATUS.md](LICENSE-STATUS.md)).

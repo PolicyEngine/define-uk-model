@@ -104,10 +104,10 @@ def test_default_registry_is_the_manual_as_printed():
     assert [e.manual_ref for e in again] == [e.manual_ref for e in manual]
 
 
-def test_empirical_flag_replaces_exactly_the_twelve_forms_in_place():
+def test_empirical_flag_replaces_exactly_the_listed_forms_in_place():
     manual = list(build_registry())
     emp = list(build_registry("empirical"))
-    assert len(EMPIRICAL_FORMS) == 19
+    assert len(EMPIRICAL_FORMS) == 25
     assert [e.name for e in manual] == [e.name for e in emp]  # solve order kept
     assert [e.manual_ref for e in manual] == [e.manual_ref for e in emp]
     changed = {m.name for m, e in zip(manual, emp)

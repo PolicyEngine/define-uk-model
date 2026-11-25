@@ -1,15 +1,16 @@
 """Opt-in empirically derived equation forms (NOT the manual as printed).
 
-Nineteen equations where the pinned upstream run's numbers depart from the
+Twenty-five equations where the pinned upstream run's numbers depart from the
 DEFINE-UK Model Manual v1.1 as printed, with the form those numbers do
 follow. Each form was found from the cached output CSVs alone (lag swaps,
 one-column and ratio searches over every printed variable; round 2 of the
-6 Nov 2026 review) and is pinned against the oracle in
+6 Nov 2026 review; consumption and the equity revaluations on 24 Nov
+2026) and is pinned against the oracle in
 ``tests/test_oracle.py::ORACLE_FORMS``. None was taken from the upstream
 source code.
 
 The default registry is the manual as printed. ``build_registry(
-forms="empirical")`` replaces these 19 equations in place (same variable,
+forms="empirical")`` replaces these 25 equations in place (same variable,
 same manual_ref, same solve order), so a solve can be run both ways and the
 difference attributed equation by equation.
 
@@ -148,11 +149,60 @@ EMPIRICAL_FORMS: dict[str, tuple[str, Callable[[State, State], float]]] = {
         lambda s, l: power._BETA_DPS * s["EQA_PS"]
         / (s["EQL_NMFI"] - s["EQN_ROW"]) * s["DIVP_NMFI"],
     ),
+    # Household consumption and the equity revaluations (2026-11-24). Found
+    # from the cached CSVs alone: a regression of the printed consumption
+    # growth on the equation's own three lags returns Table 5's four
+    # alpha_CHHP to 3 figures; the equity forms follow from the implied
+    # discount rate DIVP / EQL - r_IBL_GVT, which is constant at minus
+    # Table 5's beta for NFCs and the power sector.
+    "CONS_HHP": (
+        "Eq. (318) as a log-linear partial adjustment with all four Table 5 "
+        "coefficients: ln C = alpha0 + alpha1 ln C(-1) + alpha2 ln YD(-1) + "
+        "alpha3 ln FA(-1). As printed the equation has an error-correction "
+        "speed epsilon_CHHP that Table 5 does not give; reading alpha3 as "
+        "that speed puts alpha1 and alpha2 on the wrong variables (one-step "
+        "miss up to 4%, against 0.02% for this form).",
+        lambda s, l: math.exp(_P["alpha0_CHHP"]) * l["CONS_HHP"] ** _P["alpha1_CHHP"]
+        * l["YD_HH"] ** _P["alpha2_CHHP"] * l["FA_HH"] ** _P["alpha3_CHHP"],
+    ),
+    "OTEQL_NFC": (
+        "Eq. (184) discounting at r_IBL_GVT - beta_EQLNFC: the cached run's "
+        "DIVP_NFC / EQL_NFC - r_IBL_GVT is -0.00168 in every quarter, "
+        "Table 5's beta_EQLNFC = 0.001676 with the opposite sign.",
+        lambda s, l: s["DIVP_NFC"] / (s["r_IBL_GVT"] - _P["beta_EQLNFC"])
+        - l["EQL_NFC"],
+    ),
+    "OTEQL_PS": (
+        "Eq. (114) discounting at r_IBL_GVT - beta_EQLPS, as Eq. (184).",
+        lambda s, l: s["DIVP_PS"] / (s["r_IBL_GVT"] - power._BETA_EQLPS)
+        - l["EQL_PS"],
+    ),
+    "OTEQL_NMFI": (
+        "Eq. (240) floored at zero: NMFI equity is revalued up to its "
+        "dividend-discount value and never down (the cached run prints 0 "
+        "in every quarter where the printed form is negative). The sign of "
+        "beta_EQLNMFI is as printed.",
+        lambda s, l: max(0.0, s["DIVP_NMFI"] / (s["r_IBL_GVT"] + _P["beta_EQLNMFI"])
+                         - l["EQL_NMFI"]),
+    ),
+    "OTEQA_HH": (
+        "Eq. (344) as the household share of the NMFI revaluation, "
+        "beta_dhh EQA_HH(-1) / (EQL_NMFI(-1) - EQN_RoW(-1)) OTEQL_NMFI, the "
+        "same share as the dividend form of Eq. (313). As printed "
+        "(delta_EQAHH EQA_HH(-1)) it is unrelated to OTEQL_NMFI.",
+        lambda s, l: _P["beta_dhh"] * l["EQA_HH"]
+        / (l["EQL_NMFI"] - l["EQN_ROW"]) * s["OTEQL_NMFI"],
+    ),
+    "OTEQA_PS": (
+        "Eq. (113) dividing by EQL_NMFI - EQN_RoW, as Eq. (93).",
+        lambda s, l: power._BETA_DPS * l["EQA_PS"]
+        / (l["EQL_NMFI"] - l["EQN_ROW"]) * s["OTEQL_NMFI"],
+    ),
 }
 
 
 def apply(registry: Registry) -> None:
-    """Replace the 19 manual equations with their empirical forms in place."""
+    """Replace the 25 manual equations with their empirical forms in place."""
     by_name = {eq.name: eq for eq in registry}
     for name, (_why, func) in EMPIRICAL_FORMS.items():
         old = by_name[name]

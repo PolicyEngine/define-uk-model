@@ -31,7 +31,12 @@ SIM_ORIGIN = 143  # 2022Q4, the initial period of Table 6
 SECOND_LAG_KEYS = ("GCF_HHNB_LAG",)
 
 MANUAL_GAPS = {
-    "epsilon_CHHP": "Eq. (318) epsilon_CHHP is not tabulated; alpha3_CHHP is read.",
+    "epsilon_CHHP": (
+        "Eq. (318) epsilon_CHHP is not tabulated; alpha3_CHHP is read. That "
+        "reading does not reproduce the cached run, which follows a "
+        "log-linear partial adjustment in all four alpha_CHHP "
+        "(empirical.EMPIRICAL_FORMS['CONS_HHP'])."
+    ),
     "GCF_HHHIS": (
         "Eq. (323) sums GCF_HHHIS, which no equation defines; Eq. (325) "
         "defines GCF_HHHI. Read as GCF_HHHI."
