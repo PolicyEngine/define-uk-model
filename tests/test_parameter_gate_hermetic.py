@@ -153,8 +153,8 @@ def test_without_expected_levers_the_check_is_as_before(cache):  # noqa: F811
     ({k: v for k, v in {**BASE, **LEVERS_ON}.items() if k != "GVT_CRED"},
      BASE, ["GVT_CRED"], []),
 ])
-def test_a_scenario_must_move_exactly_its_own_levers(  # noqa: F811
-        cache, scenario, baseline, unexpected, missing):
+def test_a_scenario_must_move_exactly_its_own_levers(
+        cache, scenario, baseline, unexpected, missing):  # noqa: F811
     c = _params(cache, scenario, baseline)
     assert c["undocumented"] == []  # nothing outside the union differs
     assert sorted(c["unexpected_levers"]) == unexpected

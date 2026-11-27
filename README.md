@@ -70,9 +70,12 @@ contain no policy. Two gates refuse a cached solve:
   and sectoral financial net worth must each sum to zero in every quarter.
   Two cached solves fail both and are refused.
 - **Shared parameters** (`BaselineParameterMismatch`): a scenario may differ
-  from its Baseline only in the policy levers (`POLICY_LEVERS`). The one
-  documented exception is `alpha_PPLR` (issue #20), served with its caveat;
-  any other difference is refused.
+  from its Baseline only in its own policy levers, at their recorded values
+  (`SCENARIO_LEVERS`; the table is
+  [docs/scenario-levers.md](docs/scenario-levers.md)). The one documented
+  exception is `alpha_PPLR` (issue #20), served with its caveat; any other
+  difference is refused, including a lever that belongs to another
+  scenario.
 
 ## Results
 
@@ -132,7 +135,7 @@ Details, tolerances and the run record: [VALIDATION.md](VALIDATION.md).
   otherwise it is as low as 2.08 by three extrapolations of the 2023–26
   effect. The mismatch is in the upstream run's own parameter files, so
   only an upstream re-run with a matched Baseline removes it. A clean-room
-  counterfactual reproduces the 2026 real-GDP effect (−1.16 a quarter
+  counterfactual reproduces the 2026 real-GDP effect (−1.10 a quarter
   against −1.125) and finds it does not fade, and it does not support 2.08
   as a floor (VALIDATION.md, 2026-11-24).
 - **Capacity years:** years at the electricity capacity ceiling (three
@@ -142,11 +145,14 @@ Details, tolerances and the run record: [VALIDATION.md](VALIDATION.md).
   expectation-regime labels, so comparing its variants compares a solve
   with itself ([docs/scenario-notes.md](docs/scenario-notes.md)).
 - **Clean-room model:** every printed equation is transcribed and the whole
-  model solves. With 25 forms found from the cached outputs, baseline GDP
-  is within 3.7% of the upstream in every quarter (44% low before the
-  consumption and equity forms of 24 Nov 2026; issue #17), but emissions
-  end 85% above it, and its own multiplier is 1.84 against 2.25. With the
-  manual as printed GDP ends 48% low. It is a diagnostic only.
+  model solves. With 39 forms found from the cached outputs (eight of them
+  the upstream run's own parameter values, which differ from the manual's
+  Table 5), baseline GDP is within 1.23% of the upstream in every quarter
+  and emissions within 9.2% (issue #17; 44% low on GDP before the forms of
+  24 Nov 2026, 85% high on emissions before those of 27 Nov). Its nominal
+  GDP response to green public investment does not reproduce the
+  upstream's, so it says nothing about the multiplier. With the manual as
+  printed GDP ends 48% low. It is a diagnostic only.
   Protocol: [REIMPLEMENTATION.md](REIMPLEMENTATION.md).
 - **Local only:** nothing is hosted and the upstream is never redistributed
   ([LICENSE-STATUS.md](LICENSE-STATUS.md)).

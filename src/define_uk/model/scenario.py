@@ -154,10 +154,16 @@ def scenario_inputs(
             r.setdefault("delta_KPS", r["delta_KPSFF"])
         if "u_PS" in r:
             r.setdefault("Eu_PS", r["u_PS"])
-            r.setdefault("Fu_PS", r["u_PS"])
+            # The CSVs print the weighted expected utilisation of Eq. (89)
+            # as u_PS_W (equal to u_PS wherever no ban is expected).
+            r.setdefault("Fu_PS", r.get("u_PS_W", r["u_PS"]))
+        # Row t is read as the lag of quarter t + 1, where the second lag
+        # is quarter t - 1: the row carries its own previous quarter, as a
+        # solved state does (solve_path). Before 2026-11-27 it carried
+        # t - 2, so the first solved quarter read the third lag.
         for name, key in SECOND_LAGS.items():
-            if t > 1 and name in reference[t - 2]:
-                r[key] = reference[t - 2][name]
+            if t > 0 and name in reference[t - 1]:
+                r[key] = reference[t - 1][name]
         # §3.4 exogenous inputs the CSVs do not print under the manual name.
         if "GCF_GVT" in r:  # Eq. (272): the OBR baseline path
             r.setdefault("GCF_GVTBASE", r["GCF_GVT"])
