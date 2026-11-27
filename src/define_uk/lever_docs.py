@@ -98,8 +98,10 @@ def render() -> str:
         "by.",
         "- **Green public investment is not one switch.** It sets "
         "`GVT_INVEST`, `GREEN_BONDS` and `GREEN_POWER`, and also `CO_NFF`, "
-        "`sh_rGVTNMFIG`, `CRED` and `GVT_CRED`. The manual does not name "
-        "the last four; what each does in the run is not established here.",
+        "`sh_rGVTNMFIG`, `CRED` and `GVT_CRED`. `CRED` is the manual's "
+        "perceived credibility of a fossil-fuel ban (Eq. (89)). The other "
+        "three were not checked against the manual in this round, and what "
+        "each does in the run is not established here.",
         "- **`CRED` and `GVT_CRED` move outside the power-sector block.** "
         "Every scenario of the government-investment and housing blocks "
         "sets them to 1 and 0. The Baseline holds the mutual-trust values "

@@ -137,7 +137,7 @@ Details, tolerances and the run record: [VALIDATION.md](VALIDATION.md).
   only an upstream re-run with a matched Baseline removes it. A clean-room
   counterfactual reproduces the 2026 real-GDP effect (−1.10 a quarter
   against −1.125) and finds it does not fade, and it does not support 2.08
-  as a floor (VALIDATION.md, 2026-11-24).
+  as a floor (VALIDATION.md, 2026-11-24 and 2026-11-27).
 - **Capacity years:** years at the electricity capacity ceiling (three
   served fossil-fuel-ban scenarios, all in 2032) are a price-regime switch
   and are flagged.

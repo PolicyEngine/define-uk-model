@@ -364,7 +364,8 @@ _GPI_FILE = "gvt_investment/Variables_GPI + Green Bonds.csv"
 # 2026-11-27 (issue #17, round 2). Until then these were DIVERGENT ("form
 # not known") or, for GCF_PSD, listed as not evaluable. Seven are the
 # manual's printed equation at the parameter values the run itself prints
-# (empirical.RUN_PARAMETERS); six are forms. value[1] says which.
+# (empirical.RUN_PARAMETERS), an eighth (ROW_DR) at the value its printed
+# path implies; six are forms. value[1] says which.
 ORACLE_FORMS.update({
     "SOCB_GVT": (
         ALL_FILES,
@@ -791,9 +792,10 @@ def test_divergent_equations_still_diverge():
 @requires_cached_run
 @pytest.mark.xfail(
     strict=True, raises=AssertionError,
-    reason="milestone 2: with §3.1/§3.4 held at the oracle, solved GDP is "
-    "within 0.6% but not within printing precision (price level 1.2% off "
-    "from 2023Q1; power-sector investment misses without alpha_0GCFPS)",
+    reason="milestone 2: the whole-model solve is within 1.23% of the "
+    "oracle on GDP (worst in 2025Q1, where the price level is 1.2% high), "
+    "not within the 2e-3 printing tolerance. With §3.1/§3.4 held at the "
+    "oracle it is within 0.09% (tests/test_scenario_solver.py)",
 )
 def test_baseline_gdp_path_matches_oracle():
     """The milestone-2 gate, now a real solve (2026-11-06, round 3):

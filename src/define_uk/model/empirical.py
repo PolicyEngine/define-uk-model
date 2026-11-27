@@ -6,7 +6,7 @@ follow, and two the manual uses but never defines. Each form was found from
 the cached output CSVs alone (lag swaps, one-column and ratio searches over
 every printed variable; round 2 of the 6 Nov 2026 review; consumption and
 the equity revaluations on 24 Nov 2026; the run's own parameter values and
-five more forms on 27 Nov 2026) and is pinned against the oracle in
+six more forms on 27 Nov 2026) and is pinned against the oracle in
 ``tests/test_oracle.py::ORACLE_FORMS``. None was taken from the upstream
 source code.
 

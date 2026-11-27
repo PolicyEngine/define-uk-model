@@ -281,9 +281,14 @@ def test_holding_the_nine_equations_at_the_oracle_brings_gdp_within_half_a_perce
     oracle in every quarter, household consumption 0.5%, emissions 0.3% low
     in 2040Q4. On 2026-11-24 the same diagnostic gave 5.1%; the difference
     is the world-demand growth factor (Eq. (372)). So what the free solve
-    still misses (1.23% on GDP, 9.2% on emissions) is the feedback through
-    those nine, chiefly the power-sector investment split, not anything
-    else in the registry. Σ LEND stays 0. Measured 2026-11-27."""
+    still misses (1.23% on GDP, 9.2% on emissions) is feedback through
+    those nine, not anything else in the registry. Held one at a time
+    (measured, not pinned): the government's long-run liability rate
+    r_IBL_GVTLR alone brings GDP within 0.34% (the 2025 miss is the price
+    level, 1.2% high, with real GDP 0.1% off), and the investment split
+    prop_NFF alone brings 2040Q4 emissions to -0.2%. Both equations
+    reproduce the oracle on the oracle's inputs; the miss is in the paths
+    of what they read. Σ LEND stays 0. Measured 2026-11-27."""
     p = _solve(base, "empirical", hold=FORMERLY_UNDIAGNOSED)
     assert _gap(p, base, "GDP") == pytest.approx(0.005, abs=0.002)
     assert _gap(p, base, "CONS_HH") == pytest.approx(0.005, abs=0.002)
@@ -336,9 +341,18 @@ def test_gpi_whole_model_response_and_sfc(gpi_cum):
     nominal (1.84 per pound), +77.7 consumption and +28.2 real: the power
     sector could not respond, so there was no price effect to speak of.
 
-    Nothing here is linear or symmetric any longer: the half shock gives
-    consumption +58.6 (0.45 of the full one) and nominal GDP +2.4, and the
-    negative shock moves real GDP a third as far as the positive one."""
+    The shock here keeps the Baseline's power subsidy and adds the net
+    spending on the government's balance sheet. The cached GPI file
+    instead removes the subsidy (SUBS_PS = 0) and puts all 122.5 on the
+    balance sheet; with SUBS_PS on that path too the clean-room gives
+    +108.5 nominal (1.19 per pound) and +430 real (measured 2026-11-27,
+    not pinned). Neither is an estimate.
+
+    The response is not linear: the half shock gives consumption +58.6
+    (0.45 of the full one) and nominal GDP +2.4. The negative shocks are
+    not a model property and should not be read as asymmetry: they make
+    SPEND_GVTPS - SUBS_PS negative, so government non-fossil capital goes
+    negative (to -64), and it now enters Eq. (6)'s cap and r_KNFF."""
     s = {k: gpi_cum["empirical", k] for k in (-1.0, -0.5, 0.5, 1.0)}
     for v in ("GDP", "GDP_R", "CONS_HH"):
         assert s[1.0][v] > 0 and s[0.5][v] > 0
