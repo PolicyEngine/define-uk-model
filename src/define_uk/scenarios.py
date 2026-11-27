@@ -92,23 +92,100 @@ BASELINE_PARAMETER_MISMATCH = {
 
 _TABLES = "output/tables"
 
-# Parameters a scenario may set away from its Baseline: the policy switches
-# of the manual's scenario descriptions and the expectation-regime switches
-# (EXPECTATION_REGIMES). The exact set each scenario toggles is gated in
-# tests/test_scenario_design.py; this is their union. A delta is a policy
-# effect only if nothing outside this set differs between the scenario's
-# parameter row and its Baseline's.
-POLICY_LEVERS = frozenset({
-    # green public investment and its financing
-    "GVT_INVEST", "GREEN_BONDS", "GREEN_POWER", "CO_NFF", "sh_rGVTNMFIG",
-    # power-sector regulation and subsidy
-    "FF_BAN", "FF_CAP_BAN", "FF_INV_BAN", "TRANS_PASS", "TTRANS", "POWER_SUB",
-    # housing regulation and subsidy
-    "HENBAN", "HIBAN", "HSELL", "THENBAN", "THIBAN", "TTRANSH",
-    "HOUSING_SUB", "HOUSING_SUB_RATE",
-    # expectation regimes
-    "CRED", "GVT_CRED", "ELEC_BUFFER",
-})
+# What each registered scenario changes in its parameter row, relative to
+# the same folder's Baseline: {scenario: {parameter: (Baseline, scenario)}},
+# the printed values of the cached ``Parameters-sorted_*.csv`` files
+# (alpha_PPLR, KNOWN_PARAMETER_MISMATCHES, is not a lever and is left out).
+# This is data read from the cached run, committed so that the gate and the
+# generated docs/scenario-levers.md work without it;
+# tests/test_scenario_levers.py checks it against the cache.
+#
+# Three things the names alone do not say:
+#  - CRED and GVT_CRED move in every scenario of the government-investment
+#    and housing blocks (to 1 and 0: no fossil-fuel ban is on in those
+#    files), although neither block is an expectation-regime experiment.
+#  - Green public investment also sets CO_NFF and sh_rGVTNMFIG, and no
+#    switch in the Baseline's row (POWER_SUB = GREEN_POWER = 0) says that
+#    the Baseline pays a power subsidy from 2027Q1, which it does
+#    (BASELINE_POWER_SUBSIDY).
+#  - The combined policy sets FF_INV_BAN = 165 and TTRANS = 20 where the
+#    single-policy ban sets 161 and 16.
+_REGIME_OFF = {"CRED": ("0.9", "1"), "GVT_CRED": ("1", "0")}
+_HOUSING_REGULATION = {
+    "HENBAN": ("0", "1"), "HIBAN": ("0", "1"), "HSELL": ("0", "0.012"),
+    "THENBAN": ("217", "181"), "THIBAN": ("217", "165"),
+    "TTRANSH": ("0", "16"),
+}
+_HOUSING_SUBSIDY = {"HOUSING_SUB": ("0", "1"), "HOUSING_SUB_RATE": ("0", "0.4")}
+_FF_BAN = {
+    "FF_BAN": ("0", "1"), "FF_CAP_BAN": ("226", "181"),
+    "FF_INV_BAN": ("0", "161"), "TRANS_PASS": ("0", "1"),
+    "TTRANS": ("1", "16"),
+}
+_POWER_SUBSIDY = {"POWER_SUB": ("0", "1")}
+# The regime switches as differences from the Baseline's row (which holds
+# the mutual-trust values), set only in the scenarios that contain the ban.
+_REGIME_LEVERS = {
+    "": {},
+    "__poor_credibility": {"CRED": ("0.9", "0.3"), "GVT_CRED": ("1", "0")},
+    "__false_confidence": {"GVT_CRED": ("1", "0")},
+    "__no_forward_guidance": {"CRED": ("0.9", "0")},
+    "__unexpected_enforcement": {"CRED": ("0.9", "0.3"),
+                                 "ELEC_BUFFER": ("0", "0.05")},
+}
+SCENARIO_LEVERS: dict[str, dict[str, tuple[str, str]]] = {
+    "green_public_investment": {
+        "GVT_INVEST": ("0", "1"), "GREEN_BONDS": ("0", "1"),
+        "GREEN_POWER": ("0", "1"), "CO_NFF": ("0.5", "0"),
+        "sh_rGVTNMFIG": ("1", "0"), **_REGIME_OFF,
+    },
+    "green_power_subsidy": {"GREEN_POWER": ("0", "1"), **_REGIME_OFF},
+    "housing_regulation": {**_HOUSING_REGULATION, **_REGIME_OFF},
+    "housing_regulation_subsidy": {
+        **_HOUSING_REGULATION, **_HOUSING_SUBSIDY, **_REGIME_OFF,
+    },
+    "mixed_fossil_fuel_ban_subsidy": {**_FF_BAN, **_POWER_SUBSIDY},
+    "mixed_housing_regulation_subsidy": {
+        **_HOUSING_REGULATION, **_HOUSING_SUBSIDY, **_REGIME_OFF,
+    },
+    "mixed_both_regulations_subsidies": {
+        **_FF_BAN, "FF_INV_BAN": ("0", "165"), "TTRANS": ("1", "20"),
+        **_POWER_SUBSIDY, **_HOUSING_REGULATION, **_HOUSING_SUBSIDY,
+    },
+}
+for _suffix, _regime in _REGIME_LEVERS.items():
+    SCENARIO_LEVERS[f"fossil_fuel_ban{_suffix}"] = {**_FF_BAN, **_regime}
+    SCENARIO_LEVERS[f"power_sector_subsidy{_suffix}"] = dict(_POWER_SUBSIDY)
+    SCENARIO_LEVERS[f"fossil_fuel_ban_subsidy{_suffix}"] = {
+        **_FF_BAN, **_POWER_SUBSIDY, **_regime,
+    }
+
+# Every parameter some scenario sets away from its Baseline: the union of
+# SCENARIO_LEVERS. ``parameter_check`` uses it to tell a lever from any
+# other parameter; which levers a given scenario may move, and to what, is
+# SCENARIO_LEVERS[name], and ``run_scenario`` holds each scenario to exactly
+# that set.
+POLICY_LEVERS = frozenset(
+    k for levers in SCENARIO_LEVERS.values() for k in levers
+)
+
+# The Baseline's power subsidy, as its Variables_Baseline.csv prints it. No
+# parameter switches it (POWER_SUB = GREEN_POWER = 0 in the Baseline's row),
+# so it is not in any lever table, but every delta is measured against it:
+# SUBS_PS = SPEND_GVTPS > 0 from 2027Q1 in all eight Baseline files (which
+# are byte-identical). Green public investment is the one scenario that
+# removes it: SUBS_PS = 0 throughout, with SPEND_GVTPS of 122.53 on the
+# government's own balance sheet, so the net change in public power spending
+# is 91.22, not 122.53 (GBP bn, quarterly flows summed over 2027Q1-2040Q4).
+BASELINE_POWER_SUBSIDY = {
+    "variable": "SUBS_PS",
+    "first_quarter": "2027Q1",
+    "first_quarter_value": 0.4724,
+    "last_quarter_value": 0.6543,
+    "cumulative_2027_2040": 31.31,
+    "gpi_subs_ps_cumulative": 0.0,
+    "gpi_spend_gvtps_cumulative": 122.53,
+}
 
 # Non-lever parameters known to differ between the pinned run's Baseline and
 # policy files, each with the issue that sizes it. A scenario whose only
@@ -120,8 +197,10 @@ KNOWN_PARAMETER_MISMATCHES = {"alpha_PPLR": "PolicyEngine/define-uk-model#20"}
 
 class BaselineParameterMismatch(ValueError):
     """A scenario and its Baseline differ in a parameter that is neither a
-    policy lever nor a documented mismatch, so the scenario-minus-baseline
-    delta is not the effect of the policy."""
+    policy lever nor a documented mismatch, or the levers that differ are
+    not exactly the ones recorded for that scenario (``SCENARIO_LEVERS``),
+    so the scenario-minus-baseline delta is not the effect of the named
+    policy."""
 
     def __init__(self, message: str, *, scenario: str, parameter_check: dict):
         super().__init__(message)
@@ -147,7 +226,11 @@ def _same_value(a: str, b: str) -> bool:
         return False
 
 
-def parameter_check(scenario_params: Path, baseline_params: Path) -> dict:
+def parameter_check(
+    scenario_params: Path,
+    baseline_params: Path,
+    expected_levers: dict[str, tuple[str, str]] | None = None,
+) -> dict:
     """Compare a scenario's parameter row with its Baseline's.
 
     Returns {checked, levers, non_lever, undocumented, shared_except_levers,
@@ -158,14 +241,25 @@ def parameter_check(scenario_params: Path, baseline_params: Path) -> dict:
     ``undocumented`` lists the non-lever differences that are not in
     ``KNOWN_PARAMETER_MISMATCHES``; ``passed`` is False if there are any.
 
+    With ``expected_levers`` ({parameter: (Baseline, scenario)}, one entry
+    of ``SCENARIO_LEVERS``) the levers are also held to exactly that set and
+    those printed values. ``unexpected_levers`` then maps each lever that
+    moved without being expected, or moved from or to another value, to
+    what the files print; ``missing_levers`` lists the expected ones that
+    did not move; ``levers_exact`` is True only if both are empty, and
+    ``passed`` requires it. Without ``expected_levers`` the three are
+    {}, [] and None (not checked) and ``passed`` is as before.
+
     If either file is missing the comparison cannot be made: ``checked`` is
-    False and ``shared_except_levers`` and ``passed`` are None (unknown),
-    never True.
+    False and ``shared_except_levers``, ``levers_exact`` and ``passed`` are
+    None (unknown), never True.
     """
     if not (scenario_params.exists() and baseline_params.exists()):
         return {
             "checked": False, "levers": {}, "non_lever": {},
-            "undocumented": [], "shared_except_levers": None, "passed": None,
+            "undocumented": [], "shared_except_levers": None,
+            "unexpected_levers": {}, "missing_levers": [],
+            "levers_exact": None, "passed": None,
         }
     scen, base = _parameter_row(scenario_params), _parameter_row(baseline_params)
     levers: dict[str, dict] = {}
@@ -178,13 +272,31 @@ def parameter_check(scenario_params: Path, baseline_params: Path) -> dict:
             "baseline": b, "scenario": s,
         }
     undocumented = [k for k in non_lever if k not in KNOWN_PARAMETER_MISMATCHES]
+    unexpected: dict[str, dict] = {}
+    missing: list[str] = []
+    exact = None
+    if expected_levers is not None:
+        for name, printed in levers.items():
+            want = expected_levers.get(name)
+            if (
+                want is None
+                or printed["baseline"] is None or printed["scenario"] is None
+                or not _same_value(printed["baseline"], want[0])
+                or not _same_value(printed["scenario"], want[1])
+            ):
+                unexpected[name] = printed
+        missing = sorted(set(expected_levers) - set(levers))
+        exact = not unexpected and not missing
     return {
         "checked": True,
         "levers": levers,
         "non_lever": non_lever,
         "undocumented": undocumented,
         "shared_except_levers": not non_lever,
-        "passed": not undocumented,
+        "unexpected_levers": unexpected,
+        "missing_levers": missing,
+        "levers_exact": exact,
+        "passed": not undocumented and exact is not False,
     }
 
 # Stock-flow consistency gate. LEND is the sum of the sectors' net lending
@@ -606,7 +718,10 @@ def run_scenario(
     Raises ``BaselineParameterMismatch`` if the scenario's cached parameter
     row differs from its Baseline's in a parameter that is neither a policy
     lever (``POLICY_LEVERS``) nor a documented mismatch
-    (``KNOWN_PARAMETER_MISMATCHES``, today alpha_PPLR alone); see
+    (``KNOWN_PARAMETER_MISMATCHES``, today alpha_PPLR alone), or if the
+    levers that differ are not exactly this scenario's recorded ones, at
+    their recorded values (``SCENARIO_LEVERS[name]``: a lever of another
+    scenario, a different value, or a recorded lever left unmoved); see
     ``parameter_check``, returned under ``parameter_check``.
     ``allow_parameter_mismatch=True`` returns the deltas anyway, for
     diagnosis only, with a leading caveat.
@@ -631,7 +746,24 @@ def run_scenario(
     params = parameter_check(
         scen_path.with_name(f"Parameters-sorted_{label}.csv"),
         base_path.with_name("Parameters-sorted_Baseline.csv"),
+        expected_levers=SCENARIO_LEVERS[name],
     )
+    if params["levers_exact"] is False and not allow_parameter_mismatch:
+        detail = "; ".join(filter(None, [
+            ", ".join(
+                f"{k} (baseline {v['baseline']}, scenario {v['scenario']})"
+                for k, v in params["unexpected_levers"].items()
+            ),
+            ", ".join(f"{k} (expected to move, did not)"
+                      for k in params["missing_levers"]),
+        ]))
+        raise BaselineParameterMismatch(
+            f"scenario {name!r}: its cached parameters do not move exactly "
+            f"the levers recorded for it (SCENARIO_LEVERS): {detail}. The "
+            "delta would be the effect of a different policy from the one "
+            "named, so it is not served",
+            scenario=name, parameter_check=params,
+        )
     if params["undocumented"] and not allow_parameter_mismatch:
         detail = ", ".join(
             f"{k} (baseline {v['baseline']}, scenario {v['scenario']})"
@@ -748,6 +880,13 @@ def run_scenario(
             "Stock side not checked: the cached file prints no FNW column, "
             "so only the flow side of stock-flow consistency (LEND) was "
             "checked (sfc_check, stock)."
+        ))
+    if params["levers_exact"] is False:
+        caveats.insert(0, (
+            "SCENARIO LEVERS ARE NOT THE RECORDED ONES (unexpected: "
+            + (", ".join(params["unexpected_levers"]) or "none")
+            + "; missing: " + (", ".join(params["missing_levers"]) or "none")
+            + "); diagnostic output only, not the named policy's result."
         ))
     if params["undocumented"]:
         caveats.insert(0, (

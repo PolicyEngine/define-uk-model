@@ -105,9 +105,16 @@ def test_default_registry_is_the_manual_as_printed():
 
 
 def test_empirical_flag_replaces_exactly_the_listed_forms_in_place():
+    from define_uk.model.empirical import ADDED_FORMS
+
     manual = list(build_registry())
     emp = list(build_registry("empirical"))
-    assert len(EMPIRICAL_FORMS) == 25
+    assert len(EMPIRICAL_FORMS) == 39
+    # The two profit rates the manual never defines are appended; every
+    # manual equation keeps its place and its reference.
+    assert [e.name for e in emp[len(manual):]] == list(ADDED_FORMS) == [
+        "r_KNFF", "r_KFF"]
+    emp = emp[:len(manual)]
     assert [e.name for e in manual] == [e.name for e in emp]  # solve order kept
     assert [e.manual_ref for e in manual] == [e.manual_ref for e in emp]
     changed = {m.name for m, e in zip(manual, emp)
@@ -292,8 +299,9 @@ def test_baseline_solve_converges_every_quarter(baseline_ref, forms):
 @pytest.mark.parametrize("forms", ["manual", "empirical"])
 def test_conditional_baseline_gdp_is_within_0_6_percent(baseline_ref, forms):
     """Block-exogenous closure (§3.1/§3.4 held at the oracle): GDP stays
-    within 0.6% of the oracle every quarter (0.41% empirical, 0.43% manual,
-    measured 2026-11-06), the price level within 1.3%. This is NOT the
+    within 0.6% of the oracle every quarter (0.09% empirical, 0.43% manual,
+    measured 2026-11-27; the empirical figure was 0.41% before the
+    power-sector parameter gaps were closed), the price level within 1.3%. This is NOT the
     milestone-2 gate: the power-sector block does not reproduce (below)."""
     path = _solve(baseline_ref, forms)
     def worst(v):
@@ -303,24 +311,38 @@ def test_conditional_baseline_gdp_is_within_0_6_percent(baseline_ref, forms):
 
 
 @requires_cached_run
-def test_power_sector_investment_does_not_reproduce_without_alpha0_gcfps(emp_base, baseline_ref):
+def test_power_sector_investment_needs_the_runs_alpha0_gcfps(emp_base, baseline_ref):
     """Eq. (96)'s intercept alpha_0GCFPS is not in Table 5
-    (power.MANUAL_GAPS, defaulted to 0): solved desired power investment
-    GCF_PSD misses the oracle by more than 100% within three quarters, and
-    the power-sector finance block (YD_PS, RP_PS, DSR_PS, LEND_PS) follows."""
+    (power.MANUAL_GAPS, defaulted to 0): under the manual as printed,
+    solved desired power investment GCF_PSD misses the oracle by more than
+    100% within three quarters, and the power-sector finance block follows.
+    With the value the run's own parameter file prints (0.02129,
+    empirical.RUN_PARAMETERS) it is within 0.1% at that quarter and 13% at
+    worst over the horizon; the split prop_NFF (25% at worst) and rationing
+    CR_PS (16%) carry the rest (measured 2026-11-27; with them, GDP in this
+    closure is within 0.1% of the oracle, 0.41% before)."""
     t = 146
-    assert abs(emp_base[t]["GCF_PSD"] / baseline_ref[t]["GCF_PSD"] - 1) > 1.0
+    man = _solve(baseline_ref, "manual")
+    assert abs(man[t]["GCF_PSD"] / baseline_ref[t]["GCF_PSD"] - 1) > 1.0
+    assert abs(emp_base[t]["GCF_PSD"] / baseline_ref[t]["GCF_PSD"] - 1) < 2e-3
+    def worst(v):
+        return max(abs(emp_base[q][v] / baseline_ref[q][v] - 1) for q in _SIM)
+    assert worst("GCF_PSD") < 0.15
+    assert worst("K_PSNFFR") < 0.10
+    assert worst("GDP") < 1e-3
 
 
 @requires_cached_run
 def test_manual_eq_84_doubles_the_solved_electricity_price(baseline_ref):
     """As printed, (1 + MU_ELEC) MC_ELEC: the solved P_ELEC ends up more
-    than 100% above the oracle; the empirical form stays within 0.4%."""
+    than 100% above the oracle; the empirical form stays within 0.5%
+    (0.43%; 0.4% before the power-sector investment block was freed from
+    its zero defaults on 2026-11-27)."""
     man = _solve(baseline_ref, "manual")
     emp = _solve(baseline_ref, "empirical")
     gap = lambda p: max(abs(p[t]["P_ELEC"] / baseline_ref[t]["P_ELEC"] - 1) for t in _SIM)
     assert gap(man) > 1.0
-    assert gap(emp) < 4e-3
+    assert gap(emp) < 5e-3
 
 
 @requires_cached_run
@@ -370,21 +392,26 @@ def gpi_shocks(baseline_ref, gpi_ref):
 @requires_cached_run
 def test_gpi_shock_sign_and_unit_nominal_multiplier(gpi_shocks, baseline_ref, gpi_ref):
     """+100% of the GPI + Green Bonds green public investment path (cum
-    91.23bn): cum nominal GDP rises by exactly the spending (multiplier
-    1.00) because nothing that would multiply it (households, NFC
-    investment, imports) is solved yet. The oracle's own cum ΔGDP is 209.9
-    (2.30, both over the full simulation 2023Q1-2040Q4). Real GDP rises less (69.7bn) because prices rise."""
+    91.23bn): cum nominal GDP rises by the spending plus 0.24 of induced
+    power-sector investment (multiplier 1.003) because nothing else that
+    would multiply it (households, NFC investment, imports) is solved in
+    this closure. Until 2026-11-27 it was exactly 1.00: desired power
+    investment, its split and its rationing sat at zero-parameter defaults
+    and could not respond. The oracle's own cum ΔGDP is 209.9 (2.30, both
+    over the full simulation 2023Q1-2040Q4). Real GDP rises less (69.7bn)
+    because prices rise."""
     d_sp = sum(g["SPEND_GVTPS"] - b["SPEND_GVTPS"] for g, b in
                zip(gpi_ref[144:], baseline_ref[144:]))
     s = gpi_shocks["empirical", 1.0]
     assert d_sp == pytest.approx(91.23, abs=0.01)
-    assert s["GDP"] == pytest.approx(d_sp, abs=1e-3)
+    assert s["GDP"] == pytest.approx(d_sp + 0.241, abs=2e-3)
+    assert s["GDP"] == pytest.approx(s["GCF"], abs=1e-9)  # all of it investment
     assert 0 < s["GDP_R"] < s["GDP"]
     assert s["P"] > 0 and s["GO_PSR"] > 0 and s["P_ELEC"] > 0
 
 
 @requires_cached_run
-@pytest.mark.parametrize("v,lin,sym", [("GDP", 1e-6, 1e-6), ("GDP_R", 2e-3, 5e-3),
+@pytest.mark.parametrize("v,lin,sym", [("GDP", 1e-5, 1e-5), ("GDP_R", 2e-3, 5e-3),
                                        ("GO_PSR", 2e-3, 5e-3), ("P_ELEC", 2e-3, 5e-3),
                                        ("P", 1e-2, 3e-2)])
 def test_gpi_shock_is_linear_and_symmetric(gpi_shocks, v, lin, sym):

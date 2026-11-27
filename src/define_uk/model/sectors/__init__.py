@@ -12,9 +12,10 @@ def build_registry(forms: str = "manual") -> Registry:
     """Assemble the full model registry from every sector module.
 
     ``forms="manual"`` (the default) is the Model Manual as printed.
-    ``forms="empirical"`` swaps in the 18 forms the oracle's numbers follow
-    where it departs from the printed manual (``define_uk.model.empirical``,
-    found from the cached output CSVs alone, 2026-11-06).
+    ``forms="empirical"`` swaps in the forms the oracle's numbers follow
+    where it departs from the printed manual, and adds the two profit rates
+    the manual never defines (``define_uk.model.empirical``, found from the
+    cached output CSVs alone).
     """
     if forms not in ("manual", "empirical"):
         raise ValueError(f"forms must be 'manual' or 'empirical', not {forms!r}")

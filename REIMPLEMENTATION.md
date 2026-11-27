@@ -52,10 +52,10 @@ sheets sum) are asserted each period, not assumed.
 | # | Slice (manual §) | Gate | Status |
 |---|------------------|------|--------|
 | 1 | Accounting core: transactions + balance-sheet matrices (§2.2), residual instruments | matrices identically satisfied on initial values (§5) | **PASS** (2026-08-04) — `model/accounting.py` + `model/calibration.py` (§5 Tables 5–6 fully transcribed); all Table 1/2 row and column identities hold on the §5 initial values within the manual's own 4-significant-figure printing precision (`tests/test_accounting.py`). One documented manual inconsistency (Table 6 LENDM_ROW omits the DIVN_ROW term of Eq. (383); overall LENDM tabulated as 5.44 where "should equal 0"): the MFI/RoW transaction columns miss LEND by ∓DIVN_ROW, pinned exactly in the tests. |
-| 2 | High-level macro + production (§3.2–3.3) | baseline GDP path vs oracle | **not passed** (status 2026-11-17) — every equation is transcribed and the gate is a real solve (`tests/test_oracle.py::test_baseline_gdp_path_matches_oracle`, strict xfail). With §3.1/§3.4 held at the oracle, solved GDP is within 0.41% (empirical forms) / 0.43% (manual) of it every quarter, outside the 2e-3 printing tolerance. Solved as a whole model (milestones 3–4 landed) with the 25 oracle-derived forms, baseline GDP is within 3.7% of the oracle in every quarter (2026-11-24; 44% low before the consumption and equity forms), against a 1% gate (issue #17). See "Scenario solver" and "Whole model" below. |
-| 3 | Sectoral equations (§3.4.1–3.4.7) | full S1 baseline vs oracle within tolerance | **transcribed, not passed** (2026-11-06) — every equation registered and solving. Status 2026-11-24: with the consumption form of Eq. (318) and five equity-revaluation forms found from the cached outputs, the whole-model baseline is within 3.7% of the oracle on GDP and 4.9% on household consumption; nine equations remain undiagnosed, and holding them at the oracle does not close the gap (`tests/test_full_model.py`). |
-| 4 | Ecosystem block (§3.1) | emissions/energy paths vs oracle | **transcribed, not passed** (2026-11-06) — registered and solving inside the whole model. Emissions end 85% above the oracle in 2040 (pinned in `tests/test_full_model.py`); the power-sector parameter gaps (prop_NFF, CR_PS, GCF_PSD, CF_NFF) are the open cause. |
-| 5 | Policy scenarios (regulation, green public investment, 1.1 extensions) | scenario deltas vs published figures per `VALIDATION.md` | **not possible as specified**: no v1.1 scenario results are published (VALIDATION.md targets 2–3). The clean-room GPI multiplier is 1.84 (1.52 before 2026-11-24) against the oracle's 2.25 from the policy start (2.30 over the full simulation from 2023; the clean-room shock has no delta before 2027, so the policy window is the like-for-like one). Diagnostic only; nothing served comes from the clean-room model. |
+| 2 | High-level macro + production (§3.2–3.3) | baseline GDP path vs oracle | **not passed** (status 2026-11-17) — every equation is transcribed and the gate is a real solve (`tests/test_oracle.py::test_baseline_gdp_path_matches_oracle`, strict xfail). With §3.1/§3.4 held at the oracle, solved GDP is within 0.09% (empirical forms; 0.41% before 2026-11-27) / 0.43% (manual) of it every quarter; the empirical figure is now inside the 2e-3 printing tolerance that closure was measured against, but the gate is the whole-model solve. Solved as a whole model (milestones 3–4 landed) with the 39 oracle-derived forms, baseline GDP is within 1.23% of the oracle in every quarter (2026-11-27; 3.7% with the 25 forms of 2026-11-24, 44% low before them), against a 1% gate (issue #17). See "Scenario solver" and "Whole model" below. |
+| 3 | Sectoral equations (§3.4.1–3.4.7) | full S1 baseline vs oracle within tolerance | **transcribed, not passed** (2026-11-06) — every equation registered and solving. Status 2026-11-24: with the consumption form of Eq. (318) and five equity-revaluation forms found from the cached outputs, the whole-model baseline was within 3.7% of the oracle on GDP and 4.9% on household consumption. Status 2026-11-27: the nine equations then undiagnosed are explained (below); GDP is within 1.23% and consumption 1.8%, and with the nine held at the oracle GDP is within 0.5% (`tests/test_full_model.py`). |
+| 4 | Ecosystem block (§3.1) | emissions/energy paths vs oracle | **transcribed, not passed** (2026-11-06) — registered and solving inside the whole model. Status 2026-11-27: emissions end 9.2% above the oracle in 2040Q4 and 4.2% above it summed over 2027–2040 (85% and 43% before the power-sector parameters were read from the run's own parameter files; pinned in `tests/test_full_model.py`). What remains is in the fossil-generation residual (non-fossil capital 9% low). |
+| 5 | Policy scenarios (regulation, green public investment, 1.1 extensions) | scenario deltas vs published figures per `VALIDATION.md` | **not possible as specified**: no v1.1 scenario results are published (VALIDATION.md targets 2–3). Cumulative nominal GDP per pound of GPI is 0.13 against the oracle's 2.25 (1.84 before the power-sector forms of 2026-11-27, 1.52 before 2026-11-24); the clean-room price level falls four times as far by 2040, so this is not a multiplier estimate. The oracle's 2.25 is measured from the policy start (2.30 over the full simulation from 2023; the clean-room shock has no delta before 2027, so the policy window is the like-for-like one). Diagnostic only; nothing served comes from the clean-room model. |
 
 Tolerances are set per-milestone when the first comparison runs, and recorded
 in `VALIDATION.md` alongside the replication-gate entries — the oracle
@@ -64,7 +64,7 @@ to two references.
 
 ### Consumption and equity forms (2026-11-24)
 
-Six equations joined `model/empirical.py` (25 forms in all), each found
+Six equations joined `model/empirical.py` (25 forms in all at that date), each found
 from the cached CSVs alone and pinned in `tests/test_oracle.py::ORACLE_FORMS`:
 
 | Eq. | Manual as printed | Cached run |
@@ -80,8 +80,64 @@ The earlier reading of Eq. (318), α3 as the missing ε_CHHP
 (`households.MANUAL_GAPS`), stays in the manual registry because the manual
 gives nothing else, but it is not what the cached run does. With these
 forms the whole-model baseline is within 3.7% of the oracle on GDP (44%
-before). Still undiagnosed: GCF_NFCD, SOCB_GVT, CF_NFF, r_IBA_PSLR,
-r_IBL_NMFILR, r_IBL_GVTLR, prop_NFF, CR_PS, GCF_PSD.
+before). Nine equations were then undiagnosed: GCF_NFCD, SOCB_GVT, CF_NFF,
+r_IBA_PSLR, r_IBL_NMFILR, r_IBL_GVTLR, prop_NFF, CR_PS, GCF_PSD.
+
+### The run's own parameters, and six more forms (2026-11-27)
+
+The cached run's parameter files (`Parameters-sorted_*.csv`, outputs of the
+run, the same in all 30) print eight values that differ from the manual's
+Table 5 and three coefficients Table 5 omits. They are
+`empirical.RUN_PARAMETERS`; `calibration.PARAMETERS` stays Table 5. With
+them, seven printed equations reproduce the cached run within the printing
+bound:
+
+| Eq. | Variable | Run's parameters (Table 5) |
+|---|---|---|
+| (269) | SOCB_GVT | α_0-2SOCB = 0.0601, 0.5317, 0.1392 (0.05561, 0.5263, 0.151) |
+| (17) | CF_NFF | CF_min = 0.6, π_2 = −1.084 (0.5, −1.164) |
+| (186) | DEF_NFC | def_max = 0.04664, def_0NFC = 2909 (0.2, 12580) |
+| (117) | DEF_PS | def_max = 0.04664, def_0PS = 5737 (0.2, 24820) |
+| (96) | GCF_PSD | α_0GCFPS = 0.02129 (not tabulated) |
+| (99) | prop_NFF | α_0bNFF = 1.347, α_1bNFF = 10 (not tabulated) |
+| (138) | CR_PS | Table 5's α_0CRPS with the NFC slopes α_1-3CRNFC (no power-sector slopes are tabulated or printed) |
+
+Six equations are forms:
+
+| Eq. | Manual as printed | Cached run |
+|---|---|---|
+| (166) GCF_NFCD | utilisation u at t | u at t−1 |
+| (168) beta_nfc | tanh(P_NELEC / P_ELEC) | tanh(P_NELECT / P_ELEC), the tax-inclusive price |
+| (6) E_ELECNFF | cap CF_NFF · K_PSNFFR | cap CF_NFF · (K_PSNFFR + K_GVTNFFR) |
+| (399) r_IBA_PSLR | no floor or spread tabulated for the power sector | the NFC floor and spread |
+| (401) r_IBL_NMFILR | δ_jt undefined | δ_jt = −δ_IBLNMFI |
+| (401) r_IBL_GVTLR | δ_jt undefined | δ_jt = −δ_IBLGVT |
+
+Eq. (99) reads two profit rates the manual never defines. In the cached run
+r_KNFF = (P_ELEC · E_ELECNFF − COST_PSNFF) / (K_PSNFF + P_P · K_GVTNFFR)
+and r_KFF = (P_ELEC · E_ELECFF − COST_PSFF) / K_PSFF, zero once fossil
+capital is zero. The empirical registry adds both (`empirical.ADDED_FORMS`);
+under the manual as printed they stay exogenous and inert.
+
+Eq. (324), GCF_HHNB, reproduces as printed. It was listed as divergent
+because the comparison loader handed second-lag equations the third lag;
+`scenario_inputs` had the same error for the first solved quarter. Both are
+fixed.
+
+Eq. (372), world demand, is a parameter-precision case. Table 5 and the
+run's parameter file print the growth factor as 1.007; the cached ROW_DR
+path implies 1.00742 in all 30 files (`empirical.ROW_DG_IMPLIED`). Each
+quarter on its own reproduces with either, so the per-equation comparison
+could not see it; compounded over 72 quarters, 1.007 leaves world demand
+3.0% low. Any other growth parameter printed to 4 s.f. and compounded over
+the horizon could hide the same way; the others have not been searched.
+
+With all of the above the whole-model baseline is within 1.23% of the
+oracle on GDP (worst in 2025Q1) and emissions end 9.2% high.
+
+What is still not reproduced one equation at a time: the green-bond gilt
+stock of GPI + Green Bonds and the housing retrofit subsidy, neither of
+which has a manual equation (`tests/test_oracle.py::DIVERGENT`).
 
 ### Whole model (2026-11-06, round 4)
 

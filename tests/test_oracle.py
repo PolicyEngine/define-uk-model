@@ -48,8 +48,9 @@ from pathlib import Path
 import pytest
 
 from define_uk.model.calibration import PARAMETERS
+from define_uk.model.empirical import ADDED_FORMS, EMPIRICAL_FORMS, RUN_PARAMETERS
 from define_uk.model.sectors import build_registry, power
-from define_uk.scenarios import _TABLES, _run_root
+from define_uk.scenarios import POLICY_LEVERS, _TABLES, _run_root
 
 REFERENCE = json.loads(
     (Path(__file__).resolve().parents[1] / "validation"
@@ -131,7 +132,7 @@ REPRODUCED = {
     "OTIBA_HH", "OTIBL_HH", "OTRES_HH", "IBA_HH", "EQA_HH", "PENS", "INS",
     "IBL_HH", "FA_HH", "FL_HH", "FNWM_HH", "RES_HH", "FNW_HH", "H", "HB",
     "H_I", "H_EN", "H_EE", "HVAL", "PH", "NW_HH", "YP_ROW", "DY", "ROW_D",
-    "IMP", "EXP", "ROW_DR", "IMP_R", "EXP_R", "ER", "PF", "PE", "PI",
+    "IMP", "EXP", "IMP_R", "EXP_R", "ER", "PF", "PE", "PI",
     "IADJ", "REER", "INTN_ROW", "DIVN_ROW", "LENDM_ROW", "DISC_ROW",
     "LEND_ROW", "IBNTR_ROW", "EQNTR_ROW", "RESTR_ROW", "OTIBA_ROW",
     "OTEQN_ROW", "OTRES_ROW", "IBN_ROW", "EQN_ROW", "FNWM_ROW", "RES_ROW",
@@ -143,6 +144,10 @@ REPRODUCED = {
     # Manual gaps closed on 2026-11-15 (issue #24): no printed equation,
     # forms found from the CSVs (returns/government/nfc.MANUAL_GAPS).
     "INF_A", "ITAX_PSNFF", "ITAX_PSFF", "GOS_P",
+    # Eq. (324), 2026-11-27: reproduces as printed. Its earlier "1% at
+    # 2023Q1" was this file's loader handing it the third lag of GCF_HHNB
+    # where the equation reads the second (``_load``).
+    "GCF_HHNB",
 }
 
 ALL_FILES = frozenset(ORACLE_FILES)
@@ -346,6 +351,111 @@ ORACLE_FORMS = {
     ),
 }
 
+
+
+def _registered(name):
+    """The form ``build_registry("empirical")`` solves with, so the form
+    pinned here and the one registered cannot drift apart."""
+    func = EMPIRICAL_FORMS[name][1]
+    return lambda s, l, t, f: func(s, l)
+
+
+_GPI_FILE = "gvt_investment/Variables_GPI + Green Bonds.csv"
+# 2026-11-27 (issue #17, round 2). Until then these were DIVERGENT ("form
+# not known") or, for GCF_PSD, listed as not evaluable. Seven are the
+# manual's printed equation at the parameter values the run itself prints
+# (empirical.RUN_PARAMETERS), an eighth (ROW_DR) at the value its printed
+# path implies; six are forms. value[1] says which.
+ORACLE_FORMS.update({
+    "SOCB_GVT": (
+        ALL_FILES,
+        "Parameters. Eq. (269) as printed with the run's alpha_0-2SOCB "
+        "(0.0601, 0.5317, 0.1392; Table 5: 0.05561, 0.5263, 0.151).",
+        _registered("SOCB_GVT"),
+    ),
+    "CF_NFF": (
+        ALL_FILES,
+        "Parameters. Eq. (17) as printed with the run's CF_min = 0.6 and "
+        "pi2 = -1.084 (Table 5: 0.5, -1.164).",
+        _registered("CF_NFF"),
+    ),
+    "DEF_NFC": (
+        ALL_FILES,
+        "Parameters. Eq. (186) as printed with the run's def_max = 0.04664 "
+        "and def0_NFC = 2909 (Table 5: 0.2, 12580).",
+        _registered("DEF_NFC"),
+    ),
+    "DEF_PS": (
+        ALL_FILES,
+        "Parameters. Eq. (117) as printed with the run's def_max = 0.04664 "
+        "and def0_PS = 5737 (Table 5: 0.2, 24820).",
+        _registered("DEF_PS"),
+    ),
+    "GCF_PSD": (
+        ALL_FILES,
+        "Parameters. Eq. (96) as printed with the run's alpha_0GCFPS = "
+        "0.02129, which Table 5 omits. Fu_PS is the CSVs' u_PS_W.",
+        _registered("GCF_PSD"),
+    ),
+    "prop_NFF": (
+        ALL_FILES,
+        "Parameters. Eq. (99) as printed with the run's alpha_0bNFF = 1.347 "
+        "and alpha_1bNFF = 10, which Table 5 omits.",
+        _registered("prop_NFF"),
+    ),
+    "CR_PS": (
+        ALL_FILES,
+        "Parameters. Eq. (138) with Table 5's alpha_0CRPS and the NFC "
+        "slopes alpha_1-3CRNFC (no power-sector slopes are tabulated or "
+        "printed by the run).",
+        _registered("CR_PS"),
+    ),
+    "GCF_NFCD": (
+        ALL_FILES,
+        "Timing. Eq. (166) reads u at t; the oracle reads u at t-1.",
+        _registered("GCF_NFCD"),
+    ),
+    "beta_nfc": (
+        ALL_FILES,
+        "Eq. (168) prints P_NELEC / P_ELEC; the oracle uses the "
+        "tax-inclusive P_NELECT / P_ELEC.",
+        _registered("beta_nfc"),
+    ),
+    "E_ELECNFF": (
+        {_GPI_FILE},
+        "Eq. (6) caps non-fossil generation at CF_NFF K_PSNFFR; the oracle "
+        "at CF_NFF (K_PSNFFR + K_GVTNFFR). Only GPI + Green Bonds has "
+        "government non-fossil capital.",
+        _registered("E_ELECNFF"),
+    ),
+    "r_IBA_PSLR": (
+        ALL_FILES,
+        "Eq. (399): Table 5 gives the power sector no floor or spread; the "
+        "oracle uses the NFC ones (its r_IBA_PSLR equals its r_IBA_NFCLR).",
+        _registered("r_IBA_PSLR"),
+    ),
+    "r_IBL_NMFILR": (
+        ALL_FILES,
+        "Eq. (401): the undefined delta_jt is -delta_IBLNMFI.",
+        _registered("r_IBL_NMFILR"),
+    ),
+    "r_IBL_GVTLR": (
+        ALL_FILES,
+        "Eq. (401): the undefined delta_jt is -delta_IBLGVT.",
+        _registered("r_IBL_GVTLR"),
+    ),
+    # One quarter at a time the manual form reproduces in every file (so it
+    # departs in none): the departure is in the compounded path, pinned by
+    # test_world_demand_growth_is_finer_than_the_printed_parameter.
+    "ROW_DR": (
+        set(),
+        "Parameter precision. Eq. (372) with growth 1.00742, the factor "
+        "the printed ROW_DR path implies over 72 quarters; Table 5 and the "
+        "run's parameter file print 1.007.",
+        _registered("ROW_DR"),
+    ),
+})
+
 # Not a form but a coefficient: Eq. (139) sets alpha_PP to Table 5's
 # alpha_PPLR = 0.2762, which every policy file prints, while all seven
 # Baseline files print 0.2748 from 2023Q1. Policy-minus-baseline deltas
@@ -358,25 +468,15 @@ ORACLE_FORMS["alpha_PP"] = (
 )
 
 # Still diverge in at least one file, and the oracle form is not known.
-# value = why
-DIVERGENT = {
-    "prop_NFF": "Eq. (99): alpha_0bNFF, alpha_1bNFF are not in Table 5 "
-                "(power.MANUAL_GAPS, defaulted to 0, so prop_NFF = 0.5); the "
-                "oracle's prop_NFF runs 0.90-1.00.",
-    "CR_PS": "Eq. (138): alpha_1-3CRPS are not in Table 5 (power.MANUAL_GAPS, "
-             "defaulted to 0); the oracle's CR_PS runs 0.06-0.59.",
-    "DEF_PS": "Eq. (117) reproduces in the baseline-like files (within 2.2x "
-              "the printing bound, which an exponential of a printed lag can "
-              "reach) but misses by up to 35x in GPI + Green Bonds and 10x in "
-              "the mixed policy, at the 2030 illiquidity spike (oracle 0.0170 "
-              "vs 0.0234 in 2030Q3). Not diagnosed.",
-}
+# value = why. (prop_NFF, CR_PS and DEF_PS left on 2026-11-27: the run's own
+# parameter values explain them, see ORACLE_FORMS.)
+DIVERGENT: dict[str, str] = {}
 
 # Output or an input is not a column of the oracle CSVs, so the equation
 # cannot be compared one at a time (only through a full solve).
 NOT_EVALUABLE = {
     "lam", "EMP", "GDP_RFE", "LF", "P_P", "mu", "WS", "WR", "Eu_PS", "Fu_PS",
-    "COST_PSNFF", "COST_PSFF", "INTR_PS", "INTP_PS", "GCF_PSD", "OTIBA_PS",
+    "COST_PSNFF", "COST_PSFF", "INTR_PS", "INTP_PS", "OTIBA_PS",
     "OTIBL_PS", "OTRES_PS", "delta_KPS", "IBA_PS",
     "IBL_PS", "EQA_PS", "EQL_PS", "FNWM_PS", "RES_PS", "FNW_PS", "K_PSFFR",
     "K_PSNFFR", "ILLIQ_PS", "DSR_PS",
@@ -390,27 +490,11 @@ _HOUSING = "only in the two housing-subsidy files: the retrofit subsidy " \
            "(SUBS_HH, lower C_HIENR/C_HIEER) is a policy instrument the " \
            "manual's Eqs. (325), (331)-(334), (362)-(363) do not print"
 DIVERGENT.update({
-    "E_ELECNFF": "Eq. (6): only in GPI + Green Bonds, the one file with "
-                 "government non-fossil capacity K_GVTNFFR > 0. Eq. (5) "
-                 "counts it in capacity; Eq. (6)'s cap prints only "
-                 "CF_NFF K_PSNFFR.",
-    "CF_NFF": "Eq. (17): matches at 2023 (0.4%) but drifts to 0.5 (CF_min) "
-              "while the oracle floors at 0.6; median miss 12%.",
-    "GCF_NFCD": "Eq. (166): 3% at 2023Q1, 0.4% median.",
-    "beta_nfc": "Eq. (168): within 0.5%, 2x the printing bound.",
-    "DEF_NFC": "Eq. (186): within 1.5% (exponential of a printed lag).",
     "INTR_NMFI": _GPI, "IBLTR_NMFI": _GPI, "FA_NMFI": _GPI,
     "INTP_GVT": _GPI, "IBLTR_GVT": _GPI, "FL_GVT": _GPI,
-    "SOCB_GVT": "Eq. (269): 3.3% low in every quarter (constant level gap).",
-    "GCF_HHNB": "Eq. (324): 1% at 2023Q1, 0.3% median.",
     "GCF_HH": _HOUSING, "GCF_HHHIR": _HOUSING, "GCF_HHHIER": _HOUSING,
     "GCF_HHHIENR": _HOUSING, "LENDM_HH": _HOUSING, "CHI_ENR": _HOUSING,
     "CHI_EER": _HOUSING,
-    "r_IBA_PSLR": "Eq. (399): spr_psa and minr_ps are not in Table 5 "
-                  "(returns.MANUAL_GAPS); held at its lag.",
-    "r_IBL_NMFILR": "Eq. (401): the undefined delta_jt (returns.MANUAL_GAPS) "
-                    "read as delta_IBLNMFI misses by 30%.",
-    "r_IBL_GVTLR": "Eq. (401): delta_jt read as delta_IBLGVT misses by 10%.",
 })
 NOT_EVALUABLE |= {
     # Inputs the CSVs do not print: GCF_GVTBASE (Eq. (272)), GCF_GVTNFFR
@@ -453,9 +537,17 @@ def _load(rel: str) -> list[dict[str, float]]:
         for csv_name, name in CSV_ALIASES.items():
             if csv_name in r and name not in r:
                 r[name] = r[csv_name]
-        if t > 1:
-            for name in ("K_NFC", "GCF_HHNB"):
-                r[f"{name}_LAG"] = data[t - 2][name]
+        # Row t is the lag of quarter t + 1, whose second lag is quarter
+        # t - 1 (as in scenario.scenario_inputs). Before 2026-11-27 this
+        # carried t - 2, so Eqs. (166) and (324) were compared on a third
+        # lag: GCF_HHNB looked divergent and the lagged-utilisation form of
+        # Eq. (166) looked 3.8 bounds off in 2023Q1.
+        if t > 0:
+            for name in ("K_NFC", "GCF_HHNB", "K_PS"):
+                r[f"{name}_LAG"] = data[t - 1][name]
+        # Eq. (89)'s weighted expected utilisation is printed as u_PS_W.
+        if "u_PS_W" in r:
+            r.setdefault("Fu_PS", r["u_PS_W"])
         if "ROW_DR" in r and "PF" in r:
             r.setdefault("ROW_D", r["ROW_DR"] * r["PF"])
         r.setdefault("t_PS", float(t))
@@ -574,6 +666,105 @@ def test_oracle_forms_explain_the_departures(rel):
 
 
 @requires_cached_run
+@pytest.mark.parametrize("rel", ORACLE_FILES)
+def test_added_forms_reproduce_the_oracle(rel):
+    """r_KNFF and r_KFF: read by Eq. (99), defined nowhere in the manual,
+    printed by the CSVs. The forms found from the CSVs reproduce both in
+    every quarter of every comparison file, the fossil capital ban's zero
+    and GPI's government capital included."""
+    data = _load(rel)
+    for name, (_ref, _kind, _why, func) in ADDED_FORMS.items():
+        worst = _max_ratio(lambda s, l, t, f: func(s, l), name, data, rel)
+        assert worst <= 1.0, (name, worst)
+    if rel == _GPI_FILE:  # without government capital r_KNFF misses there
+        private = lambda s, l, t, f: (  # noqa: E731
+            s["P_ELEC"] * s["E_ELECNFF"] - s["COST_PSNFF"]) / s["K_PSNFF"]
+        assert _max_ratio(private, "r_KNFF", data, rel) > 100
+
+
+@requires_cached_run
+def test_world_demand_growth_is_finer_than_the_printed_parameter():
+    """Eq. (372): ROW_DR grows by a constant factor. Table 5 and every
+    cached parameter file print it as 1.007. Compounded from 2022Q4, that
+    leaves ROW_DR 3.0% below the cached 2040Q4 value, 60 times what 4 s.f.
+    printing can explain; 1.00742 lands inside the printing bound in every
+    simulated quarter of all 30 files. One quarter at a time both pass,
+    which is why the per-equation comparison could not see it."""
+    from define_uk.model.empirical import ROW_DG_IMPLIED
+
+    files = sorted((_run_root() / _TABLES).rglob("Variables_*.csv"))
+    assert len(files) == 30
+    for rows in _parameter_rows().values():
+        assert rows["RoW_Dg"] == "1.007" and PARAMETERS["ROW_Dg"] == 1.007
+    for path in files:
+        data = _load(str(path.relative_to(_run_root() / _TABLES)))
+        start = data[SIM_START - 1]["ROW_DR"]
+        implied = (data[-1]["ROW_DR"] / start) ** (1 / (len(data) - SIM_START))
+        assert implied == pytest.approx(ROW_DG_IMPLIED, abs=1.5e-5)
+        for t in range(SIM_START, len(data)):
+            n = t - SIM_START + 1
+            # both ends are printed to 4 s.f.
+            assert start * ROW_DG_IMPLIED ** n == pytest.approx(
+                data[t]["ROW_DR"], rel=2 * _PRINT_REL + n * 1.5e-5), (path.name, t)
+        coarse = start * 1.007 ** (len(data) - SIM_START)
+        assert coarse / data[-1]["ROW_DR"] - 1 == pytest.approx(-0.030, abs=0.002)
+
+
+def _parameter_rows():
+    import csv as _csv
+    out = {}
+    for path in sorted((_run_root() / _TABLES).rglob("Parameters-sorted_*.csv")):
+        with path.open(newline="") as fh:
+            rows = list(_csv.reader(fh))
+        out[path] = {h.strip(): v.strip() for h, v in zip(rows[0][1:], rows[1][1:])}
+    return out
+
+
+@requires_cached_run
+def test_run_parameters_are_what_the_cached_files_print():
+    """The finding behind seven of the forms: the run does not use Table 5
+    throughout. Its own parameter files print eight values that differ from
+    Table 5 in every file (plus alpha_PPLR in the Baseline files, issue
+    #20) and three behavioural coefficients Table 5 omits.
+    RUN_PARAMETERS holds exactly those, and nothing else the two share
+    differs."""
+    rows = _parameter_rows()
+    assert len(rows) == 30
+    norm = lambda k: k.lower().replace("_", "")  # noqa: E731
+    table5 = {norm(k): k for k in PARAMETERS}
+    differs, absent = set(), set()
+    for path, row in rows.items():
+        for name, printed in row.items():
+            if name in POLICY_LEVERS:  # switches, not Table 5 entries
+                continue
+            key = table5.get(norm(name))
+            if key is None:
+                absent.add(name)
+                continue
+            if printed == "NA":
+                continue
+            x, y = float(printed), PARAMETERS[key]
+            if abs(x - y) > 6e-4 * max(abs(x), abs(y)):
+                differs.add(key)
+                if key != "alpha_PPLR":
+                    assert x == RUN_PARAMETERS[key], (path.name, key)
+    assert differs == {"CF_min", "pi2", "def_max", "def0_NFC", "def0_PS",
+                       "alpha0_SOCB", "alpha1_SOCB", "alpha2_SOCB",
+                       "alpha_PPLR"}
+    omitted = {"alpha_0GCFPS": "alpha0_GCFPS", "alpha_0bNFF": "alpha0_bNFF",
+               "alpha_1bNFF": "alpha1_bNFF"}
+    assert set(omitted) <= absent
+    for row in rows.values():
+        for printed, key in omitted.items():
+            assert float(row[printed]) == RUN_PARAMETERS[key]
+    assert set(RUN_PARAMETERS) == (differs - {"alpha_PPLR"}) | set(omitted.values())
+    # No power-sector credit-rationing slopes are printed either: CR_PS
+    # uses the NFC ones (ORACLE_FORMS["CR_PS"]).
+    assert not any(k.startswith(("alpha_1CRPS", "alpha_2CRPS", "alpha_3CRPS"))
+                   for k in absent)
+
+
+@requires_cached_run
 def test_gcf_divergence_is_exactly_the_public_green_investment():
     data = _load("gvt_investment/Variables_GPI + Green Bonds.csv")
     eq = next(e for e in build_registry() if e.name == "GCF")
@@ -601,9 +792,10 @@ def test_divergent_equations_still_diverge():
 @requires_cached_run
 @pytest.mark.xfail(
     strict=True, raises=AssertionError,
-    reason="milestone 2: with §3.1/§3.4 held at the oracle, solved GDP is "
-    "within 0.6% but not within printing precision (price level 1.2% off "
-    "from 2023Q1; power-sector investment misses without alpha_0GCFPS)",
+    reason="milestone 2: the whole-model solve is within 1.23% of the "
+    "oracle on GDP (worst in 2025Q1, where the price level is 1.2% high), "
+    "not within the 2e-3 printing tolerance. With §3.1/§3.4 held at the "
+    "oracle it is within 0.09% (tests/test_scenario_solver.py)",
 )
 def test_baseline_gdp_path_matches_oracle():
     """The milestone-2 gate, now a real solve (2026-11-06, round 3):

@@ -212,13 +212,15 @@ def test_clean_room_alpha_pp_counterfactual_persists_after_2026():
     """The cached run cannot show the alpha_PP effect after 2026Q4 (it is
     mixed with the policies). The clean-room model can be solved twice on
     the Baseline's inputs, with alpha_PP = 0.2748 and 0.2762 and nothing
-    else changed. Diagnostic only: its baseline is within 3.7% of the
+    else changed. Diagnostic only: its baseline is within 1.23% of the
     oracle on GDP, not 1% (issue #17), so two closures are run: every
-    equation solved, and the nine undiagnosed ones held at the oracle.
+    equation solved, and the nine that were undiagnosed until 2026-11-27
+    held at the oracle.
 
-    Real GDP: in 2026 the clean-room effect is -1.16 / -0.91 a quarter
-    against the cached run's -1.125, and it does not fade: -1.30 / -1.21 in
-    2040Q4. Summed over 2027-2040 it is -77 / -58, the size of the
+    Real GDP: in 2026 the clean-room effect is -1.10 / -0.91 a quarter
+    against the cached run's -1.125, and it does not fade: -1.08 / -1.36 in
+    2040Q4. Summed over 2027-2040 it is -69 / -66 (-77 / -58 before the
+    forms of 2026-11-27), the size of the
     "constant share of baseline" extrapolation (-74). So "the effect stops
     in 2027", the assumption behind the top of every published range (2.25
     for the multiplier, +252 for cumulative real GDP), is the case this
@@ -234,18 +236,18 @@ def test_clean_room_alpha_pp_counterfactual_persists_after_2026():
     effect settles at, not for its path.
 
     Nominal GDP: the clean-room effect in 2026 is 2 to 4 times the cached
-    run's (+0.52 / +1.03 against +0.25) and rises where the cached run's
+    run's (+0.60 / +1.03 against +0.25) and rises where the cached run's
     falls (+0.8 to +0.2 over 2025-26), and the two closures disagree by
-    60% on its 2027-2040 sum. It is not validated, so it does not size the
+    36% on its 2027-2040 sum (185 against 252). It is not validated, so it does not size the
     multiplier, a ratio of nominal sums. It does show that the published
     2.08-2.25 range is not a bound: that range holds the nominal effect at
     its small 2026 level or share, and a price effect that builds, as here,
     would put the policy-only multiplier well below 2.08. Measured
-    2026-11-24.
+    2026-11-27.
     """
     from define_uk.model.scenario import load_reference, scenario_inputs, solve_path
     from define_uk.model.sectors import build_registry
-    from test_full_model import UNDIAGNOSED
+    from test_full_model import FORMERLY_UNDIAGNOSED as UNDIAGNOSED
 
     gv = _tables() / "gvt_investment"
     base = scenario_inputs(load_reference(gv / "Variables_Baseline.csv"))
@@ -263,8 +265,8 @@ def test_clean_room_alpha_pp_counterfactual_persists_after_2026():
     assert oracle("GDP_R") == pytest.approx(-1.125) and oracle("GDP") == pytest.approx(0.25)
 
     want = {  # hold: (real 2026, real 2040Q4, real 2027-40 sum, nominal 2026)
-        (): (-1.16, -1.30, -76.7, 0.52),
-        UNDIAGNOSED: (-0.91, -1.21, -58.0, 1.03),
+        (): (-1.10, -1.08, -68.7, 0.60),
+        UNDIAGNOSED: (-0.91, -1.36, -65.5, 1.03),
     }
     nominal_sums = []
     for hold, (r26, r40, rsum, n26) in want.items():
@@ -298,4 +300,4 @@ def test_clean_room_alpha_pp_counterfactual_persists_after_2026():
         # A building price effect: far more than the 20.5 the published
         # range allows for in the multiplier's numerator.
         assert nominal_sums[-1] > 100
-    assert max(nominal_sums) / min(nominal_sums) > 1.6  # closures disagree
+    assert max(nominal_sums) / min(nominal_sums) > 1.3  # closures disagree
